@@ -1,3 +1,5 @@
+import { LucideIcon } from "lucide-react";
+
 export type modesProps = {
   id: string;
   label: string;
@@ -10,3 +12,10 @@ export type LogoProps = {
   labelClassName?: string;
   iconClassName?: string;
 };
+
+export type dashboardLinksProps = {
+  id: string;
+  label: string;
+  href: string;
+  icon: LucideIcon
+}

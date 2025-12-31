@@ -22,19 +22,19 @@ const HomePage = () => {
             <ArrowLeftIcon className="w-5 md:w-6" /> <span>تسجيل الدخول</span>
           </Link>
         </div>
-        <div className="flex items-center justify-center p-6 md:w-3/5 md:px-28 md:py-12">
+        <div className="flex items-center justify-center py-6 md:w-3/5 md:px-28 md:py-12">
           <Image
-            src="/hero-desktop.png"
+            src="/hero-desktop.webp"
             width={1000}
             height={760}
-            className="hidden md:block"
+            className="hidden md:block rounded-lg"
             alt="Screenshots of the dashboard project showing desktop version"
           />
           <Image
-            src="/hero-mobile.png"
+            src="/hero-mobile.webp"
             width={560}
             height={620}
-            className="block md:hidden"
+            className="block md:hidden rounded-lg"
             alt="Screenshot of the dashboard project showing mobile version"
           />
         </div>
