@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Frown } from "lucide-react"
 import KoshLogo from '@/components/kosh-logo'
+import Footer from '@/components/footer'
 
 const NotFoundPage = () => {
   return (
@@ -21,9 +22,10 @@ const NotFoundPage = () => {
         href="/"
         className="ks-btn ks-btn-primary ks-btn-sm mt-4"
       >
-        الصفحة الرئيسية
+       العودة إلى الصفحة الرئيسية
       </Link>
     </div>
+    <Footer />
   </main>
   )
 }

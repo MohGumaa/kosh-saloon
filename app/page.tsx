@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeftIcon } from 'lucide-react'
 import KoshLogo from '@/components/kosh-logo'
+import Footer from '@/components/footer'
 
 const HomePage = () => {
   return (
@@ -38,6 +39,7 @@ const HomePage = () => {
           />
         </div>
       </div>
+      <Footer />
     </main>
   )
 }
