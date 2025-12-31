@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import "@/styles/globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ModeToggle } from "@/components/mode-toggle";
 import { tajawal } from "@/fonts";
@@ -24,7 +24,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body
-        className={`${tajawal.className} antialiased`}
+        className={`${tajawal.className} text-gray-700 dark:text-gray-300 antialiased overflow-x-hidden`}
       >
         <ThemeProvider
             attribute="class"

@@ -120,6 +120,90 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-white dark:bg-gray-950;
+  }
+}
+
+@layer components {
+  .flexCenter {
+    @apply flex justify-center items-center;
+  }
+
+  .ks-title {
+    @apply text-gray-950 dark:text-white;
+  }
+
+  .ks-btn {
+    @apply cursor-pointer rounded-md font-semibold capitalize transition-all px-4 py-2;
+  }
+
+  .ks-btn-primary {
+    @apply bg-sky-500 dark:bg-sky-400 hover:bg-sky-600 text-white;
+  }
+
+  .ks-btn-sm {
+    @apply text-sm;
+  }
+}
+
+/* Used for adding custom utility classes (like new spacing, text effects, or custom animations). */
+@layer utilities {
+  .facebook-bg {
+    background: linear-gradient(227.96deg, #3b5998 11.38%, #2b4170 84.07%);
+  }
+
+  .twitter-bg {
+    background: linear-gradient(227.96deg, #000000 11.38%, #121212 84.07%);
+  }
+
+  .reddit-bg {
+    background: linear-gradient(262.85deg, #f45c9f 5.57%, #ff7563 73.65%);
+  }
+
+  .linkedin-bg {
+    background: linear-gradient(227.96deg, #0077b5 11.38%, #00a0dc 84.07%);
+  }
+
+  .telegram-bg {
+    background: linear-gradient(#36aee0, #1c96d1);
+  }
+
+  .rss-bg {
+    background: #f48225;
+  }
+
+  .text-shadow {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+    -webkit-appearance: none;
+    display: none;
+  } */
+
+  input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
   }
 }
