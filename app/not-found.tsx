@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import { Frown } from "lucide-react"
+import KoshLogo from '@/components/kosh-logo'
 
 const NotFoundPage = () => {
   return (
   <main className="flex min-h-screen flex-col gap-2 p-6">
     <div className="flex h-20 shrink-0 items-end rounded-lg bg-sky-500 dark:bg-sky-400 p-4 md:h-52">
-      {/* <AcmeLogo /> */} الشعار
+      <KoshLogo />
     </div>
     <div className='grow flexCenter flex-col gap-2 text-center'>
       <Frown className="w-10 text-gray-400" />
