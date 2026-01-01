@@ -1,6 +1,6 @@
 import { LucideIcon } from "lucide-react";
 
-export type modesProps = {
+export type ModesProps = {
   id: string;
   label: string;
   icon: LucideIcon
@@ -13,9 +13,12 @@ export type LogoProps = {
   iconClassName?: string;
 };
 
-export type dashboardLinksProps = {
+export type UserRole = "ADMIN" | "SUPERVISOR" | "STAFF";
+
+export type DashboardLinkProps = {
   id: string;
   label: string;
   href: string;
   icon: LucideIcon
+  allowedRoles: UserRole[];
 }
