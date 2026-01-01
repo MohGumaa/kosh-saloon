@@ -25,7 +25,7 @@ const SideNav = () => {
           <Button 
             variant="outline"
             size="sm"
-            className='cursor-pointer bg-gray-50 dark:bg-white/10 hover:bg-sky-100 hover:text-sky-500 flexCenter w-full grow gap-2 border-0 shadow-none h-12 p-3 md:p-2 md:px-3 md:flex-none md:justify-start'
+            className='cursor-pointer bg-gray-50 dark:bg-white/10 hover:bg-sky-100 hover:text-sky-500 flexCenter w-full grow gap-2 border-0 shadow-none h-12 p-3 md:p-2 md:px-3 md:flex-none md:justify-start font-semibold'
           >
             <Power className="w-6" />
             <span className="hidden md:block">تسجيل الخروج</span>
