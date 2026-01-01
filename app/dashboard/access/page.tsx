@@ -1,11 +1,11 @@
 import React from 'react'
 
-const page = () => {
+const AccessPage = () => {
   return (
     <div>
-      
+      access
     </div>
   )
 }
 
-export default page
+export default AccessPage

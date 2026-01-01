@@ -60,4 +60,4 @@ export const DASHBOARD_LINKS: DashboardLinkProps[] = [
 ];
 
 // const { user } = useAuthContext(); // user.role: "ADMIN" | "SUPERVISOR" | "STAFF"
-export const user: any = {name: "Mohamed", role: "STAFF"};
+export const user: any = {name: "Mohamed", role: "ADMIN"};
