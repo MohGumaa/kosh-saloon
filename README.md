@@ -1,7 +1,7 @@
 <div align="center">
   <br />
     <a href="#" target="_blank">
-      <img src="" alt="Project Banner">
+      <img src="https://github.com/MohGumaa/kosh-saloon/blob/main/public/opengraph-image.webp" alt="Project Banner">
     </a>
   <br />
 
