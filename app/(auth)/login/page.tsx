@@ -1,7 +1,7 @@
+import Link from 'next/link';
 import { Suspense } from 'react';
 import KoshLogo from '@/components/kosh-logo';
 import LoginForm from '@/components/login-form';
-import Link from 'next/link';
 
 const LoginPage = () => {
   return (
