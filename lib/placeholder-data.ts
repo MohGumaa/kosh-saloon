@@ -366,7 +366,7 @@ export const invoices = [
   {
     id: randomUUID(),
     serviceId: services[0].id,
-    staffId: users[2].id,
+    userId: users[2].id,
     amount: 40,
     date: new Date('2024-01-01'),
     notes: 'Regular customer',
@@ -374,7 +374,7 @@ export const invoices = [
   {
     id: randomUUID(),
     serviceId: services[1].id,
-    staffId: users[3].id,
+    userId: users[3].id,
     amount: 30,
     date: new Date('2024-01-02'),
     notes: null,
@@ -382,7 +382,7 @@ export const invoices = [
   {
     id: randomUUID(),
     serviceId: services[3].id,
-    staffId: users[2].id,
+    userId: users[2].id,
     amount: 40,
     date: new Date('2024-01-03'),
     notes: 'Quick service',
@@ -390,7 +390,7 @@ export const invoices = [
   {
     id: randomUUID(),
     serviceId: services[4].id,
-    staffId: users[4].id,
+    userId: users[4].id,
     amount: 40,
     date: new Date('2024-01-04'),
     notes: 'Styling for event',
@@ -398,7 +398,7 @@ export const invoices = [
   {
     id: randomUUID(),
     serviceId: services[0].id,
-    staffId: users[2].id,
+    userId: users[2].id,
     amount: 50,
     date: new Date('2024-01-05'),
     notes: 'Regular customer',
@@ -406,7 +406,7 @@ export const invoices = [
   {
     id: randomUUID(),
     serviceId: services[5].id,
-    staffId: users[3].id,
+    userId: users[3].id,
     amount: 40,
     date: new Date('2024-01-06'),
     notes: 'Color treatment',
@@ -414,7 +414,7 @@ export const invoices = [
   {
     id: randomUUID(),
     serviceId: services[2].id,
-    staffId: users[4].id,
+    userId: users[4].id,
     amount: 40,
     date: new Date('2024-01-07'),
     notes: 'Full package service',

@@ -1,6 +1,7 @@
 import postgres from "postgres";
 import { env } from "@/config/env";
-import { Revenue } from "@/types";
+import { LatestInvoiceRaw, Revenue } from "@/types";
+import { formatCurrency } from "./utils";
 
 const sql = postgres(env.databaseUrl,  { ssl: 'verify-full' });
 
@@ -20,5 +21,25 @@ export async function fetchRevenue() {
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch revenue data.');
+  }
+}
+
+export async function fetchLatestInvoices() {
+  try {
+    const data = await sql<LatestInvoiceRaw[]>`
+      SELECT invoices.amount, user.name, user.imageUrl, user.email, invoices.id
+      FROM invoices
+      JOIN user ON invoices.user_id = user.id
+      ORDER BY invoices.date DESC
+      LIMIT 5`;
+
+    const latestInvoices = data.map((invoice) => ({
+      ...invoice,
+      amount: formatCurrency(invoice.amount),
+    }));
+    return latestInvoices;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch the latest invoices.');
   }
 }

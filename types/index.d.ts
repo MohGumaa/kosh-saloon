@@ -29,16 +29,16 @@ export type User = {
   name: string;
   email: string;
   password: string;
-  imageUrl?: string;
+  image_url?: string;
   role: UserRole;
 };
 
 export type Services = {
   id: string;
-  nameEN: string;
-  nameAR: string;
-  isActive: boolean;
-  createdById: string;
+  name_en: string;
+  name_ar: string;
+  is_active: boolean;
+  created_by_id: string;
 };
 
 export type Revenue = {
@@ -48,8 +48,8 @@ export type Revenue = {
 
 export type Invoice = {
   id: string;
-  serviceId: string;
-  staffId: string;
+  service_id: string;
+  user_id: string;
   amount: number;
   date: string;
   notes?: string;
@@ -57,9 +57,9 @@ export type Invoice = {
 
 export type LatestInvoice = {
   id: string;
-  serviceId: string;
-  staffId: string;
-  imageUrl?: string;
+  service_id: string;
+  user_id: string;
+  image_url?: string;
   email: string;
   amount: string;
 };

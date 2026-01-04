@@ -77,22 +77,22 @@ async function seedInvoices() {
     CREATE TABLE IF NOT EXISTS invoices (
       id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
       service_id UUID NOT NULL,
-      staff_id UUID NOT NULL,
+      user_id UUID NOT NULL,
       amount DECIMAL(10, 2) NOT NULL,
       status VARCHAR(50) DEFAULT 'COMPLETED',
       notes TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (service_id) REFERENCES services(id),
-      FOREIGN KEY (staff_id) REFERENCES users(id)
+      FOREIGN KEY (user_id) REFERENCES users(id)
     );
   `;
 
   const insertedInvoices = await Promise.all(
     invoices.map(
       (invoice) => sql`
-        INSERT INTO invoices (id, service_id, staff_id, amount, status, notes, created_at)
-        VALUES (${invoice.id}, ${invoice.serviceId}, ${invoice.staffId}, ${invoice.amount}, 'COMPLETED', ${invoice.notes}, ${invoice.date})
+        INSERT INTO invoices (id, service_id, user_id, amount, status, notes, created_at)
+        VALUES (${invoice.id}, ${invoice.serviceId}, ${invoice.userId}, ${invoice.amount}, 'COMPLETED', ${invoice.notes}, ${invoice.date})
         ON CONFLICT (id) DO NOTHING;
       `,
     ),
