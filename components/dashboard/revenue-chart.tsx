@@ -11,7 +11,14 @@ const RevenueChart = ({
   const { yAxisLabels, topLabel } = generateYAxis(revenue);
 
   if (!revenue || revenue.length === 0) {
-    return <p className="mt-4 text-gray-400">لا توجد بيانات متاحة.</p>;
+    return (
+      <div className="w-full md:col-span-4">
+        <h2 className={`ks-title mb-4 text-xl md:text-2xl font-medium`}>
+          الإيرادات الأخيرة
+        </h2>
+        <p className="mt-4 text-gray-400">لا توجد بيانات متاحة.</p>
+      </div>
+    );
   }
 
   return (

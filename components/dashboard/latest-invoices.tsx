@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import Image from 'next/image';
 import { LatestInvoice } from '@/types';
 import { RefreshCw } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
 
 const LatestInvoices = ({
   latestInvoices
@@ -47,7 +48,9 @@ const LatestInvoices = ({
                 <p
                   className={` truncate text-sm font-medium md:text-base`}
                 >
-                  {invoice.amount}
+                  {/* {invoice.amount} */}
+                  {/* @ts-ignore */}
+                  {formatCurrency(invoice.amount)}
                 </p>
               </div>
             );

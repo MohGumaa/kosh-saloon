@@ -79,7 +79,7 @@ async function seedInvoices() {
       service_id UUID NOT NULL,
       user_id UUID NOT NULL,
       amount INTEGER NOT NULL,
-      status VARCHAR(50) DEFAULT 'COMPLETED',
+      status VARCHAR(50) DEFAULT 'paid',
       notes TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -92,7 +92,7 @@ async function seedInvoices() {
     invoices.map(
       (invoice) => sql`
         INSERT INTO invoices (id, service_id, user_id, amount, status, notes, created_at)
-        VALUES (${invoice.id}, ${invoice.service_id}, ${invoice.user_id}, ${invoice.amount}, 'COMPLETED', ${invoice.notes}, ${invoice.date})
+        VALUES (${invoice.id}, ${invoice.service_id}, ${invoice.user_id}, ${invoice.amount}, 'paid', ${invoice.notes}, ${invoice.date})
         ON CONFLICT (id) DO NOTHING;
       `,
     ),

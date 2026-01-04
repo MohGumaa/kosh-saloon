@@ -51,6 +51,7 @@ export type Invoice = {
   service_id: string;
   user_id: string;
   amount: number;
+  status: 'paid' | 'pending';
   date: string;
   notes?: string;
 };
