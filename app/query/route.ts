@@ -18,7 +18,7 @@ async function listInvoices() {
   const data = await sql`
     SELECT
       i.id,
-      i.price,
+      i.amount,
       i.status,
       i.notes,
       i.created_at,

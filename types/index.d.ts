@@ -13,7 +13,6 @@ export type LogoProps = {
   iconClassName?: string;
 };
 
-export type UserRole = "ADMIN" | "SUPERVISOR" | "STAFF";
 
 export type DashboardLinkProps = {
   id: string;
@@ -23,7 +22,49 @@ export type DashboardLinkProps = {
   allowedRoles: UserRole[];
 }
 
+export type UserRole = "ADMIN" | "SUPERVISOR" | "STAFF";
+
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  imageUrl?: string;
+  role: UserRole;
+};
+
+export type Services = {
+  id: string;
+  nameEN: string;
+  nameAR: string;
+  isActive: boolean;
+  createdById: string;
+};
+
 export type Revenue = {
   month: string;
   revenue: number;
+};
+
+export type Invoice = {
+  id: string;
+  serviceId: string;
+  staffId: string;
+  amount: number;
+  date: string;
+  notes?: string;
+};
+
+export type LatestInvoice = {
+  id: string;
+  serviceId: string;
+  staffId: string;
+  imageUrl?: string;
+  email: string;
+  amount: string;
+};
+
+// The database returns a number for amount, but we later format it to a string with the formatCurrency function
+export type LatestInvoiceRaw = Omit<LatestInvoice, 'amount'> & {
+  amount: number;
 };

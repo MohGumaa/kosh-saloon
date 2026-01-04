@@ -1,6 +1,6 @@
 import { Revenue } from '@/types';
 import { generateYAxis } from '@/lib/utils';
-import { CalendarDays } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 
 const RevenueChart = ({
   revenue,
@@ -16,12 +16,12 @@ const RevenueChart = ({
 
   return (
     <div className="w-full md:col-span-4">
-      <h2 className={`mb-4 text-xl md:text-2xl font-medium`}>
+      <h2 className={`ks-title mb-4 text-xl md:text-2xl font-medium`}>
         الإيرادات الأخيرة
       </h2>
 
-     <div className="rounded-xl bg-gray-50 p-4">
-        <div className="sm:grid-cols-13 mt-0 grid grid-cols-12 items-end gap-2 rounded-md bg-white p-4 md:gap-4">
+     <div className="rounded-xl bg-gray-50 dark:bg-white/10 p-4">
+        <div className="sm:grid-cols-13 mt-0 grid grid-cols-12 items-end gap-2 rounded-md bg-white dark:bg-gray-950 p-4 md:gap-4">
           <div
             className="mb-6 hidden flex-col justify-between text-sm text-gray-400 sm:flex"
             style={{ height: `${chartHeight}px` }}
@@ -45,9 +45,9 @@ const RevenueChart = ({
             </div>
           ))}
         </div>
-        <div className="flex items-center pb-2 pt-6">
-          <CalendarDays className="h-5 w-5 text-gray-500" />
-          <h3 className="ml-2 text-sm text-gray-500 ">الأشهر الـ 12 الماضية</h3>
+        <div className="flex items-center gap-2 pb-2 pt-6">
+          <Calendar className="h-5 w-5 text-gray-500" />
+          <h3 className="text-sm text-gray-500">الأشهر الـ 12 الماضية</h3>
         </div>
       </div>
     </div>

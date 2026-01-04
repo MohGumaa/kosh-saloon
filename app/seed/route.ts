@@ -23,6 +23,7 @@ async function seedUsers() {
       name VARCHAR(255) NOT NULL,
       email TEXT NOT NULL UNIQUE,
       password TEXT NOT NULL,
+      imageUrl VARCHAR(255) NOT NULL,
       role VARCHAR(50) NOT NULL DEFAULT 'STAFF'
     );
   `;
@@ -31,8 +32,8 @@ async function seedUsers() {
     users.map(async (user) => {
       const hashedPassword = await bcrypt.hash(user.password, 10);
       return sql`
-        INSERT INTO users (id, name, email, password, role)
-        VALUES (${user.id}, ${user.name}, ${user.email}, ${hashedPassword}, ${user.role})
+        INSERT INTO users (id, name, email, password, imageUrl, role)
+        VALUES (${user.id}, ${user.name}, ${user.email}, ${hashedPassword}, ${user.imageUrl}, ${user.role})
         ON CONFLICT (id) DO NOTHING;
       `;
     }),
@@ -77,7 +78,7 @@ async function seedInvoices() {
       id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
       service_id UUID NOT NULL,
       staff_id UUID NOT NULL,
-      price DECIMAL(10, 2) NOT NULL,
+      amount DECIMAL(10, 2) NOT NULL,
       status VARCHAR(50) DEFAULT 'COMPLETED',
       notes TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -90,8 +91,8 @@ async function seedInvoices() {
   const insertedInvoices = await Promise.all(
     invoices.map(
       (invoice) => sql`
-        INSERT INTO invoices (id, service_id, staff_id, price, status, notes, created_at)
-        VALUES (${invoice.id}, ${invoice.serviceId}, ${invoice.staffId}, ${invoice.price}, 'COMPLETED', ${invoice.notes}, ${invoice.date})
+        INSERT INTO invoices (id, service_id, staff_id, amount, status, notes, created_at)
+        VALUES (${invoice.id}, ${invoice.serviceId}, ${invoice.staffId}, ${invoice.amount}, 'COMPLETED', ${invoice.notes}, ${invoice.date})
         ON CONFLICT (id) DO NOTHING;
       `,
     ),
