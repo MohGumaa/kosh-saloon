@@ -1,4 +1,9 @@
-const DashboardPage = () => {
+import RevenueChart from "@/components/dashboard/revenue-chart";
+import { fetchRevenue } from "@/lib/data";
+
+const DashboardPage = async () => {
+  const revenue = await fetchRevenue();
+
   return (
     <main>
       <h1 className="mb-4 text-xl md:text-2xl font-bold">
@@ -15,7 +20,7 @@ const DashboardPage = () => {
         /> */}
       </div>
       <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-4 lg:grid-cols-8">
-        {/* <RevenueChart revenue={revenue}  /> */}
+        <RevenueChart revenue={revenue}  />
         {/* <LatestInvoices latestInvoices={latestInvoices} /> */}
       </div>
     </main>

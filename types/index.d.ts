@@ -22,3 +22,8 @@ export type DashboardLinkProps = {
   icon: LucideIcon
   allowedRoles: UserRole[];
 }
+
+export type Revenue = {
+  month: string;
+  revenue: number;
+};
