@@ -1,8 +1,10 @@
+import LatestInvoices from "@/components/dashboard/latest-invoices";
 import RevenueChart from "@/components/dashboard/revenue-chart";
-import { fetchRevenue } from "@/lib/data";
+import { fetchLatestInvoices, fetchRevenue } from "@/lib/data";
 
 const DashboardPage = async () => {
   const revenue = await fetchRevenue();
+  const latestInvoices = await fetchLatestInvoices();
 
   return (
     <main>
@@ -21,7 +23,7 @@ const DashboardPage = async () => {
       </div>
       <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-4 lg:grid-cols-8">
         <RevenueChart revenue={revenue}  />
-        {/* <LatestInvoices latestInvoices={latestInvoices} /> */}
+        <LatestInvoices latestInvoices={latestInvoices} />
       </div>
     </main>
   )

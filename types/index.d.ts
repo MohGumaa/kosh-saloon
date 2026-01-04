@@ -57,9 +57,8 @@ export type Invoice = {
 
 export type LatestInvoice = {
   id: string;
-  service_id: string;
-  user_id: string;
-  image_url?: string;
+  name: string;
+  image_url: string;
   email: string;
   amount: string;
 };

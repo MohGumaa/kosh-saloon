@@ -7,10 +7,13 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const formatCurrency = (amount: number) => {
-  return (amount / 100).toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  });
+  // return amount.toLocaleString('ar-AE', {
+  //   style: 'currency',
+  //   currency: 'AED',
+  //   currencyDisplay: 'name',
+  //   maximumFractionDigits: 0,
+  // });
+  return `${amount.toLocaleString('ar-AE')} درهم`;
 };
 
 export const generateYAxis = (revenue: Revenue[]) => {

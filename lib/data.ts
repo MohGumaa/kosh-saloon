@@ -5,6 +5,7 @@ import { formatCurrency } from "./utils";
 
 const sql = postgres(env.databaseUrl,  { ssl: 'verify-full' });
 
+// We need to update to check if table exist
 export async function fetchRevenue() {
   try {
     // Artificially delay a response for demo purposes.
@@ -27,11 +28,11 @@ export async function fetchRevenue() {
 export async function fetchLatestInvoices() {
   try {
     const data = await sql<LatestInvoiceRaw[]>`
-      SELECT invoices.amount, user.name, user.imageUrl, user.email, invoices.id
+      SELECT invoices.amount, users.name, users.image_url, users.email, invoices.id
       FROM invoices
-      JOIN user ON invoices.user_id = user.id
-      ORDER BY invoices.date DESC
-      LIMIT 5`;
+      JOIN users ON invoices.user_id = users.id
+      ORDER BY invoices.created_at DESC
+      LIMIT 6`;
 
     const latestInvoices = data.map((invoice) => ({
       ...invoice,

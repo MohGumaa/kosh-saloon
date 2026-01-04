@@ -23,7 +23,7 @@ async function seedUsers() {
       name VARCHAR(255) NOT NULL,
       email TEXT NOT NULL UNIQUE,
       password TEXT NOT NULL,
-      imageUrl VARCHAR(255) NOT NULL,
+      image_url VARCHAR(255) NOT NULL,
       role VARCHAR(50) NOT NULL DEFAULT 'STAFF'
     );
   `;
@@ -32,8 +32,8 @@ async function seedUsers() {
     users.map(async (user) => {
       const hashedPassword = await bcrypt.hash(user.password, 10);
       return sql`
-        INSERT INTO users (id, name, email, password, imageUrl, role)
-        VALUES (${user.id}, ${user.name}, ${user.email}, ${hashedPassword}, ${user.imageUrl}, ${user.role})
+        INSERT INTO users (id, name, email, password, image_url, role)
+        VALUES (${user.id}, ${user.name}, ${user.email}, ${hashedPassword}, ${user.image_url}, ${user.role})
         ON CONFLICT (id) DO NOTHING;
       `;
     }),
@@ -61,7 +61,7 @@ async function seedServices() {
     services.map(
       (service) => sql`
         INSERT INTO services (id, name_en, name_ar, is_active, created_by_id)
-        VALUES (${service.id}, ${service.nameEN}, ${service.nameAR}, ${service.isActive}, ${service.createdById})
+        VALUES (${service.id}, ${service.name_en}, ${service.name_ar}, ${service.is_active}, ${service.created_by_id})
         ON CONFLICT (id) DO NOTHING;
       `,
     ),
@@ -78,7 +78,7 @@ async function seedInvoices() {
       id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
       service_id UUID NOT NULL,
       user_id UUID NOT NULL,
-      amount DECIMAL(10, 2) NOT NULL,
+      amount INTEGER NOT NULL,
       status VARCHAR(50) DEFAULT 'COMPLETED',
       notes TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -92,7 +92,7 @@ async function seedInvoices() {
     invoices.map(
       (invoice) => sql`
         INSERT INTO invoices (id, service_id, user_id, amount, status, notes, created_at)
-        VALUES (${invoice.id}, ${invoice.serviceId}, ${invoice.userId}, ${invoice.amount}, 'COMPLETED', ${invoice.notes}, ${invoice.date})
+        VALUES (${invoice.id}, ${invoice.service_id}, ${invoice.user_id}, ${invoice.amount}, 'COMPLETED', ${invoice.notes}, ${invoice.date})
         ON CONFLICT (id) DO NOTHING;
       `,
     ),
