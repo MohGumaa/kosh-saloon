@@ -33,6 +33,8 @@ export async function fetchRevenue(): Promise<Revenue[]> {
   }
 
   try {
+    // console.log("Fetch revenue data...")
+    // await new Promise(reslove => setTimeout(reslove, 3000))
     return await sql<Revenue[]>`SELECT * FROM monthly_revenue`;
   } catch (error) {
     console.error("Database Error (fetchRevenue):", error);
