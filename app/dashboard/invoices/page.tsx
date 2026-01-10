@@ -1,8 +1,8 @@
 import { Suspense } from 'react';
 import Search from '@/components/search';
+import InvoicesTable from '@/components/invoices/table';
 import { CreateInvoice } from '@/components/invoices/buttons';
 import { InvoicesTableSkeleton } from '@/components/skeletons/dashboard-skeleton';
-import InvoicesTable from '@/components/invoices/table';
 
 const InvoicesPage = async (props: {
   searchParams?: Promise<{
