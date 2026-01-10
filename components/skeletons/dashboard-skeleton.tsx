@@ -104,9 +104,9 @@ export const DashboardSkeleton = () => {
 
 export const TableRowSkeleton = () => {
   return (
-    <tr className="w-full border-b border-gray-100 dark:border-gray-500 last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg">
+    <tr className="bg-white dark:bg-gray-950 w-full border-b border-gray-100 dark:border-gray-800 last-of-type:border-none [&:first-child>td:first-child]:rounded-tr-lg [&:first-child>td:last-child]:rounded-tl-lg [&:last-child>td:first-child]:rounded-br-lg [&:last-child>td:last-child]:rounded-bl-lg">
       {/* Customer Name and Image */}
-      <td className="relative overflow-hidden whitespace-nowrap py-3 pl-6 pr-3">
+      <td className="relative overflow-hidden whitespace-nowrap py-3 pr-6 pl-3">
         <div className="flex items-center gap-3">
           <div className="h-8 w-8 rounded-full bg-gray-100 dark:bg-white/10"></div>
           <div className="h-6 w-24 rounded bg-gray-100 dark:bg-white/10"></div>
@@ -129,7 +129,7 @@ export const TableRowSkeleton = () => {
         <div className="h-6 w-16 rounded bg-gray-100 dark:bg-white/10"></div>
       </td>
       {/* Actions */}
-      <td className="whitespace-nowrap py-3 pl-6 pr-3">
+      <td className="whitespace-nowrap py-3 pr-6 pl-3">
         <div className="flex justify-end gap-3">
           <div className="h-9.5 w-9.5 rounded bg-gray-100 dark:bg-white/10"></div>
           <div className="h-9.5 w-9.5 rounded bg-gray-100 dark:bg-white/10"></div>
@@ -142,9 +142,9 @@ export const TableRowSkeleton = () => {
 export const InvoicesMobileSkeleton = () => {
   return (
     <div className="mb-2 w-full rounded-md bg-white dark:bg-gray-950 p-4">
-      <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-500 pb-8">
+      <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-8">
         <div className="flex items-center">
-          <div className="mr-2 h-8 w-8 rounded-full bg-gray-100 dark:bg-white/10"></div>
+          <div className="ml-2 h-8 w-8 rounded-full bg-gray-100 dark:bg-white/10"></div>
           <div className="h-6 w-16 rounded bg-gray-100 dark:bg-white/10"></div>
         </div>
         <div className="h-6 w-16 rounded bg-gray-100 dark:bg-white/10"></div>
@@ -176,29 +176,29 @@ export const InvoicesTableSkeleton = () => {
             <InvoicesMobileSkeleton />
             <InvoicesMobileSkeleton />
           </div>
-          <table className="hidden min-w-full text-gray-900 md:table">
-            <thead className="rounded-lg text-left text-sm font-normal">
+          <table className="hidden min-w-full text-gray-900 dark:text-gray-400 md:table">
+            <thead className="rounded-lg text-right text-sm font-normal">
               <tr>
                 <th scope="col" className="px-4 py-5 font-medium sm:pl-6">
-                  Customer
+                  الموظف
                 </th>
                 <th scope="col" className="px-3 py-5 font-medium">
-                  Email
+                  البريد إلكتروني
                 </th>
                 <th scope="col" className="px-3 py-5 font-medium">
-                  Amount
+                  المبلغ
                 </th>
                 <th scope="col" className="px-3 py-5 font-medium">
-                  Date
+                  التاريخ
                 </th>
                 <th scope="col" className="px-3 py-5 font-medium">
-                  Status
+                  الحالة
                 </th>
                 <th
                   scope="col"
-                  className="relative pb-4 pl-3 pr-6 pt-2 sm:pr-6"
+                  className="relative pb-4 pr-3 pl-6 pt-2 sm:pl-6"
                 >
-                  <span className="sr-only">Edit</span>
+                  <span className="sr-only">تعديل</span>
                 </th>
               </tr>
             </thead>

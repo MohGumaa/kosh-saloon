@@ -1,9 +1,11 @@
 import postgres from "postgres";
 import { env } from "@/config/env";
-import { LatestInvoiceRaw, Revenue } from "@/types";
+import { InvoicesTable, LatestInvoiceRaw, Revenue } from "@/types";
 import { formatCurrency } from "./utils";
 
 const sql = postgres(env.databaseUrl, { ssl: "verify-full" });
+
+const ITEMS_PER_PAGE = 6;
 
 // ---------------------------------------
 // Helper: check if table exists
@@ -22,6 +24,53 @@ async function tableExists(tableName: string): Promise<boolean> {
     return false;
   }
 }
+
+// ---------------------------------------
+// Fetch filtered invoices with pagination
+// ---------------------------------------
+export const fetchFilteredInvoices = async (
+  query: string,
+  currentPage: number,
+) => {
+  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+
+  if (!(await tableExists("invoices"))) {
+    console.warn('Table "invoices" does not exist.');
+    return [];
+  }
+
+  try {
+    const invoices = await sql<InvoicesTable[]>`
+      SELECT 
+        invoices.id,
+        invoices.amount,
+        invoices.created_at,
+        invoices.status,
+        services.name_ar,
+        services.name_en,
+        users.name, 
+        users.image_url
+      FROM invoices
+      JOIN users ON invoices.user_id = users.id
+      JOIN services ON invoices.service_id = services.id
+      WHERE
+        users.name ILIKE ${`%${query}%`} OR
+        services.name_ar ILIKE ${`%${query}%`} OR
+        services.name_en ILIKE ${`%${query}%`} OR
+        invoices.amount::text ILIKE ${`%${query}%`} OR
+        invoices.status ILIKE ${`%${query}%`} OR
+        invoices.created_at::text ILIKE ${`%${query}%`}
+      ORDER BY invoices.created_at DESC
+      LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
+    `;
+
+    return invoices;
+    // return await sql<any[]>`SELECT * FROM invoices`;
+  } catch (error) {
+    console.error('Database Error (fetchFilteredInvoices):', error);
+    throw new Error('Failed to fetch invoices.');
+  }
+};
 
 // ---------------------------------------
 // Fetch monthly revenue safely
@@ -127,3 +176,4 @@ export async function fetchCardData() {
     return safeResult;
   }
 }
+
