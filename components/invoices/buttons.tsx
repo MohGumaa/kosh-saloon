@@ -1,12 +1,11 @@
-
-import { Pen, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { Pen, Plus, Trash2 } from 'lucide-react';
 
 export function CreateInvoice() {
   return (
     <Link
       href="/dashboard/invoices/create"
-      className="flex h-10 items-center rounded-lg bg-sky-600 px-4 text-sm font-medium text-white transition-colors hover:bg-sky-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600"
+      className="flex items-center h-10 font-medium! ks-btn ks-btn-sm ks-btn-primary"
     >
       <span className="hidden md:block">إنشاء فاتورة</span>{' '}
       <Plus className="h-5 md:mr-4" />
