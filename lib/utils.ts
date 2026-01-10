@@ -32,7 +32,7 @@ export const generateYAxis = (revenue: Revenue[]) => {
 
 export const formatDateToLocal = (
   dateStr: string | Date,
-  locale: string = 'en-US',
+  locale: string = 'ar-SA', // en-US
 ): string => {
   const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
   const options: Intl.DateTimeFormatOptions = {

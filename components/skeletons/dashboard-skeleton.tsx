@@ -176,14 +176,14 @@ export const InvoicesTableSkeleton = () => {
             <InvoicesMobileSkeleton />
             <InvoicesMobileSkeleton />
           </div>
-          <table className="hidden min-w-full text-gray-900 dark:text-gray-400 md:table">
+          <table className="hidden min-w-full ks-title md:table">
             <thead className="rounded-lg text-right text-sm font-normal">
               <tr>
-                <th scope="col" className="px-4 py-5 font-medium sm:pl-6">
+                <th scope="col" className="px-4 py-5 font-medium sm:pr-6">
                   الموظف
                 </th>
                 <th scope="col" className="px-3 py-5 font-medium">
-                  البريد إلكتروني
+                  نوع الخدمة
                 </th>
                 <th scope="col" className="px-3 py-5 font-medium">
                   المبلغ
