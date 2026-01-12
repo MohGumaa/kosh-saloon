@@ -73,6 +73,38 @@ export const fetchFilteredInvoices = async (
 };
 
 // ---------------------------------------
+// Fetch total pages for invoices
+// ---------------------------------------
+export const fetchInvoicesPages = async (query: string): Promise<number> => {
+  if (!(await tableExists("invoices"))) {
+    console.warn('Table "invoices" does not exist.');
+    return 0;
+  }
+
+  try {
+    const data = await sql<{ count: number }[]>`
+      SELECT COUNT(*) as count
+      FROM invoices
+      JOIN users ON invoices.user_id = users.id
+      JOIN services ON invoices.service_id = services.id
+      WHERE
+        users.name ILIKE ${`%${query}%`} OR
+        services.name_ar ILIKE ${`%${query}%`} OR
+        services.name_en ILIKE ${`%${query}%`} OR
+        invoices.amount::text ILIKE ${`%${query}%`} OR
+        invoices.created_at::text ILIKE ${`%${query}%`} OR
+        invoices.status ILIKE ${`%${query}%`}
+    `;
+
+    const totalPages = Math.ceil(Number(data[0]?.count ?? 0) / ITEMS_PER_PAGE);
+    return totalPages;
+  } catch (error) {
+    console.error('Database Error (fetchInvoicesPages):', error);
+    throw new Error('Failed to fetch total number of invoices.');
+  }
+};
+
+// ---------------------------------------
 // Fetch monthly revenue safely
 // ---------------------------------------
 export async function fetchRevenue(): Promise<Revenue[]> {
