@@ -46,7 +46,7 @@ export const DASHBOARD_LINKS: DashboardLinkProps[] = [
   {
     id: "staff",
     label: "الموظفين",
-    href: "/dashboard/staff",
+    href: "/dashboard/our-staff",
     icon: Users,
     allowedRoles: ["ADMIN"],
   },

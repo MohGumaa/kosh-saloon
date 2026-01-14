@@ -1,8 +1,19 @@
+import Breadcrumbs from "@/components/invoices/breadcrumbs"
+
 const AccessPage = () => {
   return (
-    <div>
-      access
-    </div>
+    <main>
+      <Breadcrumbs
+        breadcrumbs={[
+          { label: 'لوحة التحكم', href: '/dashboard' },
+          {
+            label: 'صلاحيات الوصول',
+            href: '/dashboard/access',
+            active: true,
+          },
+        ]}
+      />
+    </main>
   )
 }
 
