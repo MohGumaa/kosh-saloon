@@ -1,30 +1,41 @@
+'use client';
 
-import { cairo } from '@/fonts';
-import { ArrowLeft, AtSign, Key } from 'lucide-react';
+import { Label } from './ui/label';
+import { Input } from './ui/input';
 import { Button } from './ui/button';
-
+import { useActionState } from 'react';
+import { authenticate } from '@/lib/actions';
+import { useSearchParams } from 'next/navigation';
+import { ArrowLeft, AtSign, CircleAlert, Key } from 'lucide-react';
 
 export default function LoginForm() {
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+  const [errorMessage, formAction, isPending] = useActionState(
+    authenticate,
+    undefined,
+  );
+
   return (
-    <form className="space-y-3">
+    <form action={formAction} className="space-y-3">
       <div className="flex-1 rounded-lg bg-gray-50 dark:bg-white/10 px-6 pb-4 pt-8">
-        <h1 className={`${cairo.className} mb-3 text-2xl ks-title`}>
+        <h1 className="mb-3 text-2xl ks-title font-medium">
           يرجى تسجيل الدخول للمتابعة.
         </h1>
         <div className="w-full">
           <div>
-            <label
-              className="mb-3 mt-5 block text-xs font-medium text-gray-900 dark:text-gray-100"
+            <Label
+              className="mb-3 mt-5 text-gray-900 dark:text-gray-100"
               htmlFor="email"
             >
               البريد إلكتروني
-            </label>
+            </Label>
             <div className="relative">
-              <input
-                className="peer block w-full rounded-md border border-gray-200 py-2.25 pr-10 text-sm outline-2 dark:outline-white/10 placeholder:text-gray-500 dark:bg-white/5"
+              <Input 
                 id="email"
                 type="email"
                 name="email"
+                className="peer w-full rounded-md placeholder:text-gray-500 pr-10 h-10"
                 placeholder="أدخل عنوان بريدك الإلكتروني"
                 required
               />
@@ -32,15 +43,15 @@ export default function LoginForm() {
             </div>
           </div>
           <div className="mt-4">
-            <label
-              className="mb-3 mt-5 block text-xs font-medium text-gray-900"
+            <Label
+              className="mb-3 mt-5 text-gray-900 dark:text-gray-100"
               htmlFor="password"
             >
               كلمة المرور
-            </label>
+            </Label>
             <div className="relative">
-              <input
-                className="peer block w-full rounded-md border border-gray-200 py-2.25 pr-10 text-sm outline-2 placeholder:text-gray-500"
+              <Input
+                className="peer w-full rounded-md placeholder:text-gray-500 pr-10 h-10"
                 id="password"
                 type="password"
                 name="password"
@@ -48,15 +59,25 @@ export default function LoginForm() {
                 required
                 minLength={6}
               />
-              <Key className="pointer-events-none absolute right-3 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-gray-500 peer-focus:text-gray-900" />
+              <Key className="pointer-events-none absolute right-3 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-gray-500 peer-focus:text-gray-900 dark:peer-focus:text-gray-500" />
             </div>
           </div>
         </div>
-        <Button variant="outline" className="mt-4 w-full ks-btn ks-btn-primary border-none! h-10">
+        <Input type="hidden" name="redirectTo" value={callbackUrl} />
+        <Button variant="outline" className="mt-4 w-full ks-btn ks-btn-primary border-none! h-10" aria-disabled={isPending}>
           تسجيل الدخول <ArrowLeft className="mr-auto h-5 w-5 text-gray-50" />
         </Button>
-        <div className="flex h-8 items-end space-x-1">
-          {/* Add form errors here */}
+        <div
+          className="flex h-8 items-end space-x-1"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {errorMessage && (
+            <>
+              <CircleAlert className="h-5 w-5 text-red-500" />
+              <p className="text-sm text-red-500">{errorMessage}</p>
+            </>
+          )}
         </div>
       </div>
     </form>

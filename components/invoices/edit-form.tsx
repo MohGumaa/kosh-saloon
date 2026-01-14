@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { createInvoice } from '@/lib/actions';
+import { updateInvoice } from '@/lib/actions';
 import { Check, CircleDollarSign, Clock } from 'lucide-react';
 import { InvoiceForm, ServiceField, StaffField } from '@/types';
 
@@ -12,8 +12,10 @@ export default function EditInvoiceForm(
   { invoice, staffs, services }: 
   { invoice: InvoiceForm, staffs: StaffField[], services: ServiceField[] }
 ) {
+  const updateInvoiceWithId = updateInvoice.bind(null, invoice.id);
+
   return (
-    <form action={createInvoice}>
+    <form action={updateInvoiceWithId}>
       <div className="rounded-md bg-gray-50 dark:bg-white/10 p-4 md:p-6">
 
         <div className="mb-5">

@@ -1,3 +1,5 @@
+import { signOut } from '@/auth'
+
 import Link from 'next/link'
 import NavLinks from './nav-links'
 import KoshLogo from '../kosh-logo'
@@ -21,7 +23,12 @@ const SideNav = () => {
       <div className="flex grow flex-row justify-between space-x-2 md:flex-col md:space-x-0 md:space-y-2">
         <NavLinks />
         <div className="hidden h-auto w-full grow rounded-md bg-gray-50 dark:bg-white/10 md:block"></div>
-        <form>
+        <form 
+          action={async () => {
+            'use server';
+            await signOut({ redirectTo: '/' });
+          }}
+        >
           <Button 
             variant="outline"
             size="sm"
