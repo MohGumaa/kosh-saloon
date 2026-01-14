@@ -6,7 +6,7 @@ export default function InvoiceStatus({ status }: { status: string }) {
   return (
     <span
       className={clsx(
-        'inline-flex items-center rounded-full px-2 py-1 text-xs',
+        'flexCenter rounded-full px-2 py-1 text-xs max-w-24.5',
         {
           'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-300': status === 'pending',
           'bg-green-500 text-white': status === 'paid',
@@ -15,7 +15,7 @@ export default function InvoiceStatus({ status }: { status: string }) {
     >
       {status === 'pending' ? (
         <>
-          قيد الانتظار
+          غير مدفوعة
           <Clock className="mr-1 w-4 text-gray-500" />
         </>
       ) : null}
