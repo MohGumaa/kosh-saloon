@@ -1,6 +1,6 @@
 import postgres from "postgres";
 import { env } from "@/config/env";
-import { InvoicesTable, LatestInvoiceRaw, Revenue, ServiceField, StaffField } from "@/types";
+import { InvoiceForm, InvoicesTable, LatestInvoiceRaw, Revenue, ServiceField, StaffField } from "@/types";
 import { formatCurrency } from "./utils";
 
 const sql = postgres(env.databaseUrl, { ssl: "verify-full" });
@@ -101,6 +101,35 @@ export const fetchInvoicesPages = async (query: string): Promise<number> => {
   } catch (error) {
     console.error('Database Error (fetchInvoicesPages):', error);
     throw new Error('Failed to fetch total number of invoices.');
+  }
+};
+
+// ---------------------------------------
+// Fetch invoice by id
+// ---------------------------------------
+export const fetchInvoiceById = async (id: string): Promise<InvoiceForm | null> => {
+  if (!(await tableExists("invoices"))) {
+    console.warn('Table "invoices" does not exist.');
+    return null;
+  }
+
+  try {
+    const invoice = await sql<InvoiceForm[]>`
+      SELECT
+        invoices.id,
+        invoices.service_id as "serviceId",
+        invoices.user_id as "userId",
+        invoices.amount,
+        invoices.status
+      FROM invoices
+      WHERE invoices.id = ${id}
+      LIMIT 1
+    `;
+
+    return invoice[0] ?? null;
+  } catch (error) {
+    console.error('Database Error (fetchInvoiceById):', error);
+    throw new Error('Failed to fetch invoice.');
   }
 };
 

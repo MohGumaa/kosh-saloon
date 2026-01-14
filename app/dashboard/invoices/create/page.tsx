@@ -3,8 +3,10 @@ import Form from "@/components/invoices/create-form";
 import { fetchServices, fetchStaffs } from "@/lib/data";
 
 const CreateInvoicesPage = async() => {
-  const staffs = await fetchStaffs();
-  const services = await fetchServices();
+  const [services, staffs] = await Promise.all([
+    fetchServices(),
+    fetchStaffs()
+  ]);
 
   return (
    <main>

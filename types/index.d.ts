@@ -66,6 +66,14 @@ export type Invoice = {
   notes?: string;
 };
 
+export type InvoiceForm = {
+  id: string;
+  serviceId: string;
+  userId: string;
+  amount: number;
+  status: 'paid' | 'pending';
+};
+
 export type LatestInvoice = {
   id: string;
   name: string;
