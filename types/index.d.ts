@@ -33,12 +33,22 @@ export type User = {
   role: UserRole;
 };
 
+export type StaffField = {
+  id: string;
+  name: string;
+};
+
 export type Services = {
   id: string;
   name_en: string;
   name_ar: string;
   is_active: boolean;
   created_by_id: string;
+};
+
+export type ServiceField = {
+  id: string;
+  name_ar: string;
 };
 
 export type Revenue = {

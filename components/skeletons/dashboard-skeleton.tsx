@@ -175,6 +175,10 @@ export const InvoicesTableSkeleton = () => {
             <InvoicesMobileSkeleton />
             <InvoicesMobileSkeleton />
             <InvoicesMobileSkeleton />
+            <InvoicesMobileSkeleton />
+            <InvoicesMobileSkeleton />
+            <InvoicesMobileSkeleton />
+            <InvoicesMobileSkeleton />
           </div>
           <table className="hidden min-w-full ks-title md:table">
             <thead className="rounded-lg text-right text-sm font-normal">
@@ -203,6 +207,10 @@ export const InvoicesTableSkeleton = () => {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-white/10">
+              <TableRowSkeleton />
+              <TableRowSkeleton />
+              <TableRowSkeleton />
+              <TableRowSkeleton />
               <TableRowSkeleton />
               <TableRowSkeleton />
               <TableRowSkeleton />

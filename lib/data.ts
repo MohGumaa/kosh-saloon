@@ -1,11 +1,11 @@
 import postgres from "postgres";
 import { env } from "@/config/env";
-import { InvoicesTable, LatestInvoiceRaw, Revenue } from "@/types";
+import { InvoicesTable, LatestInvoiceRaw, Revenue, ServiceField, StaffField } from "@/types";
 import { formatCurrency } from "./utils";
 
 const sql = postgres(env.databaseUrl, { ssl: "verify-full" });
 
-const ITEMS_PER_PAGE = 6;
+const ITEMS_PER_PAGE = 10;
 
 // ---------------------------------------
 // Helper: check if table exists
@@ -209,3 +209,36 @@ export async function fetchCardData() {
   }
 }
 
+// ---------------------------------------
+// Fetch Staff
+// ---------------------------------------
+export async function fetchStaffs (): Promise<StaffField[]> {
+  if (!(await tableExists("users"))) {
+    console.warn('Table "users" does not exist.');
+    return [];
+  }
+
+  try {
+    return await sql<StaffField[]>`SELECT id, name FROM users WHERE role IN ('STAFF', 'SUPERVISOR') ORDER BY name ASC`;
+  } catch (error) {
+    console.error("Database Error (fetchRevenue):", error);
+    return [];
+  }
+}
+
+// ---------------------------------------
+// Fetch services
+// ---------------------------------------
+export async function fetchServices (): Promise<ServiceField[]> {
+  if (!(await tableExists("services"))) {
+    console.warn('Table "services" does not exist.');
+    return [];
+  }
+
+  try {
+    return await sql<ServiceField[]>`SELECT id, name_ar FROM services WHERE is_active = true ORDER BY name_ar ASC`;
+  } catch (error) {
+    console.error("Database Error (fetchRevenue):", error);
+    return [];
+  }
+}
