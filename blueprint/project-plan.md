@@ -164,6 +164,7 @@ Each user has:
 - name
 - username
 - email
+- phone (optional)
 - password
 - profile image
 - role
@@ -179,12 +180,15 @@ Authentication features:
 - Login
 - Logout
 - Change password
-- Password reset
+- Password reset by email
 - Secure sessions
 - Protected routes
 - Active/inactive accounts
-- Login notifications
+- Login notification emails
 - Server-side authorization
+
+Email in V1 is limited to password reset and login notifications. Scheduled
+report emails and settlement notifications are future features.
 
 Passwords must never be stored as plain text.
 
@@ -255,6 +259,21 @@ permissions.manage
 Permissions must be checked on the server.
 
 Hiding a button is not enough to provide security.
+
+Default permissions per role (an Admin can grant or remove individual
+permissions for Supervisor and Staff users):
+
+ADMIN: all permissions, always.
+
+SUPERVISOR: employees.view, services.view, invoices.view, invoices.create,
+invoices.edit, invoices.change_status, expenses.view, expenses.create,
+employee_expenses.view, employee_expenses.create, reports.view,
+reports.view_all_employees, settlements.view, settlements.create.
+settlements.approve, settlements.mark_paid, and settings or permission
+management must be granted explicitly by an Admin.
+
+STAFF: services.view, invoices.create (own only), invoices.view (own only),
+reports.view_own_performance, settlements.view (own only).
 
 # 10. Employees
 
@@ -393,8 +412,23 @@ CANCELLED
 
 Future status:
 
-REFUNDED 13. Create Invoice
+REFUNDED
+
+Invoices are never permanently deleted. Cancelling sets the status to
+CANCELLED. Cancelled invoices do not count toward any revenue.
+
+Invoice numbers are sequential and unique, formatted like INV-000001.
+
+# 13. Create Invoice
+
 Staff creates an invoice for themselves.
+
+The amount is pre-filled from the service's default price and can be changed
+when the invoice is created.
+
+Staff choose Paid or Unpaid when creating the invoice. After creation, Staff
+cannot edit the invoice, change its status, or cancel it. Only Admin and
+Supervisor users with the matching permission can do that.
 
 Example:
 
@@ -580,7 +614,10 @@ Then:
 
 # Final Employee Payout
 
-Employee Share - Employee Expenses
+Employee Share - Employee Expenses + Adjustments
+
+Adjustments are signed corrections carried over from earlier paid settlements
+(see section 57). They are zero in most months.
 
 Example:
 
@@ -651,10 +688,10 @@ AED 2,200
 
 Settlement statuses:
 
-DRAFT
-CALCULATED
-APPROVED
-PAID
+DRAFT - created for the period; figures can be recalculated freely.
+CALCULATED - figures computed and frozen, ready for review. Recalculating moves it back to DRAFT.
+APPROVED - approved by a user with settlements.approve.
+PAID - marked paid by a user with settlements.mark_paid; locked.
 
 # 22. Historical Share Percentage
 
@@ -946,6 +983,9 @@ When changed, it applies to new calculations.
 
 Historical settlements must not change.
 
+The tax rate and tax ID are stored for future receipts and invoices. In V1,
+tax is not applied to invoice amounts, revenue, or payouts.
+
 # 36. Security Settings
 
     Security tab:
@@ -963,9 +1003,9 @@ Login notification by email
     Notification settings:
 
 Login notifications
-Daily report
-Weekly report
-Monthly settlement notification
+
+Future (not V1): daily report, weekly report, and monthly settlement
+notification emails.
 
 # 38. Future Settings
 
@@ -1214,7 +1254,6 @@ PostgreSQL
 Core models:
 
 User
-Role
 Permission
 UserPermission
 
@@ -1226,6 +1265,7 @@ SalonExpense
 EmployeeExpense
 
 EmployeeSettlement
+SettlementAdjustment
 
 SalonSettings
 
@@ -1239,6 +1279,7 @@ id
 name
 username
 email
+phone
 password_hash
 image
 role
@@ -1251,10 +1292,7 @@ last_login_at
 
 # 48. Role Model
 
-    Role:
-
-id
-name
+    Role is a fixed enum stored on User.role, not a separate table.
 
 Role values:
 
@@ -1346,6 +1384,7 @@ share_percentage
 employee_share
 
 total_expenses
+total_adjustments
 final_amount
 
 status
@@ -1356,6 +1395,17 @@ paid_at
 
 created_at
 updated_at
+
+Settlement adjustment:
+
+id
+employee_id
+amount (signed: positive adds to payout, negative deducts)
+reason
+source_settlement_id (the paid settlement being corrected)
+applied_settlement_id (the later settlement that includes it; empty until applied)
+created_by
+created_at
 
 # 55. Salon Settings Model
 
@@ -1414,12 +1464,7 @@ Admin marked settlement as paid
 
     Financial records should not be silently deleted.
 
-Invoices should use:
-
-ACTIVE
-CANCELLED
-
-instead of permanent deletion.
+Invoices use the CANCELLED status instead of permanent deletion.
 
 Paid settlements should be locked.
 
@@ -1435,7 +1480,9 @@ PAID
 
 Once paid, the settlement should not be silently modified.
 
-Corrections should use an adjustment/audit mechanism.
+Corrections to a paid settlement never edit it. An authorized user records a
+settlement adjustment (signed amount and reason). The adjustment is added to
+the employee's next settlement and written to the audit log.
 
 # 58. Tech Stack
 
@@ -1607,6 +1654,10 @@ Login
 Logout
 
 Password change
+
+Password reset by email
+
+Login notification emails
 
 Active/inactive users
 
@@ -2025,7 +2076,7 @@ Employee share =
 revenue × share percentage / 100
 
 Final payout =
-employee share - employee expenses
+employee share - employee expenses + adjustments
 
 Historical Settlement Test
 September = 50%
@@ -2241,7 +2292,7 @@ Employee Earnings =
 Paid Revenue × Share Percentage / 100
 
 Final Amount =
-Employee Earnings - Employee Expenses
+Employee Earnings - Employee Expenses + Adjustments
 
 # 72. Important Business Rules
 
@@ -2357,27 +2408,28 @@ Database migrations are managed correctly.
 
     Build the project in this order:
 
-1. Project setup
-1. Database
+1. Project setup, database, app shell, and English/Arabic, RTL, and theme foundations
 1. Authentication
-1. Roles
-1. Permissions
+1. Roles and permissions
+1. Audit logs
+1. Salon settings (the share percentage is needed before earnings)
 1. Employees
 1. Services
 1. Transactions
-1. Employee expenses
 1. Salon expenses
+1. Employee expenses
 1. Employee share calculation
 1. Monthly settlements
 1. Dashboard
 1. Reports
-1. Settings
-1. English/Arabic
-1. RTL
-1. Themes
-1. Audit logs
+1. Security and notification settings
+1. English/Arabic, RTL, and theme completion
 1. Testing
 1. Production deployment
+
+Every feature ships with English and Arabic text, RTL-safe layout, and audit
+logging from the start. The later localization and theme items are review and
+completion passes, not first introductions.
 
 Do not start by building every dashboard chart first.
 

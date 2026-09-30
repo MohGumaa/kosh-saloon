@@ -1,6 +1,6 @@
 # Kosh CRM - Project Overview
 
-<!-- blueprint:source-hash c61fca3df057c8c9320b234ee3a86487a1d0c5116213e4c65920021e0628f76a -->
+<!-- blueprint:source-hash d18efdb5c3bdc2595e527d949db21be750f820855ac9aeb8cefec0401b9c5089 -->
 
 > Salon management and financial CRM for Kosh Salon: employees, services,
 > invoices, expenses, employee earnings, monthly settlements, reports,
@@ -16,13 +16,14 @@ most revenue, and who changed a financial record.
 
 ## Users
 
-Three roles. Roles give default access; per-user granular permissions add control.
+Three roles. Roles give default permissions; an Admin can grant or remove
+individual permissions for Supervisor and Staff users.
 
 | Role | Access |
 | --- | --- |
-| **ADMIN** | Everything: users, roles, permissions, services, invoices, all expenses, settlements, all reports, settings (incl. global share %, currency, tax), notifications, audit logs. |
-| **SUPERVISOR** | Day-to-day operations, permission-controlled: employees, staff accounts, services, invoices, expenses, performance, reports, settlements. Not by default: admin accounts, role management, global permissions, security settings, global financial settings. |
-| **STAFF** | Own data only: login/logout, own dashboard and account, view services, create invoices for themselves (cannot pick another employee), own invoices, revenue, performance, deductions, earnings, and monthly settlement. No salon-wide financials, no other employees' data. |
+| **ADMIN** | All permissions, always: users, roles, permissions, services, invoices, all expenses, settlements, all reports, settings (incl. global share %, currency, tax), audit logs. |
+| **SUPERVISOR** | Default: `employees.view`, `services.view`, `invoices.{view,create,edit,change_status}`, `expenses.{view,create}`, `employee_expenses.{view,create}`, `reports.{view,view_all_employees}`, `settlements.{view,create}`. Approving or paying settlements, settings, and permission management must be granted explicitly. Never admin accounts or role management by default. |
+| **STAFF** | Default: `services.view`, `invoices.create` and `invoices.view` (own only), `reports.view_own_performance`, `settlements.view` (own only). Creates invoices only for themselves, as Paid or Unpaid; cannot edit, change status, or cancel afterwards. No salon-wide financials or other employees' data. |
 
 ## Usage model
 
@@ -31,26 +32,32 @@ Three roles. Roles give default access; per-user granular permissions add contro
   button is not security. No sensitive data in client code.
 - **Auth:** hashed passwords (never plaintext), secure sessions and cookies,
   protected routes, inactive accounts blocked, rate limiting where necessary.
-- **Financial integrity:** financial records are cancelled or soft-deleted, not
-  silently deleted. Paid settlements are locked; corrections go through an
-  adjustment/audit mechanism.
+- **Financial integrity:** invoices are cancelled, never deleted. Paid
+  settlements are locked; corrections are signed adjustments applied to the
+  next settlement.
 - **Audit:** important financial, security, and user changes are logged with
-  the acting user, old/new value, and timestamp.
+  the acting user, old/new value, and timestamp, from feature 4 onward.
+- **Email (V1):** only password reset and login notifications.
 - **Secrets:** never committed to Git.
 
 ## Core business rules
 
-- Share percentage is a global setting (`employee_share_percentage`), default
+- Share percentage is a global setting (`employeeSharePercentage`), default
   **50%**, never hard-coded. A change applies to new calculations only.
-- `paid_revenue` = sum of eligible **PAID** invoices for the employee in the period.
-- `employee_share` = `paid_revenue * share_percentage / 100`
-- `final_amount` = `employee_share - employee_expenses`
-- Unpaid invoices appear in performance reports (generated revenue) but do not
-  normally count toward payout.
+- `paidRevenue` = sum of the employee's **PAID** invoices in the period.
+  UNPAID invoices show in performance reports only; CANCELLED count nowhere.
+- `employeeShare` = `paidRevenue * sharePercentage / 100`
+- `finalAmount` = `employeeShare - employeeExpenses + adjustments`
 - Salon expenses feed salon reports only; they never reduce employee payout.
-- Each settlement stores the `share_percentage` used, so historical settlements
+- **No tax math in V1:** the tax rate and tax ID are stored for future receipts;
+  they do not affect invoice amounts, revenue, or payouts.
+- Each settlement stores the `sharePercentage` used, so historical settlements
   never change (September at 50% stays 50% after a switch to 60%).
-- Settlement flow: `DRAFT -> CALCULATED -> APPROVED -> PAID`.
+- Settlement flow: `DRAFT` (recalculable) -> `CALCULATED` (frozen for review;
+  recalculating returns to DRAFT) -> `APPROVED` (`settlements.approve`) ->
+  `PAID` (`settlements.mark_paid`, locked).
+- Invoice amount is pre-filled from the service default price and editable at
+  creation. Invoice numbers are sequential and unique: `INV-000001`.
 - Financial calculations must have automated tests.
 - Worked example: paid AED 5,000, 50% -> earnings AED 2,500, expenses AED 300 ->
   final AED 2,200.
@@ -59,40 +66,44 @@ Three roles. Roles give default access; per-user granular permissions add contro
 
 V1, in build-plan order. The core flow (staff invoice -> paid revenue ->
 deductions -> monthly settlement -> approval -> payment) is the headline;
-features 5 and 7 to 10 carry it.
+features 8 and 10 to 13 carry it. From feature 1 on, every feature ships with
+EN/AR text, RTL-safe layout, and theme support; features 22 to 24 are completion
+passes.
 
-1. **Authentication & sessions** - login, logout, password management, sessions, inactive-account block.
-2. **Roles & permissions** - ADMIN/SUPERVISOR/STAFF plus granular permissions, enforced server-side.
-3. **Employee management** - create, edit, activate/deactivate, and view employee accounts, profiles, images, roles.
-4. **Service management** - services with EN/AR names, default price, active status, categories.
-5. **Invoice & transaction management** - create, view, edit, search, filter, pay, cancel invoices tied to an employee and service.
-6. **Salon expense management** - rent, utilities, supplies, maintenance, marketing, other.
-7. **Employee expense management** - advances, withdrawals, personal purchases, other deductions.
-8. **Employee revenue & share calculation** - paid revenue x global share % = earnings.
-9. **Monthly employee settlements** - revenue, share %, earnings, expenses, final payout, approval and payment status.
-10. **Historical settlement protection** - freeze share % and values at calculation time.
-11. **Admin dashboard** - revenue, bills, pending, expenses, staff count, payouts, latest invoices, revenue chart.
-12. **Staff personal dashboard** - own revenue, paid/unpaid, share %, earnings, expenses, payout.
-13. **Revenue reports** - daily/weekly/monthly/yearly/custom; paid/unpaid; by employee and service.
-14. **Expense reports** - salon and employee expenses by category, date range, totals.
-15. **Employee performance reports** - services, invoices, revenue, earnings, expenses, payout, trends.
-16. **Settlement reports** - monthly settlements with earnings, expenses, share %, approvals, paid status.
-17. **Salon settings** - salon info, logo, currency, tax rate, global share %.
-18. **Security settings** - password change, login notification preference, session/security controls.
-19. **Notification settings** - login notifications, daily/weekly/monthly reports, settlement notifications.
-20. **Audit logging** - log auth, user, permission, invoice, expense, percentage, settlement changes.
-21. **English & Arabic localization** - full translations for all UI.
-22. **RTL support** - correct LTR/RTL switching across layout, forms, tables, charts, dialogs.
-23. **Theme system** - Light/Dark/System with Kosh style, saved per user.
-24. **Responsive CRM experience** - desktop, tablet, mobile.
-25. **Financial validation & business rules** - automated tests for revenue, share, expenses, payout, status, tax, settlements.
-26. **Production deployment & database operations** - PostgreSQL, migrations, env vars, storage, backups, monitoring, Vercel.
-27. **Production security & permission testing** - role boundaries, escalation, inactive accounts, unauthorized financial actions.
-28. **Production readiness & QA** - E2E, error/loading/empty states, accessibility, performance, final verification.
+1. **App shell & foundation** - Prisma + PostgreSQL, shadcn/ui, env vars, layout with sidebar and header, EN/AR + RTL foundation, Light/Dark/System foundation.
+2. **Authentication & sessions** - login, logout, password change, password reset by email, login notification emails, sessions, inactive-account block.
+3. **Roles & permissions** - three roles, default permissions per role, granular grants, server-side enforcement.
+4. **Audit logging** - the audit log every later feature writes to, plus an admin view.
+5. **Salon settings** - salon info, logo, currency, tax rate, global share %.
+6. **Employee management** - create, edit, activate/deactivate, and view employees, images, roles.
+7. **Service management** - EN/AR names, default price, active status.
+8. **Invoice & transaction management** - create, view, edit, search, filter, pay, cancel invoices.
+9. **Salon expense management** - rent, utilities, supplies, maintenance, marketing, other.
+10. **Employee expense management** - advances, withdrawals, personal purchases, other deductions.
+11. **Employee revenue & share calculation** - paid revenue x global share % = earnings.
+12. **Monthly employee settlements** - revenue, share %, earnings, expenses, adjustments, payout, approval and payment status.
+13. **Historical settlement protection** - freeze values, lock paid settlements, corrections via next-month adjustments.
+14. **Admin dashboard** - revenue, bills, pending, expenses, staff count, payouts, latest invoices, revenue chart.
+15. **Staff personal dashboard** - own revenue, paid/unpaid, share %, earnings, expenses, payout.
+16. **Revenue reports** - daily/weekly/monthly/yearly/custom; paid/unpaid; by employee and service.
+17. **Expense reports** - salon and employee expenses by category, date range, totals.
+18. **Employee performance reports** - services, invoices, revenue, earnings, expenses, payout, trends.
+19. **Settlement reports** - monthly settlements with earnings, expenses, share %, approvals, paid status.
+20. **Security settings** - settings tab with password change (from 2), login notification preference, session controls.
+21. **Notification settings** - settings tab for login notification preferences.
+22. **English & Arabic translation completion** - review and fill all translations.
+23. **RTL review** - verify and fix LTR/RTL layouts everywhere.
+24. **Theme polish** - full Kosh style for all themes, per-user preference.
+25. **Responsive CRM experience** - desktop, tablet, mobile.
+26. **Financial validation & business rules** - automated tests for revenue, share, expenses, adjustments, payout, status, settlements.
+27. **Production deployment & database operations** - PostgreSQL, migrations, env vars, storage, backups, monitoring, Vercel.
+28. **Production security & permission testing** - role boundaries, escalation, inactive accounts, unauthorized financial actions.
+29. **Production readiness & QA** - E2E, error/loading/empty states, accessibility, performance, final verification.
 
 Out of V1 (future): customers, appointments/calendar, inventory, POS/product
-sales, tips, receipt/PDF printing, automated email/WhatsApp/SMS, multi-branch,
-loyalty/memberships/gift cards, online booking, advanced analytics, PWA.
+sales, tips, receipt/PDF printing, invoice tax calculation, scheduled report and
+settlement emails, WhatsApp/SMS, multi-branch, loyalty/memberships/gift cards,
+online booking, advanced analytics, PWA.
 
 ## Data model
 
@@ -102,16 +113,15 @@ PostgreSQL via Prisma. Money fields use `Decimal`. All models have `id`
 ### User (employees are users)
 
 - `name` (string), `username` (string, unique), `email` (string, unique)
+- `phone` (string?)
 - `passwordHash` (string)
 - `image` (string?, object-storage URL/key)
-- `role` (enum `Role`: ADMIN | SUPERVISOR | STAFF)
+- `role` (enum `Role`: ADMIN | SUPERVISOR | STAFF; no Role table)
 - `isActive` (boolean)
 - `language` (enum: EN | AR), `theme` (enum: LIGHT | DARK | SYSTEM)
 - `lastLoginAt` (DateTime?)
 - has many Invoice (as employee and as creator), EmployeeExpense,
-  EmployeeSettlement, UserPermission, AuditLog
-
-> TODO: `phone` appears on the employee profile but not in the User model.
+  EmployeeSettlement, SettlementAdjustment, UserPermission, AuditLog
 
 ### Permission / UserPermission
 
@@ -137,9 +147,9 @@ PostgreSQL via Prisma. Money fields use `Decimal`. All models have `id`
 
 ### Invoice
 
-- `invoiceNumber` (string, unique)
+- `invoiceNumber` (string, unique, `INV-000001` sequence)
 - `employeeId` -> User, `serviceId` -> Service, `createdById` -> User
-- `amount` (Decimal)
+- `amount` (Decimal, defaults from `Service.defaultPrice`)
 - `status` (enum: PAID | UNPAID | CANCELLED; REFUNDED is future)
 - Never hard-deleted; cancel instead.
 
@@ -155,20 +165,27 @@ PostgreSQL via Prisma. Money fields use `Decimal`. All models have `id`
   ADVANCE_SALARY | WITHDRAWAL | PERSONAL_PURCHASE | OTHER),
   `description` (string?), `date` (Date), `createdById` -> User
 
-### EmployeeSettlement (locks shapes features 9, 10, 12, 16 depend on)
+### EmployeeSettlement (locks shapes features 12, 13, 15, 19 depend on)
 
 - `employeeId` -> User, `periodStart` / `periodEnd` (Date)
 - `totalRevenue`, `sharePercentage`, `employeeShare`, `totalExpenses`,
-  `finalAmount` (all Decimal, frozen at calculation)
+  `totalAdjustments`, `finalAmount` (all Decimal, frozen at calculation)
 - `status` (enum: DRAFT | CALCULATED | APPROVED | PAID)
 - `approvedById` -> User?, `approvedAt` (DateTime?), `paidAt` (DateTime?)
 - Locked once PAID.
+
+### SettlementAdjustment (no updatedAt)
+
+- `employeeId` -> User, `amount` (Decimal, signed: + adds, - deducts), `reason` (string)
+- `sourceSettlementId` -> EmployeeSettlement (the paid one being corrected)
+- `appliedSettlementId` -> EmployeeSettlement? (set when included in a later settlement)
+- `createdById` -> User, `createdAt`
 
 ### SalonSettings (single row)
 
 - `name`, `licenseNumber`, `address`, `phone`, `email`, `taxId` (strings),
   `logo` (string?, storage URL/key)
-- `currency` (string, e.g. AED), `taxRate` (Decimal),
+- `currency` (string, e.g. AED), `taxRate` (Decimal, stored only in V1),
   `employeeSharePercentage` (Decimal, default 50)
 
 ### AuditLog (append-only, no updatedAt)
@@ -186,10 +203,13 @@ PostgreSQL via Prisma. Money fields use `Decimal`. All models have `id`
 - **Zod** - input validation
 - **Translation files** - `locales/en.json`, `locales/ar.json`
 - **External object storage** - profile images, salon logo (DB stores URL/key)
+- **Email provider** - password reset and login notifications
 - **Vercel** - hosting; no reliance on local filesystem storage
 - **pnpm** - package manager
 
-> TODO: auth library, i18n library, storage provider, and email provider are not chosen.
+> TODO: auth library, i18n library, storage provider, email provider, and
+> database host are not chosen. Decide each in the spec of the feature that
+> first needs it (features 1, 2, and 6).
 
 ## Monetization
 
@@ -225,30 +245,16 @@ Employee Performance, Employee Earnings, Settlements); Settings.
 - **Build/start:** `pnpm build` / `pnpm start`; Prisma migrations run on deploy.
 - **Env vars (names to finalize):** `DATABASE_URL`, `AUTH_SECRET`,
   `STORAGE_URL`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY`, `EMAIL_API_KEY`
-- Backups and error monitoring are part of feature 26.
+- No cron jobs in V1 (scheduled emails are future).
+- Backups and error monitoring are part of feature 27.
 
-> TODO: database host, storage provider, health path, domain, and any cron for scheduled reports.
+> TODO: database host, storage provider, health path, and domain.
 
 ## Open questions
 
-> Contradictions and gaps between the plans. Resolve them in the plans, then
-> re-run /overview.
+> Minor gaps; none block Feature 1.
 
-- **No foundation step.** Plan §66/§75 starts with setup (Prisma, PostgreSQL,
-  shadcn/ui, layout shell, sidebar, theme and language switchers); the build
-  plan starts at Authentication, which needs the database.
-- **Localization/RTL/theme ordering.** §72 says English/Arabic "from the
-  beginning" and §75 puts switchers in the first milestone; the build plan puts
-  them at 21 to 23.
-- **Ordering dependencies.** Feature 8 needs the global share % (feature 17);
-  invoices (5) need audit logging (20) per Phase 5.
-- **Invoice status.** §12 uses PAID/UNPAID/CANCELLED; §57 uses ACTIVE/CANCELLED.
-- **Service categories.** Build plan feature 4 names categories; the Service model has none.
-- **Role model.** §46/§48 list a Role table; §47 stores `role` on User. Modeled as an enum here.
-- **Tax.** A tax rate setting exists, and feature 25 validates tax, but no plan says how tax applies to invoices or payouts.
-- **Notifications vs future scope.** Features 18/19 include email login notifications and scheduled reports; "Automated notifications" is listed as future.
-- **Password reset.** §7 lists it; the V1 scope (§65) lists only password change.
-- **Default permissions** per role, and whether STAFF can mark their own invoices paid or edit them, are undefined.
-- **Invoice amount** vs service default price (override allowed?) and invoice number format are undefined.
-- **Settlements:** difference between DRAFT and CALCULATED, and the adjustment mechanism for paid settlements, are undefined.
-- **Overlap:** password change appears in features 1 and 18.
+- The "Employee Earnings" and "Services" report pages named in plan §29 have no
+  dedicated build-plan feature; they are assumed covered by features 16, 18, and 19.
+- Session/security controls in feature 20 are not detailed (for example, sign
+  out other sessions). Define them in that feature's spec.
