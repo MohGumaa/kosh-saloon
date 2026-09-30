@@ -1,0 +1,53 @@
+{
+  "metadata": {
+    "title": "كوش CRM",
+    "description": "نظام إدارة الصالون والشؤون المالية لصالون كوش"
+  },
+  "brand": {
+    "name": "كوش",
+    "tagline": "نظام إدارة الصالون",
+    "footer": "كوش صالون · الإصدار 1.0"
+  },
+  "nav": {
+    "label": "التنقل الرئيسي",
+    "dashboard": "لوحة التحكم",
+    "invoices": "الفواتير",
+    "salonExpenses": "مصروفات الصالون",
+    "employees": "الموظفون",
+    "services": "الخدمات",
+    "revenue": "الإيرادات",
+    "expenses": "المصروفات",
+    "employeePerformance": "أداء الموظفين",
+    "employeeEarnings": "أرباح الموظفين",
+    "settlements": "التسويات",
+    "settings": "الإعدادات",
+    "comingSoon": "قريبًا",
+    "groups": {
+      "transactions": "المعاملات",
+      "manage": "الإدارة",
+      "reports": "التقارير",
+      "system": "النظام"
+    }
+  },
+  "header": {
+    "openMenu": "فتح القائمة",
+    "menu": "القائمة",
+    "language": "اللغة",
+    "theme": "المظهر"
+  },
+  "theme": {
+    "light": "المظهر الفاتح",
+    "dark": "المظهر الداكن",
+    "system": "مظهر النظام"
+  },
+  "dashboard": {
+    "title": "لوحة التحكم",
+    "placeholderTitle": "مرحبًا بك في كوش CRM",
+    "placeholder": "ستظهر لوحة تحكم الصالون هنا في تحديث لاحق."
+  },
+  "errors": {
+    "genericTitle": "حدث خطأ ما",
+    "generic": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
+    "retry": "حاول مرة أخرى"
+  }
+}

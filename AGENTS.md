@@ -304,6 +304,14 @@ Package manager: pnpm (`pnpm-lock.yaml`).
 - Production server: `pnpm start`
 - Lint: `pnpm lint`
 - Typecheck: `pnpm exec tsc --noEmit` (no package script yet)
+- Prisma client: `pnpm exec prisma generate` (also runs on `postinstall`;
+  output in `generated/prisma`, git-ignored)
+- Prisma schema check: `pnpm exec prisma validate`
+- Migrations: `pnpm exec prisma migrate dev` (local), `pnpm exec prisma migrate
+  status` (before committing), `pnpm exec prisma migrate deploy` (production)
+
+Prisma reads `kosh_DATABASE_URL` (Vercel Prisma Postgres prefix) from `.env` (copy `.env.example`); config lives in
+`prisma.config.ts`.
 
 No test runner is configured, so there is no test gate yet. Run `/tests` or
 `$tests` to add one and update this section with the real test commands. No

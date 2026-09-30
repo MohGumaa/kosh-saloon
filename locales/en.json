@@ -1,0 +1,53 @@
+{
+  "metadata": {
+    "title": "Kosh CRM",
+    "description": "Salon management and financial CRM for Kosh Salon"
+  },
+  "brand": {
+    "name": "Kosh",
+    "tagline": "Salon CRM",
+    "footer": "Kosh Salon · v1.0"
+  },
+  "nav": {
+    "label": "Main navigation",
+    "dashboard": "Dashboard",
+    "invoices": "Invoices",
+    "salonExpenses": "Salon Expenses",
+    "employees": "Employees",
+    "services": "Services",
+    "revenue": "Revenue",
+    "expenses": "Expenses",
+    "employeePerformance": "Employee Performance",
+    "employeeEarnings": "Employee Earnings",
+    "settlements": "Settlements",
+    "settings": "Settings",
+    "comingSoon": "Coming soon",
+    "groups": {
+      "transactions": "Transactions",
+      "manage": "Manage",
+      "reports": "Reports",
+      "system": "System"
+    }
+  },
+  "header": {
+    "openMenu": "Open menu",
+    "menu": "Menu",
+    "language": "Language",
+    "theme": "Theme"
+  },
+  "theme": {
+    "light": "Light theme",
+    "dark": "Dark theme",
+    "system": "System theme"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "placeholderTitle": "Welcome to Kosh CRM",
+    "placeholder": "Your salon dashboard will appear here in a later update."
+  },
+  "errors": {
+    "genericTitle": "Something went wrong",
+    "generic": "An unexpected error occurred. Please try again.",
+    "retry": "Try again"
+  }
+}

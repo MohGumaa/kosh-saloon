@@ -1,0 +1,10 @@
+// Kosh CRM database schema. Each feature adds its own models and migration.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}

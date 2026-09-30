@@ -1,9 +1,10 @@
 # Coding Standards
 
 > Tuned by `/onboard` for Kosh CRM: Next.js 16 (App Router) + React 19 +
-> TypeScript (strict) + Tailwind CSS v4, managed with pnpm. Prisma, PostgreSQL,
-> Zod, shadcn/ui, and Recharts are planned in `project-plan.md` but not yet
-> installed; each is added by the feature that first needs it.
+> TypeScript (strict) + Tailwind CSS v4, managed with pnpm. Prisma 7 (PostgreSQL
+> via `@prisma/adapter-pg`), shadcn/ui (Base UI, RTL enabled), next-intl, and
+> next-themes are installed. Zod and Recharts are added by the feature that
+> first needs them.
 
 ## TypeScript
 
@@ -45,7 +46,10 @@ alias `@/*` maps to the project root.
 - Types: `types/[feature].ts`
 - Lib/Utils: `lib/[utility].ts`
 
-> TODO: confirm these folders when the first feature creates them.
+- Layout components: `components/layout/`; shadcn/ui primitives: `components/ui/`
+- Signed-in app pages live in the `app/(app)/` route group, which renders the shell
+- Translations: `locales/en.json`, `locales/ar.json`; i18n config: `i18n/`
+- Prisma schema: `prisma/schema.prisma`; client: `lib/db.ts` (import `db`)
 
 ## Naming
 
@@ -59,7 +63,7 @@ alias `@/*` maps to the project root.
 
 - Tailwind CSS for all styling
 - Tailwind v4: CSS-first config (`@theme` in `globals.css`), no `tailwind.config.js`
-- Use shadcn/ui components where applicable (planned, not yet installed)
+- Use shadcn/ui components where applicable
 - No inline styles
 - Support light, dark, and system themes
 - Use logical properties and utilities (`ms-*`, `me-*`, `ps-*`, `start-*`,
@@ -71,11 +75,16 @@ alias `@/*` maps to the project root.
 - Arabic renders right-to-left (`dir="rtl"`)
 - Bilingual data (for example service names) stores both languages
 
-> TODO: the i18n library and locale routing are not chosen yet.
+- Library: `next-intl` without i18n routing. Routes have no locale prefix; the
+  locale comes from the `NEXT_LOCALE` cookie (`en` | `ar`, default `en`)
+- Server components use `getTranslations`; client components use `useTranslations`
+- Add every key to both `locales/en.json` and `locales/ar.json` (same key set)
+- The root layout sets `<html lang dir>`; Base UI components get the direction
+  from `DirectionProvider`
 
 ## Database
 
-Planned: PostgreSQL (cloud-hosted) via Prisma. Not installed yet.
+PostgreSQL (cloud-hosted) via Prisma 7 with the `pg` driver adapter.
 
 - Use Prisma ORM for all database operations
 - Always use `prisma migrate dev` for schema changes (not `db push`)

@@ -8,7 +8,7 @@ Keep completed items checked and append new features as the project grows.
 Do not renumber completed features; archived feature specs will refer to their IDs.
 
 Your features
-- [ ] 1. App shell & foundation - Connect PostgreSQL through Prisma, add shadcn/ui, environment variables, and the base layout with sidebar and header, plus the English/Arabic translation foundation with RTL switching and the Light/Dark/System theme foundation, so every later feature ships translated, RTL-ready, and themed.
+- [x] 1. App shell & foundation - Connect PostgreSQL through Prisma, add shadcn/ui, environment variables, and the base layout with sidebar and header, plus the English/Arabic translation foundation with RTL switching and the Light/Dark/System theme foundation, so every later feature ships translated, RTL-ready, and themed.
 
 - [ ] 2. Authentication & sessions - Secure login, logout, password change, password reset by email, login notification emails, sessions, inactive-account protection, and authentication state.
 

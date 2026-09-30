@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en" dir="ltr" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kosh CRM - Dashboard (prototype)</title>
+  <link rel="stylesheet" href="theme.css">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: var(--text-base);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .num { font-variant-numeric: tabular-nums; font-family: var(--font-sans); }
+    svg.icon { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    [dir="rtl"] .flip-rtl { transform: scaleX(-1); }
+
+    /* shell */
+    .shell { display: grid; grid-template-columns: var(--sidebar-width) 1fr; min-height: 100vh; }
+    .sidebar {
+      background: var(--surface);
+      border-inline-end: 1px solid var(--border);
+      padding: var(--space-5) var(--space-4);
+      display: flex; flex-direction: column; gap: var(--space-6);
+    }
+    .brand { display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--space-2); }
+    .brand-mark {
+      width: 36px; height: 36px; border-radius: var(--radius-sm);
+      background: var(--accent); color: var(--accent-ink);
+      display: grid; place-items: center; font-weight: 700; font-size: var(--text-lg);
+    }
+    .brand-name { font-weight: 700; font-size: var(--text-lg); }
+    .brand-sub { color: var(--muted); font-size: var(--text-xs); }
+    .nav { display: flex; flex-direction: column; gap: var(--space-1); }
+    .nav-label { color: var(--faint); font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; padding: var(--space-3) var(--space-3) var(--space-1); }
+    [lang="ar"] .nav-label { text-transform: none; letter-spacing: 0; }
+    .nav a {
+      display: flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm);
+      color: var(--muted); text-decoration: none; font-size: var(--text-sm); font-weight: 500;
+    }
+    .nav a:hover { background: var(--surface-2); color: var(--text); }
+    .nav a.active { background: var(--accent-soft); color: var(--accent); }
+    .nav a.sub { padding-inline-start: 42px; }
+    .nav a.disabled { color: var(--faint); pointer-events: none; }
+    .sidebar-foot { margin-top: auto; color: var(--faint); font-size: var(--text-xs); padding: 0 var(--space-2); }
+
+    .main { display: flex; flex-direction: column; min-width: 0; }
+    .header {
+      height: var(--header-height);
+      display: flex; align-items: center; gap: var(--space-4);
+      padding: 0 var(--space-6);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .search {
+      flex: 1; max-width: 380px;
+      display: flex; align-items: center; gap: var(--space-2);
+      background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: var(--space-2) var(--space-3); color: var(--faint); font-size: var(--text-sm);
+    }
+    .header-actions { margin-inline-start: auto; display: flex; align-items: center; gap: var(--space-3); }
+    .seg { display: flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 2px; }
+    .seg button {
+      border: 0; background: transparent; color: var(--muted); cursor: pointer;
+      font: inherit; font-size: var(--text-xs); font-weight: 600;
+      padding: var(--space-1) var(--space-3); border-radius: 6px;
+      display: flex; align-items: center; gap: var(--space-1);
+    }
+    .seg button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+    .user { display: flex; align-items: center; gap: var(--space-2); }
+    .avatar {
+      width: 34px; height: 34px; border-radius: var(--radius-full);
+      background: var(--accent-soft); color: var(--accent);
+      display: grid; place-items: center; font-weight: 600; font-size: var(--text-sm);
+    }
+    .user-name { font-size: var(--text-sm); font-weight: 600; line-height: 1.2; }
+    .user-role { font-size: var(--text-xs); color: var(--muted); }
+
+    /* content */
+    .content { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-6); }
+    .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); }
+    .crumbs { display: flex; align-items: center; gap: var(--space-1); color: var(--faint); font-size: var(--text-xs); }
+    .crumbs svg.icon { width: 14px; height: 14px; }
+    h1 { margin: var(--space-1) 0 0; font-size: var(--text-xl); font-weight: 700; }
+    .page-sub { color: var(--muted); font-size: var(--text-sm); margin: 0; }
+    .toolbar { display: flex; gap: var(--space-2); }
+    .btn {
+      display: inline-flex; align-items: center; gap: var(--space-2);
+      border: 1px solid var(--border); background: var(--surface); color: var(--text);
+      font: inherit; font-size: var(--text-sm); font-weight: 600;
+      padding: var(--space-2) var(--space-4); border-radius: var(--radius-sm); cursor: pointer;
+    }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn:focus-visible, .seg button:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 1px; }
+
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow);
+    }
+    .card-head { display: flex; align-items: center; justify-content: space-between; padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border); }
+    .card-title { font-weight: 600; font-size: var(--text-base); margin: 0; }
+    .card-link { color: var(--accent); font-size: var(--text-sm); font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: var(--space-1); }
+    .card-link svg.icon { width: 14px; height: 14px; }
+
+    .stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--space-4); }
+    .stat { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-2); }
+    .stat-top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); min-height: 42px; color: var(--muted); font-size: var(--text-sm); font-weight: 500; line-height: 1.3; }
+    .stat-icon { width: 32px; height: 32px; border-radius: var(--radius-sm); display: grid; place-items: center; }
+    .stat-icon.accent { background: var(--accent-soft); color: var(--accent); }
+    .stat-icon.success { background: var(--success-soft); color: var(--success); }
+    .stat-icon.warning { background: var(--warning-soft); color: var(--warning); }
+    .stat-icon.danger { background: var(--danger-soft); color: var(--danger); }
+    .stat-value { font-size: var(--text-2xl); font-weight: 700; letter-spacing: -0.01em; line-height: 1.1; }
+    .stat-value { display: flex; align-items: baseline; gap: var(--space-1); }
+    .stat-value small { font-size: var(--text-sm); color: var(--muted); font-weight: 600; }
+    .stat-foot { font-size: var(--text-xs); color: var(--muted); margin-top: auto; }
+    .up { color: var(--success); font-weight: 600; }
+    .down { color: var(--danger); font-weight: 600; }
+
+    .row { display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-4); }
+
+    /* chart */
+    .row > .card { display: flex; flex-direction: column; }
+    .chart-body { padding: var(--space-5); flex: 1; display: flex; flex-direction: column; }
+    .legend { display: flex; gap: var(--space-4); font-size: var(--text-xs); color: var(--muted); }
+    .legend span { display: inline-flex; align-items: center; gap: var(--space-1); }
+    .dot { width: 10px; height: 10px; border-radius: 3px; }
+    .chart { display: grid; grid-template-columns: auto 1fr; gap: var(--space-3); flex: 1; min-height: 260px; }
+    .y-axis { display: flex; flex-direction: column; justify-content: space-between; color: var(--faint); font-size: var(--text-xs); text-align: end; padding-bottom: 22px; }
+    .plot { position: relative; display: flex; align-items: flex-end; gap: var(--space-3); padding-bottom: 22px;
+      background-image: linear-gradient(var(--border) 1px, transparent 1px);
+      background-size: 100% calc((100% - 22px) / 4);
+    }
+    .bar-group { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: relative; }
+    .bars { display: flex; align-items: flex-end; gap: 3px; height: 100%; width: 100%; justify-content: center; }
+    .bar { width: 40%; max-width: 18px; border-radius: 4px 4px 0 0; }
+    .bar.paid { background: var(--chart-1); }
+    .bar.unpaid { background: var(--chart-2); opacity: 0.8; }
+    .bar-group.future .bar { background: var(--chart-muted); }
+    .bar-label { position: absolute; bottom: -22px; font-size: var(--text-xs); color: var(--faint); }
+    .bar-group.current .bar-label { color: var(--accent); font-weight: 600; }
+
+    /* settlements panel */
+    .list { list-style: none; margin: 0; padding: var(--space-2) 0; }
+    .list li { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-5); }
+    .list li + li { border-top: 1px solid var(--border); }
+    .list .who { flex: 1; min-width: 0; }
+    .list .who-name { font-size: var(--text-sm); font-weight: 600; }
+    .list .who-sub { font-size: var(--text-xs); color: var(--muted); }
+    .list .amt { font-weight: 700; font-size: var(--text-sm); text-align: end; }
+    .list .amt div { margin-bottom: 2px; }
+    .panel-foot { padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: var(--text-sm); color: var(--muted); }
+    .panel-foot strong { color: var(--text); }
+
+    /* badges */
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: var(--text-xs); font-weight: 600;
+      padding: 2px var(--space-2); border-radius: var(--radius-full); white-space: nowrap;
+    }
+    .badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .b-paid { color: var(--success); background: var(--success-soft); }
+    .b-unpaid { color: var(--warning); background: var(--warning-soft); }
+    .b-cancelled { color: var(--danger); background: var(--danger-soft); }
+    .b-draft { color: var(--st-draft); background: var(--st-draft-soft); }
+    .b-calculated { color: var(--st-calculated); background: var(--st-calculated-soft); }
+    .b-approved { color: var(--st-approved); background: var(--st-approved-soft); }
+    .b-spaid { color: var(--st-paid); background: var(--st-paid-soft); }
+
+    /* table */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+    th {
+      text-align: start; font-weight: 600; font-size: var(--text-xs); color: var(--muted);
+      background: var(--surface-2); padding: var(--space-3) var(--space-5); white-space: nowrap;
+    }
+    td { padding: var(--space-3) var(--space-5); border-top: 1px solid var(--border); white-space: nowrap; }
+    tbody tr:hover td { background: var(--surface-2); }
+    .t-end { text-align: end; }
+    .inv { color: var(--accent); font-weight: 600; text-decoration: none; }
+    .emp { display: flex; align-items: center; gap: var(--space-2); }
+    .emp .avatar { width: 26px; height: 26px; font-size: var(--text-xs); }
+    .muted { color: var(--muted); }
+    .strike { text-decoration: line-through; color: var(--faint); }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">K</div>
+      <div>
+        <div class="brand-name" data-ar="كوش">Kosh</div>
+        <div class="brand-sub" data-ar="نظام إدارة الصالون">Salon CRM</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <a href="#" class="active">
+        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        <span data-ar="لوحة التحكم">Dashboard</span>
+      </a>
+
+      <div class="nav-label" data-ar="المعاملات">Transactions</div>
+      <a href="#">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7M9 7h4"/></svg>
+        <span data-ar="الفواتير">Invoices</span>
+      </a>
+      <a href="#">
+        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/></svg>
+        <span data-ar="مصروفات الصالون">Salon Expenses</span>
+      </a>
+
+      <div class="nav-label" data-ar="الإدارة">Manage</div>
+      <a href="#">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.8 3 2.6 3.5 5.2"/></svg>
+        <span data-ar="الموظفون">Employees</span>
+      </a>
+      <a href="#">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.5 7.5 20 17M8.5 16.5 20 7"/></svg>
+        <span data-ar="الخدمات">Services</span>
+      </a>
+
+      <div class="nav-label" data-ar="التقارير">Reports</div>
+      <a href="#" class="sub"><span data-ar="الإيرادات">Revenue</span></a>
+      <a href="#" class="sub"><span data-ar="المصروفات">Expenses</span></a>
+      <a href="#" class="sub"><span data-ar="أداء الموظفين">Employee Performance</span></a>
+      <a href="#" class="sub"><span data-ar="أرباح الموظفين">Employee Earnings</span></a>
+      <a href="#" class="sub"><span data-ar="التسويات">Settlements</span></a>
+
+      <div class="nav-label" data-ar="النظام">System</div>
+      <a href="#">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        <span data-ar="الإعدادات">Settings</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-foot" data-ar="كوش صالون · الإصدار 1.0">Kosh Salon · v1.0</div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="header">
+      <div class="search">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <span data-ar="ابحث عن فاتورة أو موظف أو خدمة…">Search invoices, employees, services…</span>
+      </div>
+      <div class="header-actions">
+        <div class="seg" role="group" aria-label="Language">
+          <button type="button" class="on" data-lang="en">EN</button>
+          <button type="button" data-lang="ar">AR</button>
+        </div>
+        <div class="seg" role="group" aria-label="Theme">
+          <button type="button" data-theme-btn="light" title="Light">
+            <svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          </button>
+          <button type="button" class="on" data-theme-btn="dark" title="Dark">
+            <svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+          </button>
+        </div>
+        <div class="user">
+          <div class="avatar">SA</div>
+          <div>
+            <div class="user-name" data-ar="سارة أحمد">Sara Ahmed</div>
+            <div class="user-role" data-ar="مدير">Admin</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="page-head">
+        <div>
+          <div class="crumbs">
+            <span data-ar="الرئيسية">Home</span>
+            <svg class="icon flip-rtl" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
+            <span data-ar="لوحة التحكم">Dashboard</span>
+          </div>
+          <h1 data-ar="لوحة التحكم">Dashboard</h1>
+          <p class="page-sub" data-ar="سبتمبر 2026 · جميع الموظفين">September 2026 · All employees</p>
+        </div>
+        <div class="toolbar">
+          <button class="btn" type="button">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+            <span data-ar="هذا الشهر">This month</span>
+          </button>
+          <button class="btn btn-primary" type="button">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            <span data-ar="فاتورة جديدة">New invoice</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Stat cards -->
+      <section class="stats">
+        <div class="card stat">
+          <div class="stat-top"><span data-ar="الإيرادات المدفوعة">Paid revenue</span>
+            <span class="stat-icon accent"><svg class="icon" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></span></div>
+          <div class="stat-value num"><small>AED</small>84,250</div>
+          <div class="stat-foot"><span class="up num">+12.4%</span> <span data-ar="عن أغسطس">vs August</span></div>
+        </div>
+        <div class="card stat">
+          <div class="stat-top"><span data-ar="الفواتير">Invoices</span>
+            <span class="stat-icon accent"><svg class="icon" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7"/></svg></span></div>
+          <div class="stat-value num">412</div>
+          <div class="stat-foot"><span class="num">389</span> <span data-ar="مدفوعة ·">paid ·</span> <span class="num">17</span> <span data-ar="ملغاة">cancelled</span></div>
+        </div>
+        <div class="card stat">
+          <div class="stat-top"><span data-ar="غير مدفوع">Unpaid</span>
+            <span class="stat-icon warning"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span></div>
+          <div class="stat-value num"><small>AED</small>3,180</div>
+          <div class="stat-foot"><span class="num">6</span> <span data-ar="فواتير معلقة">open invoices</span></div>
+        </div>
+        <div class="card stat">
+          <div class="stat-top"><span data-ar="مصروفات الصالون">Salon expenses</span>
+            <span class="stat-icon danger"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg></span></div>
+          <div class="stat-value num"><small>AED</small>21,640</div>
+          <div class="stat-foot"><span class="down num">+4.1%</span> <span data-ar="عن أغسطس">vs August</span></div>
+        </div>
+        <div class="card stat">
+          <div class="stat-top"><span data-ar="الموظفون النشطون">Active staff</span>
+            <span class="stat-icon success"><svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/></svg></span></div>
+          <div class="stat-value num">9</div>
+          <div class="stat-foot"><span class="num">1</span> <span data-ar="غير نشط">inactive</span></div>
+        </div>
+        <div class="card stat">
+          <div class="stat-top"><span data-ar="مستحقات معلقة">Pending payouts</span>
+            <span class="stat-icon warning"><svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16v12H4z"/><path d="M4 7l3-3h10l3 3M12 11v4M10 13h4"/></svg></span></div>
+          <div class="stat-value num"><small>AED</small>38,925</div>
+          <div class="stat-foot"><span class="num">7</span> <span data-ar="تسويات بانتظار الدفع">settlements not paid</span></div>
+        </div>
+      </section>
+
+      <!-- Chart + settlements -->
+      <section class="row">
+        <div class="card">
+          <div class="card-head">
+            <h2 class="card-title" data-ar="الإيرادات الشهرية · 2026">Monthly revenue · 2026</h2>
+            <div class="legend">
+              <span><i class="dot" style="background:var(--chart-1)"></i><span data-ar="مدفوع">Paid</span></span>
+              <span><i class="dot" style="background:var(--chart-2)"></i><span data-ar="غير مدفوع">Unpaid</span></span>
+            </div>
+          </div>
+          <div class="chart-body">
+            <div class="chart">
+              <div class="y-axis num"><span>100k</span><span>75k</span><span>50k</span><span>25k</span><span>0</span></div>
+              <div class="plot" id="plot"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2 class="card-title" data-ar="تسويات سبتمبر">September settlements</h2>
+            <a href="#" class="card-link"><span data-ar="عرض الكل">View all</span>
+              <svg class="icon flip-rtl" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></a>
+          </div>
+          <ul class="list">
+            <li>
+              <div class="avatar">LM</div>
+              <div class="who"><div class="who-name" data-ar="ليلى منصور">Layla Mansour</div><div class="who-sub num">AED 18,400 × 50%</div></div>
+              <div class="amt num"><div>AED 8,900</div><span class="badge b-draft" data-ar="مسودة">Draft</span></div>
+            </li>
+            <li>
+              <div class="avatar">NK</div>
+              <div class="who"><div class="who-name" data-ar="نور خالد">Noor Khaled</div><div class="who-sub num">AED 15,200 × 50%</div></div>
+              <div class="amt num"><div>AED 7,250</div><span class="badge b-calculated" data-ar="محسوبة">Calculated</span></div>
+            </li>
+            <li>
+              <div class="avatar">RH</div>
+              <div class="who"><div class="who-name" data-ar="ريم حسن">Reem Hassan</div><div class="who-sub num">AED 12,650 × 50%</div></div>
+              <div class="amt num"><div>AED 6,025</div><span class="badge b-approved" data-ar="معتمدة">Approved</span></div>
+            </li>
+            <li>
+              <div class="avatar">MA</div>
+              <div class="who"><div class="who-name" data-ar="مريم علي">Mariam Ali</div><div class="who-sub num">AED 10,000 × 50%</div></div>
+              <div class="amt num"><div>AED 4,700</div><span class="badge b-approved" data-ar="معتمدة">Approved</span></div>
+            </li>
+            <li>
+              <div class="avatar">HS</div>
+              <div class="who"><div class="who-name" data-ar="هدى سعيد">Huda Saeed</div><div class="who-sub num">AED 5,000 × 50%</div></div>
+              <div class="amt num"><div>AED 2,200</div><span class="badge b-spaid" data-ar="مدفوعة">Paid</span></div>
+            </li>
+          </ul>
+          <div class="panel-foot">
+            <span data-ar="الإجمالي المعلق">Total pending</span>
+            <strong class="num">AED 38,925</strong>
+          </div>
+        </div>
+      </section>
+
+      <!-- Latest invoices -->
+      <section class="card">
+        <div class="card-head">
+          <h2 class="card-title" data-ar="أحدث الفواتير">Latest invoices</h2>
+          <a href="#" class="card-link"><span data-ar="كل الفواتير">All invoices</span>
+            <svg class="icon flip-rtl" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></a>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th data-ar="رقم الفاتورة">Invoice</th>
+                <th data-ar="الموظف">Employee</th>
+                <th data-ar="الخدمة">Service</th>
+                <th data-ar="التاريخ">Date</th>
+                <th data-ar="الحالة">Status</th>
+                <th class="t-end" data-ar="المبلغ">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><a class="inv num" href="#">INV-000412</a></td>
+                <td><div class="emp"><div class="avatar">LM</div><span data-ar="ليلى منصور">Layla Mansour</span></div></td>
+                <td data-ar="صبغة شعر كاملة">Full hair color</td>
+                <td class="muted num">30 Sep 2026, 18:42</td>
+                <td><span class="badge b-paid" data-ar="مدفوعة">Paid</span></td>
+                <td class="t-end num"><strong>AED 650.00</strong></td>
+              </tr>
+              <tr>
+                <td><a class="inv num" href="#">INV-000411</a></td>
+                <td><div class="emp"><div class="avatar">NK</div><span data-ar="نور خالد">Noor Khaled</span></div></td>
+                <td data-ar="مانيكير وباديكير">Manicure &amp; pedicure</td>
+                <td class="muted num">30 Sep 2026, 17:15</td>
+                <td><span class="badge b-unpaid" data-ar="غير مدفوعة">Unpaid</span></td>
+                <td class="t-end num"><strong>AED 220.00</strong></td>
+              </tr>
+              <tr>
+                <td><a class="inv num" href="#">INV-000410</a></td>
+                <td><div class="emp"><div class="avatar">RH</div><span data-ar="ريم حسن">Reem Hassan</span></div></td>
+                <td data-ar="بروتين للشعر">Keratin treatment</td>
+                <td class="muted num">30 Sep 2026, 15:03</td>
+                <td><span class="badge b-paid" data-ar="مدفوعة">Paid</span></td>
+                <td class="t-end num"><strong>AED 900.00</strong></td>
+              </tr>
+              <tr>
+                <td><a class="inv num" href="#">INV-000409</a></td>
+                <td><div class="emp"><div class="avatar">MA</div><span data-ar="مريم علي">Mariam Ali</span></div></td>
+                <td data-ar="تسريحة سشوار">Blow-dry</td>
+                <td class="muted num">30 Sep 2026, 13:40</td>
+                <td><span class="badge b-cancelled" data-ar="ملغاة">Cancelled</span></td>
+                <td class="t-end num"><span class="strike">AED 120.00</span></td>
+              </tr>
+              <tr>
+                <td><a class="inv num" href="#">INV-000408</a></td>
+                <td><div class="emp"><div class="avatar">HS</div><span data-ar="هدى سعيد">Huda Saeed</span></div></td>
+                <td data-ar="تنظيف بشرة">Facial</td>
+                <td class="muted num">30 Sep 2026, 11:25</td>
+                <td><span class="badge b-paid" data-ar="مدفوعة">Paid</span></td>
+                <td class="t-end num"><strong>AED 350.00</strong></td>
+              </tr>
+              <tr>
+                <td><a class="inv num" href="#">INV-000407</a></td>
+                <td><div class="emp"><div class="avatar">LM</div><span data-ar="ليلى منصور">Layla Mansour</span></div></td>
+                <td data-ar="قص شعر">Haircut</td>
+                <td class="muted num">29 Sep 2026, 19:10</td>
+                <td><span class="badge b-paid" data-ar="مدفوعة">Paid</span></td>
+                <td class="t-end num"><strong>AED 150.00</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+  // Chart: monthly paid / unpaid (thousands AED). Oct-Dec are future months.
+  const months = { en: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+                   ar: ["ينا","فبر","مار","أبر","ماي","يون","يول","أغس","سبت","أكت","نوف","ديس"] };
+  const data = [[61,3],[58,2],[66,4],[70,3],[74,5],[69,2],[72,4],[75,3],[84,3],[6,1],[6,1],[6,1]];
+  const plot = document.getElementById("plot");
+  data.forEach(([p, u], i) => {
+    const g = document.createElement("div");
+    g.className = "bar-group" + (i === 8 ? " current" : "") + (i > 8 ? " future" : "");
+    g.innerHTML = `<div class="bars"><div class="bar paid" style="height:${p}%"></div><div class="bar unpaid" style="height:${u * 3}%"></div></div><span class="bar-label" data-en="${months.en[i]}" data-ar="${months.ar[i]}">${months.en[i]}</span>`;
+    plot.appendChild(g);
+  });
+
+  // Language toggle: swap text via data-ar, and set dir/lang.
+  document.querySelectorAll("[data-lang]").forEach(b => b.onclick = () => {
+    const ar = b.dataset.lang === "ar";
+    document.documentElement.lang = ar ? "ar" : "en";
+    document.documentElement.dir = ar ? "rtl" : "ltr";
+    document.querySelectorAll("[data-ar]").forEach(el => {
+      if (el.dataset.en === undefined) el.dataset.en = el.textContent;
+      el.textContent = ar ? el.dataset.ar : el.dataset.en;
+    });
+    document.querySelectorAll("[data-lang]").forEach(x => x.classList.toggle("on", x === b));
+  });
+
+  // Theme toggle.
+  document.querySelectorAll("[data-theme-btn]").forEach(b => b.onclick = () => {
+    document.documentElement.dataset.theme = b.dataset.themeBtn;
+    document.querySelectorAll("[data-theme-btn]").forEach(x => x.classList.toggle("on", x === b));
+  });
+</script>
+</body>
+</html>
