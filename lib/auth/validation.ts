@@ -44,15 +44,33 @@ export const seedAdminSchema = z.object({
   password: passwordSchema,
 });
 
+/** Arabic-Indic and Extended Arabic-Indic digits become 0-9, and any Unicode space a plain space. */
+function normalizePhone(value: string): string {
+  // Both digit blocks start at a multiple of 16, so the low four bits are the digit's value.
+  return value.replace(/[٠-٩۰-۹]/g, (digit) => String(digit.charCodeAt(0) & 0xf)).replace(/\p{Zs}/gu, " ");
+}
+
 /** What a user may change about their own account; an empty phone is stored as null. */
 export const profileSchema = z.object({
-  name: z.string().trim().min(1).max(100),
-  phone: z
+  name: z
     .string()
     .trim()
-    .max(30)
-    .regex(/^[0-9+() -]*$/)
-    .transform((value) => value || null),
+    .min(1)
+    .max(100)
+    .regex(/\p{L}/u)
+    // No control or format characters, except the zero-width joiners some Arabic-script names use.
+    .regex(/^(?:[^\p{Cc}\p{Cf}]|[‌‍])*$/u),
+  phone: z
+    .string()
+    .transform(normalizePhone)
+    .pipe(
+      z
+        .string()
+        .trim()
+        .max(30)
+        .regex(/^[0-9+() -]*$/)
+        .transform((value) => value || null),
+    ),
 });
 
 export const DEFAULT_REDIRECT = "/dashboard";

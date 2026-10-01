@@ -267,6 +267,10 @@ export async function changePassword(_prev: AuthFormState, formData: FormData): 
   if (!parsed.success) return invalid(parsed.error, raw);
 
   try {
+    // Counted before the password check, so a signed-in session cannot guess the current password without limit.
+    const attemptKey = `password:user:${user.id}`;
+    if (!(await consumeAttempt(attemptKey, LOGIN_IDENTIFIER_LIMIT))) return { success: false, error: "rate_limited" };
+
     const stored = await db.user.findUnique({ where: { id: user.id }, select: { passwordHash: true } });
     if (!stored || !(await verifyPassword(parsed.data.currentPassword, stored.passwordHash))) {
       return {
@@ -282,6 +286,7 @@ export async function changePassword(_prev: AuthFormState, formData: FormData): 
       db.passwordResetToken.deleteMany({ where: { userId: user.id } }),
       db.session.deleteMany({ where: { userId: user.id, id: { not: sessionId } } }),
     ]);
+    await clearAttempts(attemptKey);
     return { success: true };
   } catch (error) {
     console.error("[auth] password change failed:", error);

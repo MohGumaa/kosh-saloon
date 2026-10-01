@@ -47,6 +47,8 @@ export function FormField({ name, label, error, hint, icon: Icon, type, classNam
           aria-describedby={describedBy}
           className={cn("h-12 rounded-xl px-4 md:text-base", Icon && "ps-12", isPassword && "pe-12", className)}
           {...inputProps}
+          // A revealed password is a text input, which browsers would otherwise spellcheck and autocorrect.
+          {...(isPassword && { spellCheck: false, autoCapitalize: "none", autoCorrect: "off" })}
         />
         {isPassword && (
           <button

@@ -62,14 +62,15 @@ function Panel({ icon: Icon, title, description, children }: PanelProps) {
 
 function Detail({ icon: Icon, label, children }: { icon: LucideIcon; label: string; children: ReactNode }) {
   return (
-    <div className="flex items-center gap-4 py-4">
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-        <Icon aria-hidden className="size-[1.125rem]" />
-      </span>
-      <div className="min-w-0">
-        <dt className="text-xs text-muted-foreground">{label}</dt>
-        <dd className="mt-0.5 truncate text-sm font-medium">{children}</dd>
-      </div>
+    // A dl row may hold only dt and dd, so the icon sits inside the dt, placed in the row's start padding.
+    <div className="relative flex min-h-18 flex-col justify-center py-4 ps-14">
+      <dt className="text-xs text-muted-foreground">
+        <span className="absolute inset-y-0 inset-s-0 my-auto flex size-10 items-center justify-center rounded-xl bg-muted">
+          <Icon aria-hidden className="size-[1.125rem]" />
+        </span>
+        {label}
+      </dt>
+      <dd className="mt-0.5 truncate text-sm font-medium">{children}</dd>
     </div>
   );
 }

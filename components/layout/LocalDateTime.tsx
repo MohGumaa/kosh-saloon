@@ -35,5 +35,10 @@ export function LocalDateTime({ iso, dateStyle = "medium", timeStyle }: LocalDat
         }).format(date)
       : new Intl.DateTimeFormat(locale, { dateStyle, timeZone: "UTC" }).format(date);
 
-  return <time dateTime={iso}>{text}</time>;
+  // Server and browser ICU data can format the same UTC text slightly differently before the second pass.
+  return (
+    <time dateTime={iso} suppressHydrationWarning>
+      {text}
+    </time>
+  );
 }

@@ -55,6 +55,25 @@ describe("profile rules", () => {
     expect(profileSchema.safeParse({ name: "Sara", phone: "050-abc" }).success).toBe(false);
     expect(profileSchema.safeParse({ name: "Sara", phone: "<script>" }).success).toBe(false);
   });
+
+  it("rejects control, invisible, and letterless names", () => {
+    for (const name of ["Sa\u0000ra", "Sara\nAli", "Sara‮Ali", "​", "‌‍", "Sara​", "123", "!!!"]) {
+      expect(profileSchema.safeParse({ name, phone: "" }).success, JSON.stringify(name)).toBe(false);
+    }
+  });
+
+  it("accepts names in other scripts, with joiners, digits, and punctuation", () => {
+    for (const name of ["سارة علي", "می‌خواهم", "Sara O'Neil-2", "José"]) {
+      expect(profileSchema.parse({ name, phone: "" }).name).toBe(name);
+    }
+  });
+
+  it("stores Arabic digits and Unicode spaces in a phone as ASCII", () => {
+    expect(profileSchema.parse({ name: "Sara", phone: "٠٥٠ ١٢٣ ٤٥٦٧" }).phone).toBe("050 123 4567");
+    expect(profileSchema.parse({ name: "Sara", phone: "۰۵۰ ۱۲۳ ۴۵۶۷" }).phone).toBe("050 123 4567");
+    expect(profileSchema.parse({ name: "Sara", phone: " " }).phone).toBeNull();
+    expect(profileSchema.safeParse({ name: "Sara", phone: "٠٥٠-abc" }).success).toBe(false);
+  });
 });
 
 describe("safeRedirectPath", () => {

@@ -62,6 +62,11 @@ export default async function DashboardPage() {
             </p>
             <h1 className="text-2xl font-semibold break-words lg:text-3xl">{t("welcome", { name: user.name })}</h1>
             <p className="mt-1 text-sm text-muted-foreground">{t("welcomeBody")}</p>
+            {account?.lastLoginAt && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t("lastSignIn")}: <LocalDateTime iso={account.lastLoginAt.toISOString()} timeStyle="short" />
+              </p>
+            )}
           </div>
           <span className="rounded-full bg-primary-soft px-3 py-1 text-sm font-medium">{tRoles(user.role)}</span>
         </div>

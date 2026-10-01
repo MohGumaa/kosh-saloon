@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hashPassword } from "@/lib/auth/password";
 import { hashToken } from "@/lib/auth/session";
+import { LOGIN_IDENTIFIER_LIMIT } from "@/lib/rate-limit";
 
 const mocks = vi.hoisted(() => ({
   db: {
@@ -282,6 +283,35 @@ describe("changePassword", () => {
     );
     expect(result).toMatchObject({ fieldErrors: { currentPassword: "wrong_current_password" } });
     expect(mocks.db.user.update).not.toHaveBeenCalled();
+    expect(mocks.consumeAttempt).toHaveBeenCalledWith("password:user:u1", LOGIN_IDENTIFIER_LIMIT);
+    expect(mocks.clearAttempts).not.toHaveBeenCalled();
+  });
+
+  it("refuses rate-limited attempts before checking the current password", async () => {
+    mocks.consumeAttempt.mockImplementation(async (key) => !key.startsWith("password:user:"));
+    const result = await changePassword(
+      null,
+      form({ currentPassword: PASSWORD, newPassword: "new-password", confirmPassword: "new-password" }),
+    );
+    expect(result).toEqual({ success: false, error: "rate_limited" });
+    expect(mocks.db.user.findUnique).not.toHaveBeenCalled();
+    expect(mocks.db.user.update).not.toHaveBeenCalled();
+  });
+
+  it("lets only the limit through when wrong guesses repeat", async () => {
+    let count = 0;
+    mocks.consumeAttempt.mockImplementation(async (_key, rule) => ++count <= rule.limit);
+
+    const errors = [];
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const result = await changePassword(
+        null,
+        form({ currentPassword: "nope-nope", newPassword: "new-password", confirmPassword: "new-password" }),
+      );
+      errors.push(result && !result.success ? result.error : null);
+    }
+    expect(errors).toEqual([...Array(5).fill("wrong_current_password"), "rate_limited"]);
+    expect(mocks.db.user.findUnique).toHaveBeenCalledTimes(5);
   });
 
   it("updates the password and keeps only the current session", async () => {
@@ -298,6 +328,7 @@ describe("changePassword", () => {
     expect(mocks.db.session.deleteMany).toHaveBeenCalledWith({ where: { userId: "u1", id: { not: "s-current" } } });
     // One transaction: the password never changes while other sessions stay signed in.
     expect(mocks.db.$transaction.mock.calls[0][0]).toHaveLength(3);
+    expect(mocks.clearAttempts).toHaveBeenCalledWith("password:user:u1");
   });
 
   it("reports a too-short new password", async () => {
