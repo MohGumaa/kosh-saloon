@@ -328,7 +328,23 @@ describe("changePassword", () => {
     expect(mocks.db.session.deleteMany).toHaveBeenCalledWith({ where: { userId: "u1", id: { not: "s-current" } } });
     // One transaction: the password never changes while other sessions stay signed in.
     expect(mocks.db.$transaction.mock.calls[0][0]).toHaveLength(3);
+    await runAfter();
     expect(mocks.clearAttempts).toHaveBeenCalledWith("password:user:u1");
+  });
+
+  it("still succeeds when clearing the attempt counter fails", async () => {
+    mocks.clearAttempts.mockRejectedValueOnce(new Error("connection lost"));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await changePassword(
+      null,
+      form({ currentPassword: PASSWORD, newPassword: "new-password", confirmPassword: "new-password" }),
+    );
+    expect(result).toEqual({ success: true });
+    await expect(runAfter()).resolves.toBeUndefined();
+    expect(mocks.clearAttempts).toHaveBeenCalledWith("password:user:u1");
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 
   it("reports a too-short new password", async () => {

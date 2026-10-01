@@ -58,8 +58,9 @@ export const profileSchema = z.object({
     .min(1)
     .max(100)
     .regex(/\p{L}/u)
-    // No control or format characters, except the zero-width joiners some Arabic-script names use.
-    .regex(/^(?:[^\p{Cc}\p{Cf}]|[‌‍])*$/u),
+    // No control, format, or line and paragraph separator characters, except the zero-width
+    // joiners some Arabic-script names use.
+    .regex(/^(?:[^\p{Cc}\p{Cf}\p{Zl}\p{Zp}]|[\u200c\u200d])*$/u),
   phone: z
     .string()
     .transform(normalizePhone)

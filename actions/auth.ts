@@ -286,7 +286,8 @@ export async function changePassword(_prev: AuthFormState, formData: FormData): 
       db.passwordResetToken.deleteMany({ where: { userId: user.id } }),
       db.session.deleteMany({ where: { userId: user.id, id: { not: sessionId } } }),
     ]);
-    await clearAttempts(attemptKey);
+    // After the response: a failed cleanup must not report a completed change as an error.
+    afterResponse("password attempt cleanup", () => clearAttempts(attemptKey));
     return { success: true };
   } catch (error) {
     console.error("[auth] password change failed:", error);

@@ -57,13 +57,13 @@ describe("profile rules", () => {
   });
 
   it("rejects control, invisible, and letterless names", () => {
-    for (const name of ["Sa\u0000ra", "Sara\nAli", "Sara‮Ali", "​", "‌‍", "Sara​", "123", "!!!"]) {
+    for (const name of ["Sa\u0000ra", "Sara\nAli", "Sara\u2028Ali", "Sara\u2029Ali", "Sara\u202eAli", "\u200b", "\u200c\u200d", "Sara\u200b", "123", "!!!"]) {
       expect(profileSchema.safeParse({ name, phone: "" }).success, JSON.stringify(name)).toBe(false);
     }
   });
 
   it("accepts names in other scripts, with joiners, digits, and punctuation", () => {
-    for (const name of ["سارة علي", "می‌خواهم", "Sara O'Neil-2", "José"]) {
+    for (const name of ["سارة علي", "می\u200cخواهم", "Sara O'Neil-2", "José"]) {
       expect(profileSchema.parse({ name, phone: "" }).name).toBe(name);
     }
   });
