@@ -58,7 +58,7 @@ export const NAVIGATION: NavGroup[] = [
   {
     key: "system",
     items: [
-      { key: "settings", icon: Settings, permissions: ["settings.view"] },
+      { key: "settings", icon: Settings, href: "/settings", permissions: ["settings.view"] },
       { key: "auditLog", icon: ScrollText, href: "/audit-log", adminOnly: true },
     ],
   },

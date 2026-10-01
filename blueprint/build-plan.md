@@ -16,7 +16,7 @@ Your features
 
 - [x] 4. Audit logging - Provide the audit log that every later feature writes to, recording authentication, user, permission, invoice, expense, percentage, settlement, and financial changes with the responsible user and timestamps, plus an admin audit log view.
 
-- [ ] 5. Salon settings - Manage salon name, license number, address, phone, email, logo, tax ID, currency, tax rate, and global employee share percentage.
+- [x] 5. Salon settings - Manage salon name, license number, address, phone, email, logo, tax ID, currency, tax rate, and global employee share percentage.
 
 - [ ] 6. Employee management - Create, edit, activate/deactivate, view, and manage employee accounts, profiles, images, roles, and account details.
 

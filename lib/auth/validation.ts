@@ -45,10 +45,18 @@ export const seedAdminSchema = z.object({
 });
 
 /** Arabic-Indic and Extended Arabic-Indic digits become 0-9, and any Unicode space a plain space. */
-function normalizePhone(value: string): string {
+export function normalizeDigitsAndSpaces(value: string): string {
   // Both digit blocks start at a multiple of 16, so the low four bits are the digit's value.
   return value.replace(/[٠-٩۰-۹]/g, (digit) => String(digit.charCodeAt(0) & 0xf)).replace(/\p{Zs}/gu, " ");
 }
+
+/**
+ * No control, format, or line and paragraph separator characters, except the zero-width
+ * joiners some Arabic-script names use.
+ */
+export const SINGLE_LINE_TEXT = /^(?:[^\p{Cc}\p{Cf}\p{Zl}\p{Zp}]|[‌‍])*$/u;
+
+export const PHONE_CHARACTERS = /^[0-9+() -]*$/;
 
 /** What a user may change about their own account; an empty phone is stored as null. */
 export const profileSchema = z.object({
@@ -58,18 +66,16 @@ export const profileSchema = z.object({
     .min(1)
     .max(100)
     .regex(/\p{L}/u)
-    // No control, format, or line and paragraph separator characters, except the zero-width
-    // joiners some Arabic-script names use.
-    .regex(/^(?:[^\p{Cc}\p{Cf}\p{Zl}\p{Zp}]|[\u200c\u200d])*$/u),
+    .regex(SINGLE_LINE_TEXT),
   phone: z
     .string()
-    .transform(normalizePhone)
+    .transform(normalizeDigitsAndSpaces)
     .pipe(
       z
         .string()
         .trim()
         .max(30)
-        .regex(/^[0-9+() -]*$/)
+        .regex(PHONE_CHARACTERS)
         .transform((value) => value || null),
     ),
 });

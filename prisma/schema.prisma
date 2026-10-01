@@ -116,6 +116,23 @@ model AuditLog {
   @@index([userId])
 }
 
+/// Single row with id "salon", created with these defaults on first read.
+model SalonSettings {
+  id                      String   @id @default("salon")
+  name                    String   @default("Kosh Salon")
+  licenseNumber           String   @default("")
+  address                 String   @default("")
+  phone                   String   @default("")
+  email                   String   @default("")
+  taxId                   String   @default("")
+  logo                    String?
+  currency                String   @default("AED")
+  taxRate                 Decimal  @default(0) @db.Decimal(5, 2)
+  employeeSharePercentage Decimal  @default(50) @db.Decimal(5, 2)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
+
 /// Fixed-window counters for sign-in and password reset requests.
 model RateLimit {
   key     String   @id

@@ -315,6 +315,9 @@ Package manager: pnpm (`pnpm-lock.yaml`).
 Prisma reads `kosh_DATABASE_URL` (Vercel Prisma Postgres prefix) from `.env` (copy `.env.example`); config lives in
 `prisma.config.ts`.
 
+The salon logo is stored in Vercel Blob and needs `BLOB_READ_WRITE_TOKEN` in
+`.env`; without it, logo upload reports that storage is not configured.
+
 - Test: `pnpm test` (Vitest, single run; fails when no tests are found)
 - Test watch: `pnpm test:watch`
 

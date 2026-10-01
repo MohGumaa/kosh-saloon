@@ -9,12 +9,13 @@ export const AUDIT_ACTIONS = [
   "auth.password_reset",
   "user.profile_updated",
   "permissions.updated",
+  "settings.updated",
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
 /** Prisma model names an entry can point at; labels live under `audit.entities`. */
-export const AUDIT_ENTITIES = ["User"] as const;
+export const AUDIT_ENTITIES = ["User", "SalonSettings"] as const;
 
 export type AuditEntity = (typeof AUDIT_ENTITIES)[number];
 

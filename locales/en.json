@@ -242,15 +242,29 @@
       },
       "permissions": {
         "updated": "Changed permissions"
+      },
+      "settings": {
+        "updated": "Changed salon settings"
       }
     },
     "entities": {
-      "User": "User"
+      "User": "User",
+      "SalonSettings": "Salon settings"
     },
     "fields": {
       "name": "Full name",
       "phone": "Phone",
-      "permissions": "Permissions"
+      "permissions": "Permissions",
+      "salonName": "Salon name",
+      "licenseNumber": "License number",
+      "address": "Address",
+      "salonPhone": "Salon phone",
+      "email": "Email",
+      "taxId": "Tax ID",
+      "logo": "Logo",
+      "currency": "Currency",
+      "taxRate": "Tax rate",
+      "employeeSharePercentage": "Employee share percentage"
     },
     "viewChanges": "View changes",
     "noChanges": "–",
@@ -262,6 +276,63 @@
       "previous": "Previous",
       "next": "Next",
       "page": "Page {page} of {total}"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Salon details and global financial settings.",
+    "tabs": {
+      "label": "Settings sections",
+      "information": "Information",
+      "financial": "Financial"
+    },
+    "readOnly": "You can view these settings but not change them.",
+    "submit": "Save changes",
+    "submitting": "Saving…",
+    "information": {
+      "title": "Salon information",
+      "description": "The salon's name and contact details.",
+      "name": "Salon name",
+      "licenseNumber": "License number",
+      "address": "Address",
+      "phone": "Phone",
+      "phoneHint": "Digits, spaces, and + - ( ) only.",
+      "email": "Email",
+      "taxId": "Tax ID",
+      "success": "Salon information saved."
+    },
+    "logo": {
+      "title": "Logo",
+      "description": "PNG, JPEG, or WebP, up to 1 MB.",
+      "alt": "Salon logo",
+      "empty": "No logo uploaded",
+      "file": "Logo file",
+      "upload": "Upload logo",
+      "uploading": "Uploading…",
+      "remove": "Remove logo",
+      "removing": "Removing…",
+      "uploaded": "Logo saved.",
+      "removed": "Logo removed."
+    },
+    "financial": {
+      "title": "Financial settings",
+      "description": "Currency, tax rate, and the share employees earn from their paid revenue.",
+      "currency": "Currency",
+      "currencyHint": "Three-letter code, for example AED.",
+      "taxRate": "Tax rate (%)",
+      "taxRateHint": "Stored for future receipts. It is not applied to invoices, revenue, or payouts.",
+      "employeeSharePercentage": "Employee share percentage (%)",
+      "employeeSharePercentageHint": "Applies to new calculations only. Existing settlements keep the percentage they were calculated with.",
+      "success": "Financial settings saved."
+    },
+    "errors": {
+      "forbidden": "You are not allowed to change the settings.",
+      "invalid_input": "Check the highlighted fields.",
+      "unexpected": "An unexpected error occurred. Please try again.",
+      "file_required": "Choose an image file first.",
+      "file_too_large": "The file is larger than 1 MB.",
+      "file_type": "The file must be a PNG, JPEG, or WebP image.",
+      "storage_unavailable": "Logo storage is not configured. Contact the system administrator."
     }
   },
   "forbidden": {
