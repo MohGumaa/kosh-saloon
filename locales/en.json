@@ -6,7 +6,9 @@
   "brand": {
     "name": "Kosh",
     "tagline": "Salon CRM",
-    "footer": "Kosh Salon · v1.0"
+    "footer": "Kosh Salon · v1.0",
+    "panelTitle": "Run your salon from one place",
+    "panelBody": "Invoices, expenses, employee earnings, and monthly settlements, in English and Arabic."
   },
   "nav": {
     "label": "Main navigation",
@@ -42,8 +44,74 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "placeholderTitle": "Welcome to Kosh CRM",
-    "placeholder": "Your salon dashboard will appear here in a later update."
+    "welcome": "Welcome back, {name}",
+    "welcomeBody": "Your salon's numbers appear here as invoices and expenses are recorded.",
+    "lastSignIn": "Last sign-in",
+    "noValue": "–",
+    "noData": "No data yet",
+    "stats": {
+      "revenue": "Revenue this month",
+      "invoices": "Invoices this month",
+      "pending": "Pending amount",
+      "expenses": "Salon expenses"
+    },
+    "revenueChart": {
+      "title": "Monthly revenue",
+      "empty": "Revenue appears here once invoices are recorded."
+    },
+    "latestInvoices": {
+      "title": "Latest invoices",
+      "invoice": "Invoice",
+      "employee": "Employee",
+      "date": "Date",
+      "amount": "Amount",
+      "status": "Status",
+      "empty": "No invoices yet."
+    },
+    "topServices": {
+      "title": "Top services",
+      "empty": "Your most requested services appear here once invoices are recorded."
+    },
+    "account": {
+      "title": "Your account",
+      "username": "Username",
+      "role": "Role",
+      "viewProfile": "View profile"
+    }
+  },
+  "account": {
+    "title": "Profile",
+    "tabs": {
+      "label": "Profile sections",
+      "info": "Info",
+      "settings": "Settings"
+    },
+    "info": {
+      "title": "Personal information",
+      "description": "Update your name and phone number.",
+      "name": "Full name",
+      "phone": "Phone",
+      "phoneHint": "Digits, spaces, and + - ( ) only. Leave empty to remove it.",
+      "submit": "Save changes",
+      "submitting": "Saving…",
+      "success": "Your profile was updated."
+    },
+    "details": {
+      "title": "Account details",
+      "description": "Only the salon administrator can change these.",
+      "username": "Username",
+      "email": "Email",
+      "role": "Role",
+      "lastSignIn": "Last sign-in",
+      "memberSince": "Member since",
+      "never": "Never"
+    },
+    "preferences": {
+      "title": "Language and theme",
+      "description": "Saved in this browser only.",
+      "language": "Language",
+      "theme": "Theme"
+    }
   },
   "errors": {
     "genericTitle": "Something went wrong",
@@ -53,6 +121,8 @@
   "auth": {
     "confirmPassword": "Confirm password",
     "passwordHint": "8 to 128 characters.",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "backToLogin": "Back to sign in",
     "login": {
       "title": "Sign in",
@@ -90,7 +160,7 @@
     },
     "userMenu": {
       "label": "Account menu for {name}",
-      "changePassword": "Change password",
+      "profile": "Profile",
       "signOut": "Sign out"
     },
     "roles": {

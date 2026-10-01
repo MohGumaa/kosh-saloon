@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AuthHeading } from "@/components/auth/AuthHeading";
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -13,17 +13,10 @@ export default async function ResetPasswordPage({ searchParams }: PageProps<"/re
   const t = await getTranslations("auth.reset");
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <h1>{t("title")}</h1>
-        </CardTitle>
-        <CardDescription>{t("description")}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {/* The token is checked when the form is submitted. */}
-        <ResetPasswordForm token={typeof token === "string" ? token : ""} />
-      </CardContent>
-    </Card>
+    <>
+      <AuthHeading title={t("title")} description={t("description")} />
+      {/* The token is checked when the form is submitted. */}
+      <ResetPasswordForm token={typeof token === "string" ? token : ""} />
+    </>
   );
 }

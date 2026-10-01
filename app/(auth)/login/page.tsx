@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AuthHeading } from "@/components/auth/AuthHeading";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { getCurrentSession } from "@/lib/auth/current-user";
 import { safeRedirectPath } from "@/lib/auth/validation";
@@ -20,16 +20,9 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
 
   const t = await getTranslations("auth.login");
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <h1>{t("title")}</h1>
-        </CardTitle>
-        <CardDescription>{t("description")}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <LoginForm next={nextPath} resetDone={reset === "1"} />
-      </CardContent>
-    </Card>
+    <>
+      <AuthHeading title={t("title")} description={t("description")} />
+      <LoginForm next={nextPath} resetDone={reset === "1"} />
+    </>
   );
 }

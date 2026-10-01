@@ -127,14 +127,15 @@
   --shadow: 0 1px 2px rgba(15, 26, 46, 0.06), 0 6px 16px rgba(15, 26, 46, 0.06);
   --radius: 0.5rem;
 
-  --sidebar: #ffffff;
-  --sidebar-foreground: #0f1a2e;
-  --sidebar-primary: #2563eb;
+  /* The sidebar and the sign-in brand panel stay dark navy in the light theme. */
+  --sidebar: #131c33;
+  --sidebar-foreground: #e8eefc;
+  --sidebar-primary: #2f6bff;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(37, 99, 235, 0.1);
-  --sidebar-accent-foreground: #2563eb;
-  --sidebar-border: #dde3ee;
-  --sidebar-ring: rgba(37, 99, 235, 0.35);
+  --sidebar-accent: rgba(255, 255, 255, 0.08);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #26324f;
+  --sidebar-ring: rgba(96, 148, 255, 0.6);
 
   --sidebar-width: 16rem;
   --header-height: 4rem;
@@ -186,10 +187,10 @@
   --sidebar-foreground: #e8eefc;
   --sidebar-primary: #2f6bff;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(47, 107, 255, 0.14);
-  --sidebar-accent-foreground: #e8eefc;
+  --sidebar-accent: rgba(255, 255, 255, 0.08);
+  --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #22304d;
-  --sidebar-ring: rgba(47, 107, 255, 0.45);
+  --sidebar-ring: rgba(96, 148, 255, 0.6);
 }
 
 /* Arabic swaps to the Arabic font stack. */

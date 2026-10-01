@@ -3,6 +3,7 @@ import {
   changePasswordSchema,
   identifierWhere,
   loginSchema,
+  profileSchema,
   resetPasswordSchema,
   safeRedirectPath,
 } from "@/lib/auth/validation";
@@ -38,6 +39,21 @@ describe("new password rules", () => {
     const mismatch = resetPasswordSchema.safeParse({ token: "t", password: "12345678", confirmPassword: "12345679" });
     expect(mismatch.success).toBe(false);
     expect(mismatch.error?.issues[0].path).toEqual(["confirmPassword"]);
+  });
+});
+
+describe("profile rules", () => {
+  it("trims the name and stores an empty phone as null", () => {
+    expect(profileSchema.parse({ name: " Sara ", phone: "  " })).toEqual({ name: "Sara", phone: null });
+    expect(profileSchema.parse({ name: "Sara", phone: "+971 (50) 123-4567" }).phone).toBe("+971 (50) 123-4567");
+  });
+
+  it("rejects an empty name, an over-long value, and phone letters", () => {
+    expect(profileSchema.safeParse({ name: "  ", phone: "" }).success).toBe(false);
+    expect(profileSchema.safeParse({ name: "a".repeat(101), phone: "" }).success).toBe(false);
+    expect(profileSchema.safeParse({ name: "Sara", phone: "1".repeat(31) }).success).toBe(false);
+    expect(profileSchema.safeParse({ name: "Sara", phone: "050-abc" }).success).toBe(false);
+    expect(profileSchema.safeParse({ name: "Sara", phone: "<script>" }).success).toBe(false);
   });
 });
 

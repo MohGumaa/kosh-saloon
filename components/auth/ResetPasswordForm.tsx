@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
+import { Lock } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { resetPassword, type AuthFormState } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
   }
 
   return (
-    <form ref={formRef} action={action} noValidate className="flex flex-col gap-4">
+    <form ref={formRef} action={action} noValidate className="flex flex-col gap-5">
       {failure && !failure.fieldErrors && (
         <FormMessage ref={messageRef} tone="error">
           {t(`errors.${failure.error}`)}
@@ -40,6 +41,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
         name="password"
         type="password"
         label={t("reset.password")}
+        icon={Lock}
         autoComplete="new-password"
         required
         error={failure?.fieldErrors?.password}
@@ -48,12 +50,13 @@ export function ResetPasswordForm({ token }: { token: string }) {
         name="confirmPassword"
         type="password"
         label={t("confirmPassword")}
+        icon={Lock}
         autoComplete="new-password"
         required
         error={failure?.fieldErrors?.confirmPassword}
       />
       <p className="text-xs text-muted-foreground">{t("passwordHint")}</p>
-      <Button type="submit" disabled={pending} className="w-full">
+      <Button type="submit" size="lg" disabled={pending} className="mt-2 h-12 w-full rounded-xl text-base">
         {pending ? t("reset.submitting") : t("reset.submit")}
       </Button>
     </form>

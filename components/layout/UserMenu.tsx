@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import Link from "next/link";
-import { ChevronDown, KeyRound, LogOut } from "lucide-react";
+import { ChevronDown, LogOut, UserRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { logout } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { UserAvatar } from "@/components/layout/UserAvatar";
 
 export interface HeaderUser {
   name: string;
@@ -28,33 +29,42 @@ export function UserMenu({ user }: { user: HeaderUser }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={<Button variant="ghost" className="gap-2" aria-label={t("userMenu.label", { name: user.name })} />}
+        render={
+          <Button
+            variant="ghost"
+            className="h-11 gap-2.5 px-2"
+            aria-label={t("userMenu.label", { name: user.name })}
+          />
+        }
       >
-        <span
-          aria-hidden
-          className="flex size-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground"
-        >
-          {user.name.trim().charAt(0).toUpperCase()}
+        <UserAvatar name={user.name} />
+        <span className="hidden max-w-40 flex-col text-start leading-tight sm:flex">
+          <span className="truncate text-sm font-medium">{user.name}</span>
+          <span className="truncate text-xs font-normal text-muted-foreground">{t(`roles.${user.role}`)}</span>
         </span>
-        <span className="hidden max-w-40 truncate text-sm sm:inline">{user.name}</span>
         <ChevronDown aria-hidden className="size-4 text-muted-foreground" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" sideOffset={8} className="w-64 p-2">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>
-            <div className="truncate text-sm text-foreground">{user.name}</div>
-            <div>{t(`roles.${user.role}`)}</div>
+          <DropdownMenuLabel className="flex items-center gap-3 px-2 py-2">
+            <UserAvatar name={user.name} className="size-10" />
+            <div className="min-w-0">
+              <div className="truncate text-sm text-foreground">{user.name}</div>
+              <div className="font-normal">{t(`roles.${user.role}`)}</div>
+            </div>
           </DropdownMenuLabel>
         </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem render={<Link href="/account/password" />}>
-          <KeyRound aria-hidden />
-          {t("userMenu.changePassword")}
+        <DropdownMenuSeparator className="my-2" />
+        <DropdownMenuItem render={<Link href="/account" />} className="gap-3 rounded-lg px-3 py-2.5">
+          <UserRound aria-hidden />
+          {t("userMenu.profile")}
         </DropdownMenuItem>
+        <DropdownMenuSeparator className="my-2" />
         <DropdownMenuItem
           variant="destructive"
           disabled={pending}
           onClick={() => startTransition(() => logout())}
+          className="gap-3 rounded-lg px-3 py-2.5"
         >
           <LogOut aria-hidden />
           {t("userMenu.signOut")}

@@ -44,6 +44,17 @@ export const seedAdminSchema = z.object({
   password: passwordSchema,
 });
 
+/** What a user may change about their own account; an empty phone is stored as null. */
+export const profileSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  phone: z
+    .string()
+    .trim()
+    .max(30)
+    .regex(/^[0-9+() -]*$/)
+    .transform((value) => value || null),
+});
+
 export const DEFAULT_REDIRECT = "/dashboard";
 
 const REDIRECT_BASE = "http://n";

@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
+import { Lock, User } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { login, type AuthFormState } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ export function LoginForm({ next, resetDone }: LoginFormProps) {
   const failure = state && !state.success ? state : null;
 
   return (
-    <form ref={formRef} action={action} noValidate className="flex flex-col gap-4">
+    <form ref={formRef} action={action} noValidate className="flex flex-col gap-5">
       {resetDone && !failure && <FormMessage tone="success">{t("login.resetDone")}</FormMessage>}
       {failure && !failure.fieldErrors && (
         <FormMessage ref={messageRef} tone="error">
@@ -35,6 +36,7 @@ export function LoginForm({ next, resetDone }: LoginFormProps) {
         key={failure?.identifier ?? ""}
         name="identifier"
         label={t("login.identifier")}
+        icon={User}
         autoComplete="username"
         autoCapitalize="none"
         spellCheck={false}
@@ -46,17 +48,19 @@ export function LoginForm({ next, resetDone }: LoginFormProps) {
         name="password"
         type="password"
         label={t("login.password")}
+        icon={Lock}
         autoComplete="current-password"
         required
         error={failure?.fieldErrors?.password}
       />
 
-      <Button type="submit" disabled={pending} className="w-full">
-        {pending ? t("login.submitting") : t("login.submit")}
-      </Button>
-      <Link href="/forgot-password" className="text-center text-sm text-primary hover:underline">
+      <Link href="/forgot-password" className="self-start text-sm text-primary hover:underline">
         {t("login.forgotPassword")}
       </Link>
+
+      <Button type="submit" size="lg" disabled={pending} className="mt-2 h-12 w-full rounded-xl text-base">
+        {pending ? t("login.submitting") : t("login.submit")}
+      </Button>
     </form>
   );
 }
