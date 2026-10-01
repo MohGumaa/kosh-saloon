@@ -8,17 +8,18 @@ import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/auth/FormField";
 import { FormMessage } from "@/components/auth/FormMessage";
 import { useFocusOnError } from "@/components/auth/useFocusOnError";
+import { useSuccessToast } from "@/components/auth/useSuccessToast";
 
 /** Shown on the profile Settings tab; reused by Settings > Security in feature 20. */
 export function ChangePasswordForm() {
   const t = useTranslations("auth");
   const [state, action, pending] = useActionState<AuthFormState, FormData>(changePassword, null);
   const { formRef, messageRef } = useFocusOnError(state);
+  useSuccessToast(state, t("changePassword.success"));
   const failure = state && !state.success ? state : null;
 
   return (
     <form ref={formRef} action={action} noValidate className="flex flex-col gap-5">
-      {state?.success && <FormMessage tone="success">{t("changePassword.success")}</FormMessage>}
       {failure && !failure.fieldErrors && (
         <FormMessage ref={messageRef} tone="error">
           {t(`errors.${failure.error}`)}

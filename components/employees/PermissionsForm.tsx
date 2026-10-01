@@ -4,6 +4,7 @@ import { startTransition, useActionState, useState, type FormEvent } from "react
 import { useTranslations } from "next-intl";
 import { updateUserPermissions, type PermissionsFormState } from "@/actions/permissions";
 import { FormMessage } from "@/components/auth/FormMessage";
+import { useSuccessToast } from "@/components/auth/useSuccessToast";
 import { Button } from "@/components/ui/button";
 import {
   PERMISSION_GROUPS,
@@ -28,6 +29,7 @@ const GROUPS = Object.entries(PERMISSION_GROUPS) as [PermissionGroup, readonly s
 export function PermissionsForm({ userId, current, changeable, defaults, readOnly }: PermissionsFormProps) {
   const t = useTranslations("permissions");
   const [state, action, pending] = useActionState<PermissionsFormState, FormData>(updateUserPermissions, null);
+  useSuccessToast(state, t("saved"));
   const [checked, setChecked] = useState<ReadonlySet<PermissionKey>>(() => new Set(current));
   const canChange = new Set(changeable);
   const hasLocked = !readOnly && changeable.length < PERMISSION_KEYS.length;
@@ -65,7 +67,6 @@ export function PermissionsForm({ userId, current, changeable, defaults, readOnl
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       <input type="hidden" name="userId" value={userId} />
-      {state?.success && <FormMessage tone="success">{t("saved")}</FormMessage>}
       {state && !state.success && <FormMessage tone="error">{t(`errors.${state.error}`)}</FormMessage>}
       {hasLocked && <p className="text-sm text-muted-foreground">{t("lockedNote")}</p>}
 

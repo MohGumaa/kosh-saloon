@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/auth/FormField";
 import { FormMessage } from "@/components/auth/FormMessage";
 import { useFocusOnError } from "@/components/auth/useFocusOnError";
+import { useSuccessToast } from "@/components/auth/useSuccessToast";
 
 interface ProfileFormProps {
   name: string;
@@ -18,12 +19,12 @@ export function ProfileForm({ name, phone }: ProfileFormProps) {
   const t = useTranslations();
   const [state, action, pending] = useActionState<ProfileFormState, FormData>(updateProfile, null);
   const { formRef, messageRef } = useFocusOnError(state);
+  useSuccessToast(state, t("account.info.success"));
   const failure = state && !state.success ? state : null;
   const values = failure?.values ?? { name, phone };
 
   return (
     <form ref={formRef} action={action} noValidate className="flex flex-col gap-5">
-      {state?.success && <FormMessage tone="success">{t("account.info.success")}</FormMessage>}
       {failure && !failure.fieldErrors && (
         <FormMessage ref={messageRef} tone="error">
           {t(`auth.errors.${failure.error}`)}

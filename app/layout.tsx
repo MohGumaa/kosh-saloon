@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { ThemeProvider } from "next-themes";
 import { DirectionProvider } from "@base-ui/react/direction-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { getDirection, isLocale, DEFAULT_LOCALE } from "@/i18n/locales";
 import "./globals.css";
 
@@ -27,6 +28,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const requestLocale = await getLocale();
   const locale = isLocale(requestLocale) ? requestLocale : DEFAULT_LOCALE;
   const dir = getDirection(locale);
+  const t = await getTranslations("toast");
 
   return (
     <html
@@ -44,6 +46,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             disableTransitionOnChange
           >
             <DirectionProvider direction={dir}>{children}</DirectionProvider>
+            <Toaster dir={dir} position="top-center" containerAriaLabel={t("label")} />
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>

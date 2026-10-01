@@ -3,6 +3,9 @@
     "title": "Kosh CRM",
     "description": "Salon management and financial CRM for Kosh Salon"
   },
+  "toast": {
+    "label": "Notifications"
+  },
   "brand": {
     "name": "Kosh",
     "tagline": "Salon CRM",
