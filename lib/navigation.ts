@@ -2,12 +2,14 @@ import {
   FileText,
   LayoutDashboard,
   Scissors,
+  ScrollText,
   Settings,
   Users,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
 import type { PermissionKey } from "@/lib/auth/permissions";
+import type { SessionUser } from "@/lib/auth/session";
 
 export interface NavItem {
   /** Translation key under the `nav` namespace. */
@@ -17,6 +19,8 @@ export interface NavItem {
   href?: string;
   /** The item is hidden unless the user holds one of these; none means everyone sees it. */
   permissions?: PermissionKey[];
+  /** Shown to an ADMIN only, whatever permissions another user holds. */
+  adminOnly?: boolean;
 }
 
 export interface NavGroup {
@@ -51,12 +55,19 @@ export const NAVIGATION: NavGroup[] = [
       { key: "settlements", permissions: ["settlements.view"] },
     ],
   },
-  { key: "system", items: [{ key: "settings", icon: Settings, permissions: ["settings.view"] }] },
+  {
+    key: "system",
+    items: [
+      { key: "settings", icon: Settings, permissions: ["settings.view"] },
+      { key: "auditLog", icon: ScrollText, href: "/audit-log", adminOnly: true },
+    ],
+  },
 ];
 
-/** Keys of the items a user with these permissions may see. Computed on the server. */
-export function visibleNavKeys(permissions: ReadonlySet<PermissionKey>): string[] {
+/** Keys of the items a user with this role and these permissions may see. Computed on the server. */
+export function visibleNavKeys(permissions: ReadonlySet<PermissionKey>, role: SessionUser["role"]): string[] {
   return NAVIGATION.flatMap((group) => group.items)
+    .filter((item) => !item.adminOnly || role === "ADMIN")
     .filter((item) => !item.permissions || item.permissions.some((key) => permissions.has(key)))
     .map((item) => item.key);
 }

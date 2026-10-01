@@ -26,6 +26,7 @@
     "employeeEarnings": "أرباح الموظفين",
     "settlements": "التسويات",
     "settings": "الإعدادات",
+    "auditLog": "سجل التدقيق",
     "comingSoon": "قريبًا",
     "groups": {
       "transactions": "المعاملات",
@@ -216,6 +217,51 @@
       "not_found": "هذا المستخدم لم يعد موجودًا.",
       "invalid_input": "الصلاحيات المرسلة غير صالحة. أعد تحميل الصفحة وحاول مرة أخرى.",
       "unexpected": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى."
+    }
+  },
+  "audit": {
+    "title": "سجل التدقيق",
+    "description": "من غيّر ماذا ومتى. الأحدث أولًا.",
+    "empty": "لم يُسجَّل أي نشاط بعد.",
+    "columns": {
+      "time": "الوقت",
+      "user": "المستخدم",
+      "action": "الإجراء",
+      "record": "السجل المتأثر",
+      "changes": "التغييرات"
+    },
+    "actions": {
+      "auth": {
+        "login": "تسجيل الدخول",
+        "logout": "تسجيل الخروج",
+        "password_changed": "تغيير كلمة المرور",
+        "password_reset": "إعادة تعيين كلمة المرور بالبريد الإلكتروني"
+      },
+      "user": {
+        "profile_updated": "تحديث الملف الشخصي"
+      },
+      "permissions": {
+        "updated": "تغيير الصلاحيات"
+      }
+    },
+    "entities": {
+      "User": "مستخدم"
+    },
+    "fields": {
+      "name": "الاسم الكامل",
+      "phone": "الهاتف",
+      "permissions": "الصلاحيات"
+    },
+    "viewChanges": "عرض التغييرات",
+    "noChanges": "–",
+    "before": "قبل",
+    "after": "بعد",
+    "noValue": "–",
+    "pagination": {
+      "label": "صفحات سجل التدقيق",
+      "previous": "السابق",
+      "next": "التالي",
+      "page": "الصفحة {page} من {total}"
     }
   },
   "forbidden": {

@@ -14,7 +14,7 @@ Your features
 
 - [x] 3. Roles & permissions - Implement ADMIN, SUPERVISOR, and STAFF roles with default permissions per role, granular permission management, and server-side authorization.
 
-- [ ] 4. Audit logging - Provide the audit log that every later feature writes to, recording authentication, user, permission, invoice, expense, percentage, settlement, and financial changes with the responsible user and timestamps, plus an admin audit log view.
+- [x] 4. Audit logging - Provide the audit log that every later feature writes to, recording authentication, user, permission, invoice, expense, percentage, settlement, and financial changes with the responsible user and timestamps, plus an admin audit log view.
 
 - [ ] 5. Salon settings - Manage salon name, license number, address, phone, email, logo, tax ID, currency, tax rate, and global employee share percentage.
 

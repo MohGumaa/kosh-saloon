@@ -46,6 +46,7 @@ model User {
   sessions            Session[]
   passwordResetTokens PasswordResetToken[]
   permissions         UserPermission[]
+  auditLogs           AuditLog[]
 }
 
 /// The catalog in `lib/auth/permissions.ts`; rows are inserted only by migrations.
@@ -95,6 +96,23 @@ model PasswordResetToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
 
+  @@index([userId])
+}
+
+/// Append-only: rows are inserted and never updated or deleted. `entityId` is not a
+/// foreign key, so it can point at any model.
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  action    String
+  entity    String
+  entityId  String
+  oldValue  Json?
+  newValue  Json?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
   @@index([userId])
 }
 

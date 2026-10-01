@@ -8,7 +8,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   const { user } = await requireSession();
   // The client gets the visible item keys, not the permission list. Hiding an item is not
   // security: every page and action checks its own permission.
-  const navKeys = visibleNavKeys(await getPermissions(user));
+  const navKeys = visibleNavKeys(await getPermissions(user), user.role);
 
   return (
     <div className="flex min-h-dvh">

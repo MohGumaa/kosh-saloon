@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { recordAudit } from "@/lib/audit";
 import { getPermissions } from "@/lib/auth/authorize";
 import { requireSession } from "@/lib/auth/current-user";
 import { PERMISSION_KEYS, changeableKeys, type PermissionKey } from "@/lib/auth/permissions";
@@ -55,11 +56,22 @@ export async function updateUserPermissions(
       const added = await db.permission.findMany({ where: { key: { in: toAdd } }, select: { id: true } });
       if (added.length !== toAdd.length) throw new Error("permission catalog rows are missing");
 
+      const after = new Set<string>([...current, ...toAdd]);
+      for (const key of toRemove) after.delete(key);
+
       await db.$transaction([
         db.userPermission.deleteMany({ where: { userId, permission: { key: { in: toRemove } } } }),
         db.userPermission.createMany({
           data: added.map((permission) => ({ userId, permissionId: permission.id })),
           skipDuplicates: true,
+        }),
+        recordAudit({
+          userId: actor.id,
+          action: "permissions.updated",
+          entity: "User",
+          entityId: userId,
+          oldValue: { permissions: PERMISSION_KEYS.filter((key) => current.has(key)) },
+          newValue: { permissions: PERMISSION_KEYS.filter((key) => after.has(key)) },
         }),
       ]);
     }

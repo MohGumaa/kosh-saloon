@@ -26,6 +26,7 @@
     "employeeEarnings": "Employee Earnings",
     "settlements": "Settlements",
     "settings": "Settings",
+    "auditLog": "Audit Log",
     "comingSoon": "Coming soon",
     "groups": {
       "transactions": "Transactions",
@@ -216,6 +217,51 @@
       "not_found": "This user no longer exists.",
       "invalid_input": "The submitted permissions were not valid. Reload the page and try again.",
       "unexpected": "An unexpected error occurred. Please try again."
+    }
+  },
+  "audit": {
+    "title": "Audit Log",
+    "description": "Who changed what, and when. Newest first.",
+    "empty": "No activity recorded yet.",
+    "columns": {
+      "time": "Time",
+      "user": "User",
+      "action": "Action",
+      "record": "Affected record",
+      "changes": "Changes"
+    },
+    "actions": {
+      "auth": {
+        "login": "Signed in",
+        "logout": "Signed out",
+        "password_changed": "Changed password",
+        "password_reset": "Reset password by email"
+      },
+      "user": {
+        "profile_updated": "Updated profile"
+      },
+      "permissions": {
+        "updated": "Changed permissions"
+      }
+    },
+    "entities": {
+      "User": "User"
+    },
+    "fields": {
+      "name": "Full name",
+      "phone": "Phone",
+      "permissions": "Permissions"
+    },
+    "viewChanges": "View changes",
+    "noChanges": "–",
+    "before": "Before",
+    "after": "After",
+    "noValue": "–",
+    "pagination": {
+      "label": "Audit log pages",
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page {page} of {total}"
     }
   },
   "forbidden": {

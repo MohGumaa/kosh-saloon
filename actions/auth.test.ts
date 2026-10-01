@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
     user: { findUnique: vi.fn(), update: vi.fn() },
     session: { deleteMany: vi.fn() },
     passwordResetToken: { findUnique: vi.fn(), deleteMany: vi.fn(), create: vi.fn() },
+    auditLog: { create: vi.fn() },
     $transaction: vi.fn(async (ops: unknown[]) => Promise.all(ops)),
   },
   consumeAttempt: vi.fn<(key: string, rule: { limit: number }) => Promise<boolean>>(async () => true),
@@ -16,7 +17,9 @@ const mocks = vi.hoisted(() => ({
   deleteExpiredRateLimits: vi.fn(),
   createSession: vi.fn(),
   deleteExpiredSessions: vi.fn(),
+  deleteCurrentSession: vi.fn(),
   requireSession: vi.fn(),
+  getCurrentSession: vi.fn(),
   sendEmail: vi.fn(),
   afterCallbacks: [] as (() => Promise<void>)[],
 }));
@@ -44,10 +47,14 @@ vi.mock("@/lib/auth/session", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/auth/session")>()),
   createSession: mocks.createSession,
   deleteExpiredSessions: mocks.deleteExpiredSessions,
+  deleteCurrentSession: mocks.deleteCurrentSession,
 }));
-vi.mock("@/lib/auth/current-user", () => ({ requireSession: mocks.requireSession }));
+vi.mock("@/lib/auth/current-user", () => ({
+  requireSession: mocks.requireSession,
+  getCurrentSession: mocks.getCurrentSession,
+}));
 
-const { changePassword, login, requestPasswordReset, resetPassword } = await import("@/actions/auth");
+const { changePassword, login, logout, requestPasswordReset, resetPassword } = await import("@/actions/auth");
 
 const PASSWORD = "correct-password";
 const passwordHash = await hashPassword(PASSWORD);
@@ -70,6 +77,14 @@ async function runAfter() {
   for (const cb of mocks.afterCallbacks.splice(0)) await cb();
 }
 
+/** Exactly one audit entry, with these fields and nothing else: no password, hash, or token. */
+function expectAuditEntry(action: string, userId = "u1") {
+  expect(mocks.db.auditLog.create).toHaveBeenCalledTimes(1);
+  expect(mocks.db.auditLog.create).toHaveBeenCalledWith({
+    data: { userId, action, entity: "User", entityId: userId },
+  });
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.afterCallbacks.length = 0;
@@ -90,6 +105,7 @@ describe("login", () => {
     expect(mocks.consumeAttempt).toHaveBeenCalledWith("login:ip:203.0.113.5", expect.anything());
     expect(mocks.refundAttempt).not.toHaveBeenCalled();
     expect(mocks.createSession).not.toHaveBeenCalled();
+    expect(mocks.db.auditLog.create).not.toHaveBeenCalled();
   });
 
   it("reports inactive only after the correct password, without a session", async () => {
@@ -100,6 +116,7 @@ describe("login", () => {
     });
     expect(await login(null, form({ identifier: "sara", password: PASSWORD }))).toMatchObject({ error: "inactive" });
     expect(mocks.createSession).not.toHaveBeenCalled();
+    expect(mocks.db.auditLog.create).not.toHaveBeenCalled();
   });
 
   it("refuses rate-limited attempts before checking the password", async () => {
@@ -108,6 +125,7 @@ describe("login", () => {
       error: "rate_limited",
     });
     expect(mocks.db.user.findUnique).not.toHaveBeenCalled();
+    expect(mocks.db.auditLog.create).not.toHaveBeenCalled();
   });
 
   it("lets only the limit through when wrong guesses arrive together", async () => {
@@ -149,6 +167,9 @@ describe("login", () => {
     expect(mocks.clearAttempts).toHaveBeenCalledWith("login:id:sara@kosh.ae");
     expect(mocks.refundAttempt).toHaveBeenCalledWith("login:ip:203.0.113.5");
     expect(mocks.db.user.update).toHaveBeenCalledWith({ where: { id: "u1" }, data: { lastLoginAt: expect.any(Date) } });
+    // One transaction: the sign-in time and its audit entry are saved together.
+    expectAuditEntry("auth.login");
+    expect(mocks.db.$transaction.mock.calls[0][0]).toHaveLength(2);
 
     await runAfter();
     expect(mocks.sendEmail).toHaveBeenCalledWith(
@@ -178,6 +199,35 @@ describe("login", () => {
       fieldErrors: { identifier: "required", password: "required" },
       identifier: "",
     });
+  });
+});
+
+describe("logout", () => {
+  it("records the sign-out, deletes the session, and redirects to login", async () => {
+    mocks.getCurrentSession.mockResolvedValue({ sessionId: "s1", user: { id: "u1" } });
+
+    await expect(logout()).rejects.toThrow("REDIRECT:/login");
+    expectAuditEntry("auth.logout");
+    expect(mocks.deleteCurrentSession).toHaveBeenCalledTimes(1);
+  });
+
+  it("still signs out when the audit entry cannot be written", async () => {
+    mocks.getCurrentSession.mockResolvedValue({ sessionId: "s1", user: { id: "u1" } });
+    mocks.db.auditLog.create.mockRejectedValueOnce(new Error("db down"));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(logout()).rejects.toThrow("REDIRECT:/login");
+    expect(mocks.deleteCurrentSession).toHaveBeenCalledTimes(1);
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it("records nothing when there is no valid session", async () => {
+    mocks.getCurrentSession.mockResolvedValue(null);
+
+    await expect(logout()).rejects.toThrow("REDIRECT:/login");
+    expect(mocks.db.auditLog.create).not.toHaveBeenCalled();
+    expect(mocks.deleteCurrentSession).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -235,6 +285,7 @@ describe("resetPassword", () => {
     expect(await resetPassword(null, form(valid))).toEqual({ success: false, error: "invalid_token" });
     expect(mocks.db.passwordResetToken.deleteMany).toHaveBeenCalledWith({ where: { id: "t1" } });
     expect(mocks.db.user.update).not.toHaveBeenCalled();
+    expect(mocks.db.auditLog.create).not.toHaveBeenCalled();
   });
 
   it("sets the password, removes tokens and every session, then redirects to login", async () => {
@@ -253,6 +304,8 @@ describe("resetPassword", () => {
     });
     expect(mocks.db.passwordResetToken.deleteMany).toHaveBeenCalledWith({ where: { userId: "u1" } });
     expect(mocks.db.session.deleteMany).toHaveBeenCalledWith({ where: { userId: "u1" } });
+    expectAuditEntry("auth.password_reset");
+    expect(mocks.db.$transaction.mock.calls[0][0]).toHaveLength(4);
   });
 
   it("treats an over-long token as an invalid link, not a field error", async () => {
@@ -283,6 +336,7 @@ describe("changePassword", () => {
     );
     expect(result).toMatchObject({ fieldErrors: { currentPassword: "wrong_current_password" } });
     expect(mocks.db.user.update).not.toHaveBeenCalled();
+    expect(mocks.db.auditLog.create).not.toHaveBeenCalled();
     expect(mocks.consumeAttempt).toHaveBeenCalledWith("password:user:u1", LOGIN_IDENTIFIER_LIMIT);
     expect(mocks.clearAttempts).not.toHaveBeenCalled();
   });
@@ -326,8 +380,9 @@ describe("changePassword", () => {
     });
     expect(mocks.db.passwordResetToken.deleteMany).toHaveBeenCalledWith({ where: { userId: "u1" } });
     expect(mocks.db.session.deleteMany).toHaveBeenCalledWith({ where: { userId: "u1", id: { not: "s-current" } } });
-    // One transaction: the password never changes while other sessions stay signed in.
-    expect(mocks.db.$transaction.mock.calls[0][0]).toHaveLength(3);
+    // One transaction: the password never changes while other sessions stay signed in or the change goes unlogged.
+    expectAuditEntry("auth.password_changed");
+    expect(mocks.db.$transaction.mock.calls[0][0]).toHaveLength(4);
     await runAfter();
     expect(mocks.clearAttempts).toHaveBeenCalledWith("password:user:u1");
   });

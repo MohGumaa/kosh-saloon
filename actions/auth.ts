@@ -6,7 +6,8 @@ import { after } from "next/server";
 import type { z } from "zod";
 import { db } from "@/lib/db";
 import { appUrl, sendEmail } from "@/lib/email";
-import { requireSession } from "@/lib/auth/current-user";
+import { recordAudit } from "@/lib/audit";
+import { getCurrentSession, requireSession } from "@/lib/auth/current-user";
 import { loginNotificationEmail, passwordResetEmail } from "@/lib/auth/emails";
 import { hashPassword, verifyDummyPassword, verifyPassword } from "@/lib/auth/password";
 import {
@@ -142,7 +143,10 @@ export async function login(_prev: AuthFormState, formData: FormData): Promise<A
     await clearAttempts(identifierKey);
     await refundAttempt(ipKey);
     const at = new Date();
-    await db.user.update({ where: { id: user.id }, data: { lastLoginAt: at } });
+    await db.$transaction([
+      db.user.update({ where: { id: user.id }, data: { lastLoginAt: at } }),
+      recordAudit({ userId: user.id, action: "auth.login", entity: "User", entityId: user.id }),
+    ]);
     await createSession(user.id);
 
     afterResponse("login notification email", () =>
@@ -171,6 +175,16 @@ export async function login(_prev: AuthFormState, formData: FormData): Promise<A
 }
 
 export async function logout(): Promise<void> {
+  const session = await getCurrentSession();
+  if (session) {
+    const { id } = session.user;
+    try {
+      await recordAudit({ userId: id, action: "auth.logout", entity: "User", entityId: id });
+    } catch (error) {
+      // A failed audit entry must never keep someone signed in.
+      console.error("[auth] logout audit entry failed:", error);
+    }
+  }
   await deleteCurrentSession();
   redirect("/login");
 }
@@ -250,6 +264,7 @@ export async function resetPassword(_prev: AuthFormState, formData: FormData): P
       db.user.update({ where: { id: record.userId }, data: { passwordHash } }),
       db.passwordResetToken.deleteMany({ where: { userId: record.userId } }),
       db.session.deleteMany({ where: { userId: record.userId } }),
+      recordAudit({ userId: record.userId, action: "auth.password_reset", entity: "User", entityId: record.userId }),
     ]);
   } catch (error) {
     console.error("[auth] password reset failed:", error);
@@ -285,6 +300,7 @@ export async function changePassword(_prev: AuthFormState, formData: FormData): 
       db.user.update({ where: { id: user.id }, data: { passwordHash } }),
       db.passwordResetToken.deleteMany({ where: { userId: user.id } }),
       db.session.deleteMany({ where: { userId: user.id, id: { not: sessionId } } }),
+      recordAudit({ userId: user.id, action: "auth.password_changed", entity: "User", entityId: user.id }),
     ]);
     // After the response: a failed cleanup must not report a completed change as an error.
     afterResponse("password attempt cleanup", () => clearAttempts(attemptKey));

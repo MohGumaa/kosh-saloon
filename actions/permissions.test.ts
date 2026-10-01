@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
     user: { findUnique: vi.fn() },
     permission: { findMany: vi.fn() },
     userPermission: { findMany: vi.fn(), deleteMany: vi.fn(), createMany: vi.fn() },
+    auditLog: { create: vi.fn() },
     $transaction: vi.fn(async (ops: unknown[]) => Promise.all(ops)),
   },
   requireSession: vi.fn(),
@@ -40,6 +41,7 @@ function expectNothingWritten() {
   expect(mocks.db.$transaction).not.toHaveBeenCalled();
   expect(mocks.db.userPermission.deleteMany).not.toHaveBeenCalled();
   expect(mocks.db.userPermission.createMany).not.toHaveBeenCalled();
+  expect(mocks.db.auditLog.create).not.toHaveBeenCalled();
   expect(mocks.revalidatePath).not.toHaveBeenCalled();
 }
 
@@ -55,15 +57,27 @@ describe("updateUserPermissions as an ADMIN", () => {
 
   it("replaces a Staff user's list in one transaction", async () => {
     target("staff1", "STAFF", "services.view", "invoices.view");
-    // Distinct return values prove the transaction received these two writes, not other values.
+    // Distinct return values prove the transaction received these writes, not other values.
     mocks.db.userPermission.deleteMany.mockReturnValueOnce("delete-op");
     mocks.db.userPermission.createMany.mockReturnValueOnce("create-op");
+    mocks.db.auditLog.create.mockReturnValueOnce("audit-op");
 
     const result = await updateUserPermissions(null, form("staff1", ["invoices.view", "settings.view", "permissions.manage"]));
 
     expect(result).toEqual({ success: true });
     expect(mocks.db.$transaction).toHaveBeenCalledTimes(1);
-    expect(mocks.db.$transaction.mock.calls[0][0]).toEqual(["delete-op", "create-op"]);
+    expect(mocks.db.$transaction.mock.calls[0][0]).toEqual(["delete-op", "create-op", "audit-op"]);
+    // The lists before and after, in catalog order, whatever order they were stored or submitted in.
+    expect(mocks.db.auditLog.create).toHaveBeenCalledWith({
+      data: {
+        userId: "admin1",
+        action: "permissions.updated",
+        entity: "User",
+        entityId: "staff1",
+        oldValue: { permissions: ["services.view", "invoices.view"] },
+        newValue: { permissions: ["invoices.view", "settings.view", "permissions.manage"] },
+      },
+    });
     expect(mocks.db.userPermission.deleteMany).toHaveBeenCalledWith({
       where: { userId: "staff1", permission: { key: { in: ["services.view"] } } },
     });
@@ -93,6 +107,7 @@ describe("updateUserPermissions as an ADMIN", () => {
 
     expect(await updateUserPermissions(null, form("staff1", ["services.view"]))).toEqual({ success: true });
     expect(mocks.db.$transaction).not.toHaveBeenCalled();
+    expect(mocks.db.auditLog.create).not.toHaveBeenCalled();
   });
 
   it("refuses to change an ADMIN, including themselves", async () => {
@@ -157,6 +172,13 @@ describe("updateUserPermissions as a limited manager", () => {
     expect(mocks.db.userPermission.createMany.mock.calls[0][0].data).toEqual([
       { userId: "staff1", permissionId: "id:invoices.view" },
     ]);
+    // The entry names the manager and the list as it really ends up, not as submitted.
+    expect(mocks.db.auditLog.create.mock.calls[0][0].data).toMatchObject({
+      userId: "sup1",
+      entityId: "staff1",
+      oldValue: { permissions: ["services.view", "settings.view"] },
+      newValue: { permissions: ["invoices.view", "settings.view"] },
+    });
   });
 
   it("never removes permission management from another manager", async () => {
