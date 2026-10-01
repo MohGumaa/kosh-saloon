@@ -11,7 +11,7 @@ import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/layout/ThemeSwitcher";
 import { UserMenu, type HeaderUser } from "@/components/layout/UserMenu";
 
-export function Header({ user }: { user: HeaderUser }) {
+export function Header({ user, navKeys }: { user: HeaderUser; navKeys: string[] }) {
   const t = useTranslations("header");
   const direction = useDirection();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -32,7 +32,7 @@ export function Header({ user }: { user: HeaderUser }) {
           className="bg-sidebar p-0 text-sidebar-foreground"
         >
           <SheetTitle className="sr-only">{t("menu")}</SheetTitle>
-          <SidebarContent onNavigate={() => setMenuOpen(false)} />
+          <SidebarContent navKeys={navKeys} onNavigate={() => setMenuOpen(false)} />
         </SheetContent>
       </Sheet>
 

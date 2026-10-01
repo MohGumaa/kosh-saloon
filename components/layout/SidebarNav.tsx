@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { NAVIGATION, type NavItem } from "@/lib/navigation";
+import { visibleNavGroups, type NavItem } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 interface SidebarNavProps {
+  /** Keys of the items this user may see, decided on the server. */
+  navKeys: string[];
   /** Called after a link is followed, so the mobile drawer can close. */
   onNavigate?: () => void;
 }
@@ -14,9 +16,10 @@ interface SidebarNavProps {
 const itemClass =
   "flex h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-sidebar-ring";
 
-export function SidebarNav({ onNavigate }: SidebarNavProps) {
+export function SidebarNav({ navKeys, onNavigate }: SidebarNavProps) {
   const t = useTranslations("nav");
   const pathname = usePathname();
+  const groups = visibleNavGroups(navKeys);
 
   function renderItem(item: NavItem, isSubItem: boolean) {
     const Icon = item.icon;
@@ -62,7 +65,7 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
 
   return (
     <nav aria-label={t("label")} className="flex flex-col gap-1">
-      {NAVIGATION.map((group, index) => (
+      {groups.map((group, index) => (
         <div key={group.key ?? index} className="flex flex-col gap-1">
           {group.key ? (
             <div className="mt-4 mb-1 px-3 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase rtl:tracking-normal rtl:normal-case">

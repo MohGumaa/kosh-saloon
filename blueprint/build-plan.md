@@ -12,7 +12,7 @@ Your features
 
 - [x] 2. Authentication & sessions - Secure login, logout, password change, password reset by email, login notification emails, sessions, inactive-account protection, and authentication state.
 
-- [ ] 3. Roles & permissions - Implement ADMIN, SUPERVISOR, and STAFF roles with default permissions per role, granular permission management, and server-side authorization.
+- [x] 3. Roles & permissions - Implement ADMIN, SUPERVISOR, and STAFF roles with default permissions per role, granular permission management, and server-side authorization.
 
 - [ ] 4. Audit logging - Provide the audit log that every later feature writes to, recording authentication, user, permission, invoice, expense, percentage, settlement, and financial changes with the responsible user and timestamps, plus an admin audit log view.
 

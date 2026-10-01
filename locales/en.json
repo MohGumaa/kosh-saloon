@@ -113,6 +113,113 @@
       "theme": "Theme"
     }
   },
+  "employees": {
+    "title": "Employees",
+    "description": "Everyone with an account in Kosh CRM.",
+    "columns": {
+      "name": "Name",
+      "username": "Username",
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "active": "Active",
+    "inactive": "Inactive",
+    "managePermissions": "Permissions",
+    "managePermissionsFor": "Permissions for {name}",
+    "back": "Back to employees",
+    "tabs": {
+      "label": "Employee sections",
+      "permissions": "Permissions"
+    }
+  },
+  "permissions": {
+    "title": "Permissions",
+    "description": "Choose what this user can see and do.",
+    "save": "Save permissions",
+    "saving": "Saving…",
+    "saved": "Permissions saved.",
+    "reset": "Reset to role defaults",
+    "adminNote": "Admins always have every permission. Nothing can be changed here.",
+    "selfNote": "You cannot change your own permissions.",
+    "lockedNote": "You can only change permissions you hold yourself. The others are locked.",
+    "groups": {
+      "employees": "Employees",
+      "services": "Services",
+      "invoices": "Invoices",
+      "expenses": "Salon expenses",
+      "employee_expenses": "Employee expenses",
+      "reports": "Reports",
+      "settlements": "Settlements",
+      "settings": "Settings",
+      "permissions": "Permissions"
+    },
+    "keys": {
+      "employees": {
+        "view": "View employees",
+        "create": "Create employees",
+        "edit": "Edit employees",
+        "delete": "Delete employees",
+        "activate": "Activate or deactivate employees"
+      },
+      "services": {
+        "view": "View services",
+        "create": "Create services",
+        "edit": "Edit services",
+        "delete": "Delete services"
+      },
+      "invoices": {
+        "view": "View invoices",
+        "create": "Create invoices",
+        "edit": "Edit invoices",
+        "delete": "Delete invoices",
+        "change_status": "Change invoice status"
+      },
+      "expenses": {
+        "view": "View salon expenses",
+        "create": "Create salon expenses",
+        "edit": "Edit salon expenses",
+        "delete": "Delete salon expenses"
+      },
+      "employee_expenses": {
+        "view": "View employee expenses",
+        "create": "Create employee expenses",
+        "edit": "Edit employee expenses",
+        "delete": "Delete employee expenses"
+      },
+      "reports": {
+        "view": "View reports",
+        "view_all_employees": "View all employees in reports",
+        "view_own_performance": "View own performance"
+      },
+      "settlements": {
+        "view": "View settlements",
+        "create": "Create settlements",
+        "approve": "Approve settlements",
+        "mark_paid": "Mark settlements as paid"
+      },
+      "settings": {
+        "view": "View settings",
+        "edit": "Edit settings",
+        "security": "Manage security settings"
+      },
+      "permissions": {
+        "manage": "Manage permissions"
+      }
+    },
+    "errors": {
+      "forbidden": "You are not allowed to change these permissions.",
+      "not_found": "This user no longer exists.",
+      "invalid_input": "The submitted permissions were not valid. Reload the page and try again.",
+      "unexpected": "An unexpected error occurred. Please try again."
+    }
+  },
+  "forbidden": {
+    "title": "Access denied",
+    "body": "You do not have permission to open this page. Ask the salon administrator if you need access.",
+    "back": "Back to dashboard"
+  },
   "errors": {
     "genericTitle": "Something went wrong",
     "generic": "An unexpected error occurred. Please try again.",

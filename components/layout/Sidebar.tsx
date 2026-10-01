@@ -7,11 +7,12 @@ import { logout } from "@/actions/auth";
 import { SidebarNav } from "@/components/layout/SidebarNav";
 
 interface SidebarContentProps {
+  navKeys: string[];
   onNavigate?: () => void;
 }
 
 /** Brand, navigation, and sign-out; shared by the desktop sidebar and mobile drawer. */
-export function SidebarContent({ onNavigate }: SidebarContentProps) {
+export function SidebarContent({ navKeys, onNavigate }: SidebarContentProps) {
   const t = useTranslations();
   const [pending, startTransition] = useTransition();
 
@@ -31,7 +32,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <SidebarNav onNavigate={onNavigate} />
+        <SidebarNav navKeys={navKeys} onNavigate={onNavigate} />
       </div>
 
       <div className="flex flex-col gap-3 border-t border-sidebar-border pt-3">
@@ -50,10 +51,10 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ navKeys }: { navKeys: string[] }) {
   return (
     <aside className="sticky top-0 hidden h-dvh w-sidebar shrink-0 border-e border-sidebar-border bg-sidebar text-sidebar-foreground lg:block">
-      <SidebarContent />
+      <SidebarContent navKeys={navKeys} />
     </aside>
   );
 }

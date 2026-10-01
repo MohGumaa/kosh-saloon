@@ -45,6 +45,33 @@ model User {
 
   sessions            Session[]
   passwordResetTokens PasswordResetToken[]
+  permissions         UserPermission[]
+}
+
+/// The catalog in `lib/auth/permissions.ts`; rows are inserted only by migrations.
+model Permission {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users UserPermission[]
+}
+
+/// A Supervisor or Staff user's own list. An ADMIN has every permission and no rows.
+model UserPermission {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([userId, permissionId])
+  @@index([userId])
 }
 
 /// Only the SHA-256 hash of the cookie token is stored.
