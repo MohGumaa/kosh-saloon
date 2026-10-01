@@ -8,3 +8,72 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum Role {
+  ADMIN
+  SUPERVISOR
+  STAFF
+}
+
+enum Language {
+  EN
+  AR
+}
+
+enum Theme {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+/// Employees are users. `username` and `email` are stored trimmed and lowercased.
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  username     String    @unique
+  email        String    @unique
+  phone        String?
+  passwordHash String
+  image        String?
+  role         Role      @default(STAFF)
+  isActive     Boolean   @default(true)
+  language     Language  @default(EN)
+  theme        Theme     @default(DARK)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  sessions            Session[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+/// Only the SHA-256 hash of the cookie token is stored.
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Single use; only the SHA-256 hash of the emailed token is stored.
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Fixed-window counters for sign-in and password reset requests.
+model RateLimit {
+  key     String   @id
+  count   Int
+  resetAt DateTime
+}

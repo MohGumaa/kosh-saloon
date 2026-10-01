@@ -101,7 +101,13 @@ PostgreSQL (cloud-hosted) via Prisma 7 with the `pg` driver adapter.
   role, or amount
 - STAFF queries are scoped to the session user's own records
 
-> TODO: the authentication library is not chosen yet.
+- Authentication is hand-rolled (no auth library): database sessions with a
+  hashed random token in the `kosh_session` httpOnly cookie, passwords hashed
+  with `node:crypto` scrypt (`lib/auth/`). Get the user with
+  `requireSession()` / `getCurrentSession()` from `lib/auth/current-user.ts` in
+  every protected page, layout, and Server Action; `proxy.ts` is only an
+  optimistic cookie check
+- Store usernames and emails trimmed and lowercased (`normalizeIdentifier`)
 
 ## Error Handling
 
@@ -152,9 +158,10 @@ of the switch; the skills and `ai-interaction.md` only point back here.
 - Run them via the project's test command (see Commands in `AGENTS.md`), not a
   hardcoded tool name.
 
-Current status: no test runner is configured, so there is no test gate yet.
-When `/tests` adds one, the expected binding is Vitest, `vi.mock()` for external
-dependencies (Prisma, auth), and `vi.useFakeTimers()` for time-dependent logic.
+Current status: Vitest is configured (`pnpm test`), so the test gate is on.
+Tests run in the `node` environment with the `@/` alias; use `vi.mock()` for
+external dependencies (Prisma, auth, email) and `vi.useFakeTimers()` for
+time-dependent logic.
 Financial calculations (shares, earnings, settlements, report totals) are prime
 in-scope logic.
 

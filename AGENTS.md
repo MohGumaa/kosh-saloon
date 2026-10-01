@@ -309,13 +309,17 @@ Package manager: pnpm (`pnpm-lock.yaml`).
 - Prisma schema check: `pnpm exec prisma validate`
 - Migrations: `pnpm exec prisma migrate dev` (local), `pnpm exec prisma migrate
   status` (before committing), `pnpm exec prisma migrate deploy` (production)
+- Seed first admin: `pnpm exec prisma db seed` (reads `SEED_ADMIN_*` from `.env`;
+  does nothing when an ADMIN already exists)
 
 Prisma reads `kosh_DATABASE_URL` (Vercel Prisma Postgres prefix) from `.env` (copy `.env.example`); config lives in
 `prisma.config.ts`.
 
-No test runner is configured, so there is no test gate yet. Run `/tests` or
-`$tests` to add one and update this section with the real test commands. No
-`Verify` command exists yet; `/ci` sets one up.
+- Test: `pnpm test` (Vitest, single run; fails when no tests are found)
+- Test watch: `pnpm test:watch`
+
+Unit tests use Vitest (`vitest.config.mts`) and live next to their source as
+`*.test.ts`. No `Verify` command exists yet; `/ci` sets one up.
 
 Browser testing is also opt-in. Run `/tests browser` or `$tests browser` to add
 or normalize a browser harness and document its exact command as `Browser

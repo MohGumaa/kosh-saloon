@@ -1,6 +1,8 @@
 import { getTranslations } from "next-intl/server";
+import { requireSession } from "@/lib/auth/current-user";
 
 export default async function DashboardPage() {
+  await requireSession();
   const t = await getTranslations("dashboard");
 
   return (

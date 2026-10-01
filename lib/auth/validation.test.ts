@@ -1,0 +1,81 @@
+import { describe, expect, it } from "vitest";
+import {
+  changePasswordSchema,
+  identifierWhere,
+  loginSchema,
+  resetPasswordSchema,
+  safeRedirectPath,
+} from "@/lib/auth/validation";
+
+describe("login identifier", () => {
+  it("trims and lowercases, matching email when it contains @", () => {
+    const parsed = loginSchema.parse({ identifier: "  Admin@Kosh.AE ", password: "x" });
+    expect(parsed.identifier).toBe("admin@kosh.ae");
+    expect(identifierWhere(parsed.identifier)).toEqual({ email: "admin@kosh.ae" });
+    expect(identifierWhere("sara")).toEqual({ username: "sara" });
+  });
+
+  it("rejects an empty identifier or password", () => {
+    expect(loginSchema.safeParse({ identifier: "   ", password: "x" }).success).toBe(false);
+    expect(loginSchema.safeParse({ identifier: "sara", password: "" }).success).toBe(false);
+  });
+});
+
+describe("new password rules", () => {
+  const base = { currentPassword: "old", newPassword: "12345678", confirmPassword: "12345678" };
+
+  it("accepts 8 to 128 characters", () => {
+    expect(changePasswordSchema.safeParse(base).success).toBe(true);
+    const long = "a".repeat(128);
+    expect(changePasswordSchema.safeParse({ ...base, newPassword: long, confirmPassword: long }).success).toBe(true);
+  });
+
+  it("rejects too short, too long, and mismatched confirmation", () => {
+    expect(changePasswordSchema.safeParse({ ...base, newPassword: "1234567", confirmPassword: "1234567" }).success).toBe(false);
+    const tooLong = "a".repeat(129);
+    expect(changePasswordSchema.safeParse({ ...base, newPassword: tooLong, confirmPassword: tooLong }).success).toBe(false);
+
+    const mismatch = resetPasswordSchema.safeParse({ token: "t", password: "12345678", confirmPassword: "12345679" });
+    expect(mismatch.success).toBe(false);
+    expect(mismatch.error?.issues[0].path).toEqual(["confirmPassword"]);
+  });
+});
+
+describe("safeRedirectPath", () => {
+  it("keeps same-origin paths", () => {
+    expect(safeRedirectPath("/dashboard")).toBe("/dashboard");
+    expect(safeRedirectPath("/account/password?x=1")).toBe("/account/password?x=1");
+    expect(safeRedirectPath("/reports?from=2026-01#top")).toBe("/reports?from=2026-01#top");
+  });
+
+  it("falls back for external, protocol-relative, and missing values", () => {
+    for (const value of ["//evil.com", "/\\evil.com", "https://evil.com", "evil", "", undefined, null]) {
+      expect(safeRedirectPath(value)).toBe("/dashboard");
+    }
+  });
+
+  it("falls back for paths that browsers resolve off-site", () => {
+    for (const value of ["/\t/evil.com", "/\n/evil.com", "/\r/evil.com", "/\t\\evil.com", "/a\\..\\evil.com", "/\u0000"]) {
+      expect(safeRedirectPath(value)).toBe("/dashboard");
+    }
+  });
+
+  it("falls back when dot segments collapse into a protocol-relative path", () => {
+    for (const value of ["/.//evil.com", "/..//evil.com", "/a/..//evil.com", "/%2e//evil.com", "/.///evil.com", "/%2E%2E//evil.com"]) {
+      expect(safeRedirectPath(value)).toBe("/dashboard");
+    }
+  });
+
+  it("never returns a path that resolves to another origin", () => {
+    const segments = ["", ".", "..", "%2e", "%2E%2e", "a", "evil.com", "@evil.com", ":80", "?", "#", "%2f", "%5c", " "];
+    for (const a of segments) {
+      for (const b of segments) {
+        for (const c of segments) {
+          const result = safeRedirectPath(`/${a}/${b}/${c}`);
+          expect(result.startsWith("//")).toBe(false);
+          expect(new URL(result, "https://app.example").origin).toBe("https://app.example");
+        }
+      }
+    }
+  });
+});

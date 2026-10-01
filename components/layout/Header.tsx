@@ -9,8 +9,9 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
 import { SidebarContent } from "@/components/layout/Sidebar";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/layout/ThemeSwitcher";
+import { UserMenu, type HeaderUser } from "@/components/layout/UserMenu";
 
-export function Header() {
+export function Header({ user }: { user: HeaderUser }) {
   const t = useTranslations("header");
   const direction = useDirection();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -38,6 +39,7 @@ export function Header() {
       <div className="ms-auto flex items-center gap-2">
         <LanguageSwitcher />
         <ThemeSwitcher />
+        <UserMenu user={user} />
       </div>
     </header>
   );

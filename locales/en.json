@@ -49,5 +49,85 @@
     "genericTitle": "Something went wrong",
     "generic": "An unexpected error occurred. Please try again.",
     "retry": "Try again"
+  },
+  "auth": {
+    "confirmPassword": "Confirm password",
+    "passwordHint": "8 to 128 characters.",
+    "backToLogin": "Back to sign in",
+    "login": {
+      "title": "Sign in",
+      "description": "Enter your username or email and password.",
+      "identifier": "Username or email",
+      "password": "Password",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "forgotPassword": "Forgot your password?",
+      "resetDone": "Your password was changed. Sign in with your new password."
+    },
+    "forgot": {
+      "title": "Reset your password",
+      "description": "Enter your username or email and we will email you a reset link.",
+      "submit": "Send reset link",
+      "submitting": "Sending…",
+      "sent": "If a matching active account exists, it will receive an email with a reset link within a few minutes. The link is valid for one hour."
+    },
+    "reset": {
+      "title": "Set a new password",
+      "description": "Choose a new password for your account. You will be signed out on all devices.",
+      "password": "New password",
+      "submit": "Set password",
+      "submitting": "Saving…",
+      "requestNew": "Request a new link"
+    },
+    "changePassword": {
+      "title": "Change password",
+      "description": "You will be signed out on all other devices.",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "submit": "Change password",
+      "submitting": "Saving…",
+      "success": "Your password was changed. Other devices have been signed out."
+    },
+    "userMenu": {
+      "label": "Account menu for {name}",
+      "changePassword": "Change password",
+      "signOut": "Sign out"
+    },
+    "roles": {
+      "ADMIN": "Admin",
+      "SUPERVISOR": "Supervisor",
+      "STAFF": "Staff"
+    },
+    "errors": {
+      "invalid_credentials": "Incorrect username, email, or password.",
+      "inactive": "This account is inactive. Contact the salon administrator.",
+      "rate_limited": "Too many attempts. Wait a few minutes and try again.",
+      "invalid_input": "Check this field.",
+      "invalid_token": "This reset link is invalid, has expired, or was already used.",
+      "wrong_current_password": "Your current password is incorrect.",
+      "password_mismatch": "The passwords do not match.",
+      "password_length": "Password must be 8 to 128 characters.",
+      "required": "This field is required.",
+      "unexpected": "An unexpected error occurred. Please try again."
+    }
+  },
+  "emails": {
+    "greeting": "Hello {name},",
+    "login": {
+      "subject": "New sign-in to Kosh CRM",
+      "body": "Your Kosh CRM account was just signed in to.",
+      "time": "Time: {time} (UTC)",
+      "ip": "IP address: {ip}",
+      "device": "Device: {device}",
+      "notYou": "If this was not you, reset your password now and tell the salon administrator.",
+      "resetLink": "Reset your password"
+    },
+    "reset": {
+      "subject": "Reset your Kosh CRM password",
+      "body": "Someone asked to reset the password for your Kosh CRM account. Use the link below to choose a new password.",
+      "expiry": "The link is valid for one hour and can be used once.",
+      "ignore": "If you did not ask for this, you can ignore this email; your password stays the same.",
+      "link": "Set a new password"
+    }
   }
 }
