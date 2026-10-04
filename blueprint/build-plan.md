@@ -22,7 +22,7 @@ Your features
 
 - [x] 7. Service management - Manage salon services with English/Arabic names, default prices, and active status.
 
-- [ ] 8. Invoice & transaction management - Create, view, edit, search, filter, pay, and cancel invoices while associating each transaction with an employee and service.
+- [x] 8. Invoice & transaction management - Create, view, edit, search, filter, pay, and cancel invoices while associating each transaction with an employee and service.
 
 - [ ] 9. Salon expense management - Record and manage salon expenses such as rent, utilities, supplies, maintenance, marketing, and other business costs.
 

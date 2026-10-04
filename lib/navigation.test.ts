@@ -73,4 +73,10 @@ describe("NAVIGATION", () => {
 
     expect(services?.href).toBe("/services");
   });
+
+  it("links the invoices item to the invoice list", () => {
+    const invoices = NAVIGATION.flatMap((group) => group.items).find((item) => item.key === "invoices");
+
+    expect(invoices?.href).toBe("/transactions");
+  });
 });

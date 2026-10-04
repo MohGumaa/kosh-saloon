@@ -267,6 +267,112 @@
       "unexpected": "An unexpected error occurred. Please try again."
     }
   },
+  "invoices": {
+    "title": "Invoices",
+    "description": "Every sold service, newest first.",
+    "new": "New invoice",
+    "back": "Back to invoices",
+    "columns": {
+      "invoiceNumber": "Invoice",
+      "employee": "Employee",
+      "service": "Service",
+      "amount": "Amount",
+      "status": "Status",
+      "date": "Date",
+      "createdBy": "Created by"
+    },
+    "statuses": {
+      "PAID": "Paid",
+      "UNPAID": "Unpaid",
+      "CANCELLED": "Cancelled"
+    },
+    "filters": {
+      "label": "Filter invoices",
+      "q": "Search",
+      "qPlaceholder": "Invoice number, employee, or service",
+      "employee": "Employee",
+      "service": "Service",
+      "status": "Status",
+      "all": "All",
+      "from": "From",
+      "to": "To",
+      "min": "Minimum amount",
+      "max": "Maximum amount",
+      "apply": "Apply filters",
+      "clear": "Clear filters"
+    },
+    "empty": {
+      "title": "No invoices yet",
+      "create": "Create the first invoice to start recording sales.",
+      "view": "No invoices have been recorded yet.",
+      "noMatchTitle": "No matching invoices",
+      "noMatch": "No invoices match these filters."
+    },
+    "pagination": {
+      "label": "Invoice pages",
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page {page} of {total}"
+    },
+    "fields": {
+      "employee": "Employee",
+      "service": "Service",
+      "amount": "Amount",
+      "amountHint": "In {currency}, up to two decimal places. Filled from the service's default price.",
+      "status": "Status",
+      "chooseEmployee": "Choose an employee",
+      "chooseService": "Choose a service",
+      "inactive": "{name} (inactive)"
+    },
+    "create": {
+      "title": "New invoice",
+      "description": "Record a sold service.",
+      "submit": "Create invoice",
+      "submitting": "Creating…",
+      "success": "Invoice created.",
+      "noServices": "There are no active services yet, so an invoice cannot be created.",
+      "addService": "Add a service"
+    },
+    "detail": {
+      "title": "Invoice details",
+      "description": "Who served which service, for how much, and when.",
+      "employee": "Employee",
+      "service": "Service",
+      "amount": "Amount",
+      "status": "Status",
+      "date": "Date",
+      "createdBy": "Created by",
+      "updatedAt": "Last updated"
+    },
+    "edit": {
+      "title": "Edit invoice",
+      "description": "Employee, service, and amount.",
+      "submit": "Save changes",
+      "submitting": "Saving…",
+      "success": "Invoice saved."
+    },
+    "statusForm": {
+      "title": "Payment status",
+      "description": "Mark this invoice paid or unpaid, or cancel it.",
+      "cancelledDescription": "This invoice is cancelled. It counts toward no revenue and cannot be changed.",
+      "markPaid": "Mark paid",
+      "markUnpaid": "Mark unpaid",
+      "cancel": "Cancel invoice",
+      "confirmCancel": "Yes, cancel invoice",
+      "keep": "Keep invoice",
+      "confirmText": "Cancelling is final. The invoice stays on record but counts toward no revenue.",
+      "submitting": "Saving…",
+      "success": "Invoice status saved.",
+      "finalDescription": "This invoice's status is final."
+    },
+    "errors": {
+      "forbidden": "You are not allowed to do this.",
+      "not_found": "This invoice no longer exists.",
+      "invalid_input": "The submitted details were not valid. Reload the page and try again.",
+      "cancelled": "This invoice is cancelled and cannot be changed.",
+      "unexpected": "An unexpected error occurred. Please try again."
+    }
+  },
   "permissions": {
     "title": "Permissions",
     "description": "Choose what this user can see and do.",
@@ -385,12 +491,20 @@
         "updated": "Updated service",
         "activated": "Activated service",
         "deactivated": "Deactivated service"
+      },
+      "invoice": {
+        "created": "Created invoice",
+        "updated": "Updated invoice",
+        "paid": "Marked invoice paid",
+        "unpaid": "Marked invoice unpaid",
+        "cancelled": "Cancelled invoice"
       }
     },
     "entities": {
       "User": "User",
       "SalonSettings": "Salon settings",
-      "Service": "Service"
+      "Service": "Service",
+      "Invoice": "Invoice"
     },
     "fields": {
       "name": "Full name",
@@ -411,7 +525,12 @@
       "image": "Profile image",
       "nameEn": "English name",
       "nameAr": "Arabic name",
-      "defaultPrice": "Default price"
+      "defaultPrice": "Default price",
+      "invoiceNumber": "Invoice number",
+      "employeeId": "Employee",
+      "serviceId": "Service",
+      "amount": "Amount",
+      "status": "Status"
     },
     "viewChanges": "View changes",
     "noChanges": "–",
@@ -555,7 +674,8 @@
       "unexpected": "An unexpected error occurred. Please try again.",
       "username_taken": "This username is already in use.",
       "email_taken": "This email is already in use.",
-      "name_taken": "Another service already uses this name."
+      "name_taken": "Another service already uses this name.",
+      "not_available": "This choice is not available. Choose an active one."
     }
   },
   "emails": {

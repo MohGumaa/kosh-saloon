@@ -47,6 +47,8 @@ model User {
   passwordResetTokens PasswordResetToken[]
   permissions         UserPermission[]
   auditLogs           AuditLog[]
+  invoices            Invoice[]            @relation("InvoiceEmployee")
+  createdInvoices     Invoice[]            @relation("InvoiceCreator")
 }
 
 /// The catalog in `lib/auth/permissions.ts`; rows are inserted only by migrations.
@@ -143,6 +145,36 @@ model Service {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  invoices Invoice[]
+}
+
+enum InvoiceStatus {
+  PAID
+  UNPAID
+  CANCELLED
+}
+
+/// One sold service. Never deleted: cancel instead, and CANCELLED is final. The
+/// server writes `invoiceNumber` (INV-000001) as one more than the highest stored one.
+/// The date of an invoice is `createdAt`.
+model Invoice {
+  id            String        @id @default(cuid())
+  invoiceNumber String        @unique
+  employeeId    String
+  employee      User          @relation("InvoiceEmployee", fields: [employeeId], references: [id], onDelete: Restrict)
+  serviceId     String
+  service       Service       @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  createdById   String
+  createdBy     User          @relation("InvoiceCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  amount        Decimal       @db.Decimal(10, 2)
+  status        InvoiceStatus
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([createdAt])
+  @@index([employeeId, createdAt])
+  @@index([serviceId])
 }
 
 /// Fixed-window counters for sign-in and password reset requests.

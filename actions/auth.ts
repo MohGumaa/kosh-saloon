@@ -51,6 +51,7 @@ export type AuthErrorCode =
   | "username_taken"
   | "email_taken"
   | "name_taken"
+  | "not_available"
   | "required"
   | "unexpected";
 
