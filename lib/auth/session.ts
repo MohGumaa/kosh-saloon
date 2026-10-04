@@ -20,6 +20,7 @@ export interface SessionUser {
   email: string;
   role: "ADMIN" | "SUPERVISOR" | "STAFF";
   language: "EN" | "AR";
+  image: string | null;
 }
 
 export interface ValidSession {
@@ -37,7 +38,9 @@ export async function validateSessionToken(token: string): Promise<ValidSession 
     select: {
       id: true,
       expiresAt: true,
-      user: { select: { id: true, name: true, email: true, role: true, language: true, isActive: true } },
+      user: {
+        select: { id: true, name: true, email: true, role: true, language: true, image: true, isActive: true },
+      },
     },
   });
   if (!session) return null;
@@ -47,8 +50,8 @@ export async function validateSessionToken(token: string): Promise<ValidSession 
     return null;
   }
 
-  const { id, name, email, role, language } = session.user;
-  return { sessionId: session.id, user: { id, name, email, role, language } };
+  const { id, name, email, role, language, image } = session.user;
+  return { sessionId: session.id, user: { id, name, email, role, language, image } };
 }
 
 /** Creates a session row and sets the cookie. Call only from a Server Action or Route Handler. */

@@ -135,7 +135,82 @@
     "back": "Back to employees",
     "tabs": {
       "label": "Employee sections",
-      "permissions": "Permissions"
+      "permissions": "Permissions",
+      "overview": "Overview",
+      "account": "Account"
+    },
+    "new": "New employee",
+    "fields": {
+      "name": "Full name",
+      "username": "Username",
+      "usernameHint": "Lowercase letters, digits, dot, underscore, or hyphen.",
+      "email": "Email",
+      "phone": "Phone",
+      "phoneHint": "Digits, spaces, and + - ( ) only. Leave empty for none.",
+      "role": "Role",
+      "password": "Password",
+      "newPassword": "New password"
+    },
+    "overview": {
+      "title": "Profile",
+      "description": "This employee's account information.",
+      "status": "Status",
+      "created": "Created",
+      "lastSignIn": "Last sign-in",
+      "never": "Never",
+      "noPhone": "Not set"
+    },
+    "create": {
+      "title": "New employee",
+      "description": "Create an account. Give the employee the password you set here.",
+      "submit": "Create employee",
+      "submitting": "Creating…",
+      "success": "Employee created."
+    },
+    "details": {
+      "title": "Account details",
+      "description": "Name, sign-in details, and role.",
+      "roleNote": "Changing the role resets this employee's permissions to the new role's defaults.",
+      "submit": "Save changes",
+      "submitting": "Saving…",
+      "success": "Employee details saved."
+    },
+    "image": {
+      "title": "Profile image",
+      "description": "PNG, JPEG, or WebP, up to 1 MB.",
+      "file": "Image file",
+      "upload": "Upload image",
+      "uploading": "Uploading…",
+      "remove": "Remove image",
+      "removing": "Removing…",
+      "uploaded": "Profile image saved.",
+      "removed": "Profile image removed."
+    },
+    "password": {
+      "title": "Set password",
+      "description": "The employee is signed out on every device and signs in with the new password.",
+      "submit": "Set password",
+      "submitting": "Saving…",
+      "success": "Password set. The employee was signed out."
+    },
+    "status": {
+      "title": "Account status",
+      "activeDescription": "This account can sign in. Deactivating it signs the employee out on every device.",
+      "inactiveDescription": "This account cannot sign in.",
+      "activate": "Activate account",
+      "deactivate": "Deactivate account",
+      "submitting": "Saving…",
+      "success": "Account status saved."
+    },
+    "errors": {
+      "forbidden": "You are not allowed to do this.",
+      "not_found": "This employee no longer exists.",
+      "invalid_input": "The submitted details were not valid. Reload the page and try again.",
+      "unexpected": "An unexpected error occurred. Please try again.",
+      "file_required": "Choose an image file first.",
+      "file_too_large": "The file is larger than 1 MB.",
+      "file_type": "The file must be a PNG, JPEG, or WebP image.",
+      "storage_unavailable": "Image storage is not configured. Contact the system administrator."
     }
   },
   "permissions": {
@@ -238,7 +313,12 @@
         "password_reset": "Reset password by email"
       },
       "user": {
-        "profile_updated": "Updated profile"
+        "profile_updated": "Updated profile",
+        "created": "Created employee",
+        "updated": "Updated employee",
+        "activated": "Activated employee",
+        "deactivated": "Deactivated employee",
+        "password_set": "Set employee password"
       },
       "permissions": {
         "updated": "Changed permissions"
@@ -264,7 +344,10 @@
       "logo": "Logo",
       "currency": "Currency",
       "taxRate": "Tax rate",
-      "employeeSharePercentage": "Employee share percentage"
+      "employeeSharePercentage": "Employee share percentage",
+      "username": "Username",
+      "role": "Role",
+      "image": "Profile image"
     },
     "viewChanges": "View changes",
     "noChanges": "–",
@@ -405,7 +488,9 @@
       "password_mismatch": "The passwords do not match.",
       "password_length": "Password must be 8 to 128 characters.",
       "required": "This field is required.",
-      "unexpected": "An unexpected error occurred. Please try again."
+      "unexpected": "An unexpected error occurred. Please try again.",
+      "username_taken": "This username is already in use.",
+      "email_taken": "This email is already in use."
     }
   },
   "emails": {

@@ -8,6 +8,11 @@ export const AUDIT_ACTIONS = [
   "auth.password_changed",
   "auth.password_reset",
   "user.profile_updated",
+  "user.created",
+  "user.updated",
+  "user.activated",
+  "user.deactivated",
+  "user.password_set",
   "permissions.updated",
   "settings.updated",
 ] as const;

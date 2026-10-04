@@ -96,7 +96,11 @@ export default async function AccountPage({ searchParams }: PageProps<"/account"
           <div className="absolute end-40 -bottom-24 size-48 rounded-full bg-white/10" />
         </div>
         <div className="flex flex-wrap items-end gap-x-5 gap-y-3 px-5 lg:px-7">
-          <UserAvatar name={user.name} className="relative -mt-12 size-24 text-3xl ring-4 ring-card lg:size-28" />
+          <UserAvatar
+            name={user.name}
+            image={user.image}
+            className="relative -mt-12 size-24 text-3xl ring-4 ring-card lg:size-28"
+          />
           <div className="min-w-0 flex-1 pb-1">
             <h1 className="text-2xl font-semibold break-words lg:text-3xl">{user.name}</h1>
             <p className="truncate text-sm text-muted-foreground">{user.email}</p>

@@ -1,6 +1,6 @@
 # Kosh CRM - Project Overview
 
-<!-- blueprint:source-hash d18efdb5c3bdc2595e527d949db21be750f820855ac9aeb8cefec0401b9c5089 -->
+<!-- blueprint:source-hash dd10618710b4fe4877cceb5b9a8bb413fa18260e8c89e58a7bbfaf16919f0c6c -->
 
 > Salon management and financial CRM for Kosh Salon: employees, services,
 > invoices, expenses, employee earnings, monthly settlements, reports,

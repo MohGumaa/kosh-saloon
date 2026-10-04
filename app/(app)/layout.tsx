@@ -15,7 +15,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       <Sidebar navKeys={navKeys} />
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Only display fields reach the client. */}
-        <Header user={{ name: user.name, role: user.role }} navKeys={navKeys} />
+        <Header user={{ name: user.name, role: user.role, image: user.image }} navKeys={navKeys} />
         <main className="flex-1 p-4 lg:p-6">{children}</main>
       </div>
     </div>

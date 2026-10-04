@@ -20,6 +20,7 @@ import { UserAvatar } from "@/components/layout/UserAvatar";
 export interface HeaderUser {
   name: string;
   role: "ADMIN" | "SUPERVISOR" | "STAFF";
+  image: string | null;
 }
 
 export function UserMenu({ user }: { user: HeaderUser }) {
@@ -37,7 +38,7 @@ export function UserMenu({ user }: { user: HeaderUser }) {
           />
         }
       >
-        <UserAvatar name={user.name} />
+        <UserAvatar name={user.name} image={user.image} />
         <span className="hidden max-w-40 flex-col text-start leading-tight sm:flex">
           <span className="truncate text-sm font-medium">{user.name}</span>
           <span className="truncate text-xs font-normal text-muted-foreground">{t(`roles.${user.role}`)}</span>
@@ -47,7 +48,7 @@ export function UserMenu({ user }: { user: HeaderUser }) {
       <DropdownMenuContent align="end" sideOffset={8} className="w-64 p-2">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="flex items-center gap-3 px-2 py-2">
-            <UserAvatar name={user.name} className="size-10" />
+            <UserAvatar name={user.name} image={user.image} className="size-10" />
             <div className="min-w-0">
               <div className="truncate text-sm text-foreground">{user.name}</div>
               <div className="font-normal">{t(`roles.${user.role}`)}</div>

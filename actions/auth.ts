@@ -48,6 +48,8 @@ export type AuthErrorCode =
   | "wrong_current_password"
   | "password_mismatch"
   | "password_length"
+  | "username_taken"
+  | "email_taken"
   | "required"
   | "unexpected";
 

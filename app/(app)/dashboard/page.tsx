@@ -55,7 +55,7 @@ export default async function DashboardPage() {
       <section className={cn(panelClass, "relative overflow-hidden")}>
         <div aria-hidden className="absolute -end-16 -top-20 size-56 rounded-full bg-primary-soft blur-2xl" />
         <div className="relative flex flex-wrap items-center gap-4">
-          <UserAvatar name={user.name} className="size-14 text-lg" />
+          <UserAvatar name={user.name} image={user.image} className="size-14 text-lg" />
           <div className="min-w-0 flex-1">
             <p className="text-sm text-muted-foreground">
               <LocalDateTime iso={new Date().toISOString()} dateStyle="full" />
@@ -110,7 +110,7 @@ export default async function DashboardPage() {
         <section className={panelClass}>
           <h2 className="text-lg font-semibold">{t("account.title")}</h2>
           <div className="mt-5 flex items-center gap-3">
-            <UserAvatar name={user.name} className="size-12 text-base" />
+            <UserAvatar name={user.name} image={user.image} className="size-12 text-base" />
             <div className="min-w-0">
               <div className="truncate font-medium">{user.name}</div>
               <div className="truncate text-sm text-muted-foreground">{user.email}</div>

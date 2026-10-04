@@ -37,10 +37,15 @@ export const changePasswordSchema = z
   })
   .refine((data) => data.newPassword === data.confirmPassword, { path: ["confirmPassword"] });
 
+/** Never contains `@`, which marks an identifier as an email at sign-in. */
+export const usernameSchema = identifierSchema.pipe(z.string().regex(/^[a-z0-9._-]+$/));
+
+export const emailSchema = identifierSchema.pipe(z.email());
+
 export const seedAdminSchema = z.object({
   name: z.string().trim().min(1).max(100),
-  username: identifierSchema.pipe(z.string().regex(/^[a-z0-9._-]+$/)),
-  email: identifierSchema.pipe(z.email()),
+  username: usernameSchema,
+  email: emailSchema,
   password: passwordSchema,
 });
 

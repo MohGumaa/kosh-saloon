@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { UserPlus } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { UserAvatar } from "@/components/layout/UserAvatar";
 import { requirePermission } from "@/lib/auth/authorize";
@@ -13,7 +14,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const COLUMNS = ["name", "username", "email", "role", "status"] as const;
 
-// Read-only until feature 6 (employee management) adds create, edit, and the other columns.
+const linkClass =
+  "rounded-md font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring";
+
+// The Revenue column arrives with invoices (feature 8).
 export default async function EmployeesPage() {
   const { permissions } = await requirePermission("employees.view");
   const canManagePermissions = permissions.has("permissions.manage");
@@ -22,15 +26,26 @@ export default async function EmployeesPage() {
     getTranslations("auth.roles"),
     db.user.findMany({
       orderBy: { name: "asc" },
-      select: { id: true, name: true, username: true, email: true, role: true, isActive: true },
+      select: { id: true, name: true, username: true, email: true, image: true, role: true, isActive: true },
     }),
   ]);
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold lg:text-3xl">{t("title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t("description")}</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold lg:text-3xl">{t("title")}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t("description")}</p>
+        </div>
+        {permissions.has("employees.create") && (
+          <Link
+            href="/employees/new"
+            className="flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground outline-none hover:bg-primary/80 focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            <UserPlus aria-hidden className="size-4" />
+            {t("new")}
+          </Link>
+        )}
       </div>
 
       {/* min-w-0 lets the card shrink below the table, so the table scrolls instead of widening the page. */}
@@ -56,8 +71,10 @@ export default async function EmployeesPage() {
                 <tr key={user.id}>
                   <th scope="row" className="px-3 py-3 text-start font-medium">
                     <div className="flex items-center gap-3">
-                      <UserAvatar name={user.name} className="size-8 text-xs" />
-                      <span className="break-words">{user.name}</span>
+                      <UserAvatar name={user.name} image={user.image} className="size-8 text-xs" />
+                      <Link href={`/employees/${user.id}`} className={cn(linkClass, "break-words")}>
+                        {user.name}
+                      </Link>
                     </div>
                   </th>
                   <td className="px-3 py-3">
@@ -81,9 +98,9 @@ export default async function EmployeesPage() {
                     <td className="px-3 py-3 text-end">
                       {user.role !== "ADMIN" && (
                         <Link
-                          href={`/employees/${user.id}`}
+                          href={`/employees/${user.id}?tab=permissions`}
                           aria-label={t("managePermissionsFor", { name: user.name })}
-                          className="rounded-md font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring"
+                          className={cn(linkClass, "text-primary")}
                         >
                           {t("managePermissions")}
                         </Link>

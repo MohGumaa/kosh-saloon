@@ -18,7 +18,7 @@ Your features
 
 - [x] 5. Salon settings - Manage salon name, license number, address, phone, email, logo, tax ID, currency, tax rate, and global employee share percentage.
 
-- [ ] 6. Employee management - Create, edit, activate/deactivate, view, and manage employee accounts, profiles, images, roles, and account details.
+- [x] 6. Employee management - Create, edit, activate/deactivate, view, and manage employee accounts, profiles, images, roles, and account details.
 
 - [ ] 7. Service management - Manage salon services with English/Arabic names, default prices, and active status.
 
