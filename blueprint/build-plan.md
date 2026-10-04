@@ -20,7 +20,7 @@ Your features
 
 - [x] 6. Employee management - Create, edit, activate/deactivate, view, and manage employee accounts, profiles, images, roles, and account details.
 
-- [ ] 7. Service management - Manage salon services with English/Arabic names, default prices, and active status.
+- [x] 7. Service management - Manage salon services with English/Arabic names, default prices, and active status.
 
 - [ ] 8. Invoice & transaction management - Create, view, edit, search, filter, pay, and cancel invoices while associating each transaction with an employee and service.
 

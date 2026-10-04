@@ -42,7 +42,7 @@ export const NAVIGATION: NavGroup[] = [
     key: "manage",
     items: [
       { key: "employees", icon: Users, href: "/employees", permissions: ["employees.view"] },
-      { key: "services", icon: Scissors, permissions: ["services.view"] },
+      { key: "services", icon: Scissors, href: "/services", permissions: ["services.view"] },
     ],
   },
   {

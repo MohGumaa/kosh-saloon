@@ -133,6 +133,18 @@ model SalonSettings {
   updatedAt               DateTime @updatedAt
 }
 
+/// A catalog entry. Never deleted: deactivate instead. `nameEn` is also unique
+/// case-insensitively, which the server checks before writing.
+model Service {
+  id           String   @id @default(cuid())
+  nameEn       String   @unique
+  nameAr       String   @unique
+  defaultPrice Decimal  @db.Decimal(10, 2)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 /// Fixed-window counters for sign-in and password reset requests.
 model RateLimit {
   key     String   @id

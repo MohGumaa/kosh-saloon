@@ -66,3 +66,11 @@ describe("visibleNavGroups", () => {
     expect(groups[0].items.map((item) => item.key)).toEqual(["dashboard"]);
   });
 });
+
+describe("NAVIGATION", () => {
+  it("links the services item to the catalog", () => {
+    const services = NAVIGATION.flatMap((group) => group.items).find((item) => item.key === "services");
+
+    expect(services?.href).toBe("/services");
+  });
+});

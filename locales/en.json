@@ -213,6 +213,60 @@
       "storage_unavailable": "Image storage is not configured. Contact the system administrator."
     }
   },
+  "services": {
+    "title": "Services",
+    "description": "The salon's service catalog and default prices.",
+    "columns": {
+      "nameEn": "English name",
+      "nameAr": "Arabic name",
+      "defaultPrice": "Default price",
+      "status": "Status"
+    },
+    "active": "Active",
+    "inactive": "Inactive",
+    "new": "New service",
+    "back": "Back to services",
+    "empty": {
+      "title": "No services yet",
+      "create": "Add the salon's first service to start the catalog.",
+      "view": "No services have been added yet."
+    },
+    "fields": {
+      "nameEn": "English name",
+      "nameAr": "Arabic name",
+      "defaultPrice": "Default price",
+      "defaultPriceHint": "In {currency}, up to two decimal places."
+    },
+    "create": {
+      "title": "New service",
+      "description": "Add a service to the catalog with its name in both languages.",
+      "submit": "Create service",
+      "submitting": "Creating…",
+      "success": "Service created."
+    },
+    "edit": {
+      "title": "Edit service",
+      "description": "Names and default price.",
+      "submit": "Save changes",
+      "submitting": "Saving…",
+      "success": "Service saved."
+    },
+    "status": {
+      "title": "Service status",
+      "activeDescription": "This service is active.",
+      "inactiveDescription": "This service is inactive. It stays in the catalog and in past records.",
+      "activate": "Activate service",
+      "deactivate": "Deactivate service",
+      "submitting": "Saving…",
+      "success": "Service status saved."
+    },
+    "errors": {
+      "forbidden": "You are not allowed to do this.",
+      "not_found": "This service no longer exists.",
+      "invalid_input": "The submitted details were not valid. Reload the page and try again.",
+      "unexpected": "An unexpected error occurred. Please try again."
+    }
+  },
   "permissions": {
     "title": "Permissions",
     "description": "Choose what this user can see and do.",
@@ -325,11 +379,18 @@
       },
       "settings": {
         "updated": "Changed salon settings"
+      },
+      "service": {
+        "created": "Created service",
+        "updated": "Updated service",
+        "activated": "Activated service",
+        "deactivated": "Deactivated service"
       }
     },
     "entities": {
       "User": "User",
-      "SalonSettings": "Salon settings"
+      "SalonSettings": "Salon settings",
+      "Service": "Service"
     },
     "fields": {
       "name": "Full name",
@@ -347,7 +408,10 @@
       "employeeSharePercentage": "Employee share percentage",
       "username": "Username",
       "role": "Role",
-      "image": "Profile image"
+      "image": "Profile image",
+      "nameEn": "English name",
+      "nameAr": "Arabic name",
+      "defaultPrice": "Default price"
     },
     "viewChanges": "View changes",
     "noChanges": "–",
@@ -490,7 +554,8 @@
       "required": "This field is required.",
       "unexpected": "An unexpected error occurred. Please try again.",
       "username_taken": "This username is already in use.",
-      "email_taken": "This email is already in use."
+      "email_taken": "This email is already in use.",
+      "name_taken": "Another service already uses this name."
     }
   },
   "emails": {

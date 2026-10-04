@@ -50,6 +50,7 @@ export type AuthErrorCode =
   | "password_length"
   | "username_taken"
   | "email_taken"
+  | "name_taken"
   | "required"
   | "unexpected";
 

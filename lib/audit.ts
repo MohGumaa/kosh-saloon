@@ -15,12 +15,16 @@ export const AUDIT_ACTIONS = [
   "user.password_set",
   "permissions.updated",
   "settings.updated",
+  "service.created",
+  "service.updated",
+  "service.activated",
+  "service.deactivated",
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
 /** Prisma model names an entry can point at; labels live under `audit.entities`. */
-export const AUDIT_ENTITIES = ["User", "SalonSettings"] as const;
+export const AUDIT_ENTITIES = ["User", "SalonSettings", "Service"] as const;
 
 export type AuditEntity = (typeof AUDIT_ENTITIES)[number];
 
