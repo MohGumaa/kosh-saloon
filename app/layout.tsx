@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import { Inter, Tajawal } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
@@ -19,6 +20,26 @@ const tajawal = Tajawal({
   weight: ["400", "500", "700"],
 });
 
+/**
+ * One stack for both languages. Inter has no Arabic glyphs, so the browser draws Latin text
+ * in Inter and Arabic text in Tajawal, whatever the page language. Both real fonts come
+ * before both metric fallbacks: Inter's fallback is Arial, which has Arabic glyphs and
+ * would otherwise draw Arabic text before Tajawal.
+ */
+function bodyFontStack(...fonts: { style: { fontFamily: string } }[]): string {
+  const families = fonts.map((font) => font.style.fontFamily.split(",").map((name) => name.trim()));
+  return [
+    ...families.map(([primary]) => primary),
+    ...families.flatMap(([, ...fallbacks]) => fallbacks),
+    "system-ui",
+    "-apple-system",
+    '"Segoe UI"',
+    "sans-serif",
+  ].join(", ");
+}
+
+const BODY_FONT = bodyFontStack(inter, tajawal);
+
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("metadata");
   return { title: t("title"), description: t("description") };
@@ -35,6 +56,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       lang={locale}
       dir={dir}
       className={`${inter.variable} ${tajawal.variable} h-full antialiased`}
+      style={{ "--font-body": BODY_FONT } as CSSProperties}
       suppressHydrationWarning
     >
       <body className="min-h-full">
