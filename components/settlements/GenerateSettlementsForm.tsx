@@ -13,8 +13,9 @@ export function GenerateSettlementsForm({ month }: { month: string }) {
   const t = useTranslations("settlements");
   const [state, action, pending] = useActionState<SettlementFormState, FormData>(generateSettlements, null);
   const { messageRef } = useFocusOnError(state);
-  const created = state?.success ? (state.created ?? 0) : 0;
-  useSuccessToast(state, created > 0 ? t("generate.success", { count: created }) : t("generate.nothing"));
+  // Only a generate that created settlements gets a toast; "nothing to generate" stays inline.
+  const nothing = state?.success ? state.nothing : undefined;
+  useSuccessToast(nothing ? null : state, t("generate.success", { count: state?.success ? (state.created ?? 0) : 0 }));
   const failure = state && !state.success ? state : null;
 
   return (
@@ -28,6 +29,9 @@ export function GenerateSettlementsForm({ month }: { month: string }) {
       <Button type="submit" size="lg" disabled={pending} aria-describedby="generate-hint" className="h-11 rounded-xl px-5">
         {pending ? t("generate.submitting") : t("generate.submit")}
       </Button>
+      <p role="status" className="text-sm font-medium empty:hidden">
+        {nothing && t(`generate.nothing.${nothing}`)}
+      </p>
       <p id="generate-hint" className="text-sm text-muted-foreground">
         {t("generate.hint")}
       </p>

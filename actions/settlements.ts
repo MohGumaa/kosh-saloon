@@ -25,7 +25,13 @@ import {
 export type SettlementErrorCode = "forbidden" | "not_found" | "invalid_input" | "invalid_state" | "unexpected";
 
 export type SettlementFormState =
-  | { success: true; /** How many settlements a generate created. */ created?: number }
+  | {
+      success: true;
+      /** How many settlements a generate created. */
+      created?: number;
+      /** Why a generate created nothing: no activity in the month, or everyone is already settled. */
+      nothing?: "no_activity" | "already_settled";
+    }
   | { success: false; error: SettlementErrorCode }
   | null;
 
@@ -89,20 +95,20 @@ function revalidateSettlement(id?: string) {
 export async function generateSettlements(_prev: SettlementFormState, formData: FormData): Promise<SettlementFormState> {
   const { user: actor } = await requireSession();
   const month = formData.get("month");
-  let created = 0;
+  let result: SettlementFormState;
 
   try {
     if (!(await mayManage(actor, "settlements.create"))) return fail("forbidden");
     if (typeof month !== "string" || !isSettleableMonth(month, salonMonth())) return fail("invalid_input");
     const { periodStart, periodEnd } = monthPeriod(month);
 
-    created = await db.$transaction(async (tx) => {
+    result = await db.$transaction(async (tx): Promise<SettlementFormState> => {
       const [revenue, expenses] = await Promise.all([
         tx.invoice.groupBy({ by: ["employeeId"], where: paidRevenueWhere(month) }),
         tx.employeeExpense.groupBy({ by: ["employeeId"], where: expensesWhere(month) }),
       ]);
       const active = [...new Set([...revenue, ...expenses].map((row) => row.employeeId))];
-      if (active.length === 0) return 0;
+      if (active.length === 0) return { success: true, created: 0, nothing: "no_activity" };
 
       const existing = await tx.employeeSettlement.findMany({
         where: { periodStart, employeeId: { in: active } },
@@ -110,7 +116,7 @@ export async function generateSettlements(_prev: SettlementFormState, formData: 
       });
       const settled = new Set(existing.map((row) => row.employeeId));
       const pending = active.filter((id) => !settled.has(id));
-      if (pending.length === 0) return 0;
+      if (pending.length === 0) return { success: true, created: 0, nothing: "already_settled" };
 
       const [settings, employees] = await Promise.all([
         getSalonSettings(tx),
@@ -133,7 +139,7 @@ export async function generateSettlements(_prev: SettlementFormState, formData: 
           tx,
         );
       }
-      return employees.length;
+      return { success: true, created: employees.length };
     });
   } catch (error) {
     // Another generate for the same month got there first.
@@ -143,7 +149,7 @@ export async function generateSettlements(_prev: SettlementFormState, formData: 
   }
 
   revalidateSettlement();
-  return { success: true, created };
+  return result;
 }
 
 const AUDIT_ACTION = {

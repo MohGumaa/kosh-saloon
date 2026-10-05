@@ -143,7 +143,7 @@ describe("generateSettlements", () => {
   it("succeeds with nothing created when every active employee is settled", async () => {
     mocks.tx.employeeSettlement.findMany.mockResolvedValue([{ employeeId: "emp1" }, { employeeId: "emp2" }, { employeeId: "emp3" }]);
 
-    expect(await generate()).toEqual({ success: true, created: 0 });
+    expect(await generate()).toEqual({ success: true, created: 0, nothing: "already_settled" });
     expect(mocks.tx.employeeSettlement.create).not.toHaveBeenCalled();
   });
 
@@ -151,7 +151,7 @@ describe("generateSettlements", () => {
     mocks.tx.invoice.groupBy.mockResolvedValue([]);
     mocks.tx.employeeExpense.groupBy.mockResolvedValue([]);
 
-    expect(await generate()).toEqual({ success: true, created: 0 });
+    expect(await generate()).toEqual({ success: true, created: 0, nothing: "no_activity" });
     expect(mocks.tx.employeeSettlement.findMany).not.toHaveBeenCalled();
   });
 

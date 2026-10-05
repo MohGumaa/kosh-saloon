@@ -625,9 +625,12 @@
     "generate": {
       "submit": "Generate settlements",
       "submitting": "Generating…",
-      "hint": "Creates a draft for each employee with paid invoices or deductions this month who has none yet.",
+      "hint": "Creates a draft for each employee with paid invoices or deductions this month who has none yet. The current month can be generated once it ends.",
       "success": "{count, plural, one {# settlement generated.} other {# settlements generated.}}",
-      "nothing": "Nothing to generate. Every employee with activity this month already has a settlement."
+      "nothing": {
+        "no_activity": "Nothing to generate. No employee had paid invoices or deductions this month.",
+        "already_settled": "Nothing new to generate. Every employee with activity this month already has a settlement."
+      }
     },
     "detail": {
       "back": "All settlements",
