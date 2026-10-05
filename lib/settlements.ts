@@ -3,12 +3,14 @@
  * and which status changes a viewer may make. No database import, so pages, actions,
  * and tests can use it.
  */
+import { z } from "zod";
 import { Prisma } from "@/generated/prisma/client";
 import type { PermissionKey } from "@/lib/auth/permissions";
 import type { SessionUser } from "@/lib/auth/session";
 import { calculateEarnings, shiftMonth } from "@/lib/earnings";
 import { employeeExpenseIdSchema } from "@/lib/employee-expenses";
-import { dateValue } from "@/lib/expenses";
+import { normalizeDigitsAndSpaces } from "@/lib/auth/validation";
+import { DESCRIPTION_MAX, MULTI_LINE_TEXT, dateValue } from "@/lib/expenses";
 import { isOwnScope } from "@/lib/invoices";
 
 type DecimalInput = Prisma.Decimal | string | number;
@@ -111,4 +113,51 @@ export function canRunSettlementAction(
 ): boolean {
   const transition = SETTLEMENT_TRANSITIONS[action];
   return transition.from.includes(status) && canManageSettlements(permissions, user, transition.permission);
+}
+
+/** The longest adjustment reason. */
+export const ADJUSTMENT_REASON_MAX = DESCRIPTION_MAX;
+
+/**
+ * A signed, nonzero amount with at most eight whole digits and two decimal places, kept a
+ * string so it reaches Prisma without passing through a float. Accepts Arabic-Indic digits,
+ * the Arabic decimal separator, and the Unicode minus sign.
+ */
+export const adjustmentAmountSchema = z
+  .string()
+  .transform((value) => normalizeDigitsAndSpaces(value).replace("٫", ".").replace("−", "-").trim())
+  .pipe(
+    z
+      .string()
+      .regex(/^-?\d{1,8}(\.\d{1,2})?$/)
+      // Runs even when the pattern failed, so it must not throw on any string.
+      .refine((value) => Number(value) !== 0)
+      .transform((value) => new Prisma.Decimal(value).toString()),
+  );
+
+/** Why the paid settlement is corrected: required plain text, line breaks allowed. */
+export const adjustmentReasonSchema = z
+  .string()
+  .transform((value) => value.replace(/\r\n?/g, "\n").trim())
+  .pipe(z.string().min(1).max(ADJUSTMENT_REASON_MAX).regex(MULTI_LINE_TEXT));
+
+/** A correction to the PAID settlement `id`. The employee always comes from that settlement. */
+export const adjustmentSchema = z.object({
+  id: settlementIdSchema,
+  amount: adjustmentAmountSchema,
+  reason: adjustmentReasonSchema,
+});
+
+/** Only a PAID settlement is corrected by an adjustment; earlier ones are recalculated. */
+export function canAdjustSettlement(
+  status: SettlementStatusValue,
+  permissions: ReadonlySet<PermissionKey>,
+  user: Pick<SessionUser, "role">,
+): boolean {
+  return status === "PAID" && canManageSettlements(permissions, user, "settlements.mark_paid");
+}
+
+/** The exact total of the adjustments a settlement includes. */
+export function sumAdjustments(amounts: readonly DecimalInput[]): Prisma.Decimal {
+  return amounts.reduce<Prisma.Decimal>((total, amount) => total.plus(amount), new Prisma.Decimal(0));
 }

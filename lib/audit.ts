@@ -36,6 +36,7 @@ export const AUDIT_ACTIONS = [
   "settlement.calculated",
   "settlement.approved",
   "settlement.paid",
+  "settlement.adjustment_created",
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -49,6 +50,7 @@ export const AUDIT_ENTITIES = [
   "SalonExpense",
   "EmployeeExpense",
   "EmployeeSettlement",
+  "SettlementAdjustment",
 ] as const;
 
 export type AuditEntity = (typeof AUDIT_ENTITIES)[number];

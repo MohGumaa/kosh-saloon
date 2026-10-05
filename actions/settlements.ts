@@ -12,17 +12,24 @@ import { isOwnScope } from "@/lib/invoices";
 import { getSalonSettings } from "@/lib/settings";
 import {
   SETTLEMENT_TRANSITIONS,
+  adjustmentSchema,
   calculateSettlement,
   expensesWhere,
   isSettleableMonth,
   monthOf,
   monthPeriod,
   settlementIdSchema,
+  sumAdjustments,
   type SettlementAction,
 } from "@/lib/settlements";
 
 /** Translation keys under `settlements.errors`. */
 export type SettlementErrorCode = "forbidden" | "not_found" | "invalid_input" | "invalid_state" | "unexpected";
+
+/** The adjustment form's fields; their error codes are `auth.errors` keys, as `FormField` shows them. */
+export type AdjustmentField = "amount" | "reason";
+
+export type AdjustmentFieldErrors = Partial<Record<AdjustmentField, "required" | "invalid_input">>;
 
 export type SettlementFormState =
   | {
@@ -32,7 +39,7 @@ export type SettlementFormState =
       /** Why a generate created nothing: no activity in the month, or everyone is already settled. */
       nothing?: "no_activity" | "already_settled";
     }
-  | { success: false; error: SettlementErrorCode }
+  | { success: false; error: SettlementErrorCode; fieldErrors?: AdjustmentFieldErrors }
   | null;
 
 type Tx = Prisma.TransactionClient;
@@ -50,6 +57,9 @@ const VALUE_FIELDS = [
 
 const fail = (error: SettlementErrorCode): SettlementFormState => ({ success: false, error });
 
+/** Thrown inside a transaction to roll back its writes when the settlement moved meanwhile. */
+class StaleSettlementError extends Error {}
+
 const isUniqueViolation = (error: unknown) =>
   typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
 
@@ -63,12 +73,35 @@ function auditValues(values: SettlementValues) {
   return Object.fromEntries(Object.entries(values).map(([key, value]) => [key, value.toFixed(2)]));
 }
 
+/**
+ * Claims the employee's pending adjustments from earlier months for this settlement and
+ * returns every adjustment it now includes. A claimed adjustment is never released, and
+ * the null condition means one cannot land on two settlements.
+ */
+async function applyAdjustments(tx: Tx, settlement: { id: string; employeeId: string; periodStart: Date }) {
+  await tx.settlementAdjustment.updateMany({
+    where: {
+      employeeId: settlement.employeeId,
+      appliedSettlementId: null,
+      sourceSettlement: { periodStart: { lt: settlement.periodStart } },
+    },
+    data: { appliedSettlementId: settlement.id },
+  });
+  const applied = await tx.settlementAdjustment.findMany({
+    where: { appliedSettlementId: settlement.id },
+    select: { id: true, amount: true },
+    orderBy: { createdAt: "asc" },
+  });
+  return { ids: applied.map((row) => row.id), total: sumAdjustments(applied.map((row) => row.amount)) };
+}
+
 /** Fresh values for one employee's month, read on the transaction client. */
 async function freshValues(
   tx: Tx,
   employee: { id: string; sharePercentage: Prisma.Decimal | null },
   month: string,
   salonPercentage: Prisma.Decimal,
+  adjustments: Prisma.Decimal,
 ): Promise<SettlementValues> {
   const [revenue, expenses] = await Promise.all([
     tx.invoice.aggregate({ where: { employeeId: employee.id, ...paidRevenueWhere(month) }, _sum: { amount: true } }),
@@ -78,8 +111,7 @@ async function freshValues(
     paidRevenue: revenue._sum.amount ?? 0,
     sharePercentage: effectiveSharePercentage(employee.sharePercentage, salonPercentage).value,
     expenses: expenses._sum.amount ?? 0,
-    // Adjustments arrive with historical settlement protection.
-    adjustments: 0,
+    adjustments,
   });
 }
 
@@ -89,8 +121,9 @@ function revalidateSettlement(id?: string) {
 }
 
 /**
- * Creates a DRAFT for every user with PAID revenue or employee expenses in a completed
- * month who has none yet. Existing settlements are left as they are.
+ * Creates a DRAFT for every user with PAID revenue, employee expenses, or adjustments
+ * pending from an earlier month who has none yet for a completed month, and applies those
+ * adjustments. Existing settlements are left as they are.
  */
 export async function generateSettlements(_prev: SettlementFormState, formData: FormData): Promise<SettlementFormState> {
   const { user: actor } = await requireSession();
@@ -103,11 +136,16 @@ export async function generateSettlements(_prev: SettlementFormState, formData: 
     const { periodStart, periodEnd } = monthPeriod(month);
 
     result = await db.$transaction(async (tx): Promise<SettlementFormState> => {
-      const [revenue, expenses] = await Promise.all([
+      const [revenue, expenses, pendingAdjustments] = await Promise.all([
         tx.invoice.groupBy({ by: ["employeeId"], where: paidRevenueWhere(month) }),
         tx.employeeExpense.groupBy({ by: ["employeeId"], where: expensesWhere(month) }),
+        // A pending correction is never stranded: its employee gets a settlement to carry it.
+        tx.settlementAdjustment.groupBy({
+          by: ["employeeId"],
+          where: { appliedSettlementId: null, sourceSettlement: { periodStart: { lt: periodStart } } },
+        }),
       ]);
-      const active = [...new Set([...revenue, ...expenses].map((row) => row.employeeId))];
+      const active = [...new Set([...revenue, ...expenses, ...pendingAdjustments].map((row) => row.employeeId))];
       if (active.length === 0) return { success: true, created: 0, nothing: "no_activity" };
 
       const existing = await tx.employeeSettlement.findMany({
@@ -123,18 +161,35 @@ export async function generateSettlements(_prev: SettlementFormState, formData: 
         tx.user.findMany({ where: { id: { in: pending } }, select: { id: true, sharePercentage: true } }),
       ]);
       for (const employee of employees) {
-        const values = await freshValues(tx, employee, month, settings.employeeSharePercentage);
+        let values = await freshValues(tx, employee, month, settings.employeeSharePercentage, sumAdjustments([]));
         const settlement = await tx.employeeSettlement.create({
           data: { ...values, employeeId: employee.id, periodStart, periodEnd, status: "DRAFT", createdById: actor.id },
           select: { id: true },
         });
+        // Adjustments are claimed by settlement id, so they are applied once the row exists.
+        const adjustments = await applyAdjustments(tx, { id: settlement.id, employeeId: employee.id, periodStart });
+        if (adjustments.ids.length > 0) {
+          values = calculateSettlement({
+            paidRevenue: values.totalRevenue,
+            sharePercentage: values.sharePercentage,
+            expenses: values.totalExpenses,
+            adjustments: adjustments.total,
+          });
+          await tx.employeeSettlement.update({ where: { id: settlement.id }, data: values });
+        }
         await recordAudit(
           {
             userId: actor.id,
             action: "settlement.generated",
             entity: "EmployeeSettlement",
             entityId: settlement.id,
-            newValue: { employeeId: employee.id, month, status: "DRAFT", ...auditValues(values) },
+            newValue: {
+              employeeId: employee.id,
+              month,
+              status: "DRAFT",
+              ...auditValues(values),
+              ...(adjustments.ids.length > 0 && { appliedAdjustmentIds: adjustments.ids }),
+            },
           },
           tx,
         );
@@ -192,15 +247,20 @@ async function transition(action: SettlementAction, formData: FormData): Promise
       let oldValue: Prisma.InputJsonObject = { status: stored.status };
       let newValue: Prisma.InputJsonObject = { status: to };
       if (action === "recalculate") {
-        const [settings, employee] = await Promise.all([
+        const [settings, employee, adjustments] = await Promise.all([
           getSalonSettings(tx),
           tx.user.findUniqueOrThrow({ where: { id: stored.employeeId }, select: { id: true, sharePercentage: true } }),
+          applyAdjustments(tx, { id: id.data, employeeId: stored.employeeId, periodStart: stored.periodStart }),
         ]);
-        const values = await freshValues(tx, employee, month, settings.employeeSharePercentage);
+        const values = await freshValues(tx, employee, month, settings.employeeSharePercentage, adjustments.total);
         const before = Object.fromEntries(VALUE_FIELDS.map((field) => [field, stored[field]])) as SettlementValues;
         data = { ...data, ...values };
         oldValue = { ...oldValue, ...auditValues(before) };
-        newValue = { ...newValue, ...auditValues(values) };
+        newValue = {
+          ...newValue,
+          ...auditValues(values),
+          ...(adjustments.ids.length > 0 && { appliedAdjustmentIds: adjustments.ids }),
+        };
       } else if (action === "approve") {
         data = { ...data, approvedById: actor.id, approvedAt: new Date() };
       } else if (action === "pay") {
@@ -208,8 +268,9 @@ async function transition(action: SettlementAction, formData: FormData): Promise
       }
 
       // Conditioned on the status just read, so a double submit or a concurrent change cannot apply twice.
+      // Thrown rather than returned, so adjustments a recalculation claimed are released too.
       const { count } = await tx.employeeSettlement.updateMany({ where: { id: id.data, status: stored.status }, data });
-      if (count === 0) return "invalid_state";
+      if (count === 0) throw new StaleSettlementError();
 
       await recordAudit(
         {
@@ -226,6 +287,7 @@ async function transition(action: SettlementAction, formData: FormData): Promise
     });
     if (outcome) return fail(outcome);
   } catch (error) {
+    if (error instanceof StaleSettlementError) return fail("invalid_state");
     console.error(`[settlements] ${action} failed:`, error);
     return fail("unexpected");
   }
@@ -248,4 +310,78 @@ export async function approveSettlement(_prev: SettlementFormState, formData: Fo
 
 export async function markSettlementPaid(_prev: SettlementFormState, formData: FormData) {
   return transition("pay", formData);
+}
+
+/**
+ * Records a signed correction to a PAID settlement. The paid settlement itself never
+ * changes: the employee's next settlement for a later month includes the adjustment.
+ */
+export async function createSettlementAdjustment(
+  _prev: SettlementFormState,
+  formData: FormData,
+): Promise<SettlementFormState> {
+  const { user: actor } = await requireSession();
+  const raw = {
+    id: String(formData.get("id") ?? ""),
+    amount: String(formData.get("amount") ?? ""),
+    reason: String(formData.get("reason") ?? ""),
+  };
+  const parsed = adjustmentSchema.safeParse(raw);
+
+  try {
+    if (!(await mayManage(actor, "settlements.mark_paid"))) return fail("forbidden");
+    if (!parsed.success) {
+      const fieldErrors: AdjustmentFieldErrors = {};
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0];
+        if ((field === "amount" || field === "reason") && !fieldErrors[field]) {
+          fieldErrors[field] = raw[field].trim() === "" ? "required" : "invalid_input";
+        }
+      }
+      // A bad id is a tampered form, not something the user can fix in a field.
+      return Object.keys(fieldErrors).length > 0
+        ? { success: false, error: "invalid_input", fieldErrors }
+        : fail("invalid_input");
+    }
+    const { id, amount, reason } = parsed.data;
+
+    const outcome = await db.$transaction(async (tx): Promise<SettlementErrorCode | null> => {
+      const source = await tx.employeeSettlement.findUnique({
+        where: { id },
+        select: { employeeId: true, periodStart: true, status: true },
+      });
+      if (!source) return "not_found";
+      if (source.status !== "PAID") return "invalid_state";
+
+      // The employee is the paid settlement's, never a submitted value.
+      const adjustment = await tx.settlementAdjustment.create({
+        data: { employeeId: source.employeeId, amount, reason, sourceSettlementId: id, createdById: actor.id },
+        select: { id: true, amount: true },
+      });
+      await recordAudit(
+        {
+          userId: actor.id,
+          action: "settlement.adjustment_created",
+          entity: "SettlementAdjustment",
+          entityId: adjustment.id,
+          newValue: {
+            employeeId: source.employeeId,
+            sourceSettlementId: id,
+            month: monthOf(source.periodStart),
+            amount: adjustment.amount.toFixed(2),
+            reason,
+          },
+        },
+        tx,
+      );
+      return null;
+    });
+    if (outcome) return fail(outcome);
+  } catch (error) {
+    console.error("[settlements] adjustment failed:", error);
+    return fail("unexpected");
+  }
+
+  revalidateSettlement(parsed.data.id);
+  return { success: true };
 }

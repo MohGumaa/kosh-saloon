@@ -6,13 +6,15 @@ const mocks = vi.hoisted(() => {
   const tx = {
     invoice: { groupBy: vi.fn(), aggregate: vi.fn() },
     employeeExpense: { groupBy: vi.fn(), aggregate: vi.fn() },
-    employeeSettlement: { findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn(), updateMany: vi.fn() },
+    employeeSettlement: { findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
+    settlementAdjustment: { groupBy: vi.fn(), updateMany: vi.fn(), findMany: vi.fn(), create: vi.fn() },
     user: { findMany: vi.fn(), findUniqueOrThrow: vi.fn() },
     salonSettings: { findUnique: vi.fn(), upsert: vi.fn() },
     auditLog: { create: vi.fn() },
   };
   const db = {
-    employeeSettlement: { create: vi.fn(), updateMany: vi.fn() },
+    employeeSettlement: { create: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
+    settlementAdjustment: { create: vi.fn(), updateMany: vi.fn() },
     auditLog: { create: vi.fn() },
     $transaction: vi.fn(),
   };
@@ -24,8 +26,14 @@ vi.mock("@/lib/db", () => ({ db: mocks.db }));
 vi.mock("@/lib/auth/current-user", () => ({ requireSession: mocks.requireSession }));
 vi.mock("@/lib/auth/authorize", () => ({ hasPermission: mocks.hasPermission }));
 
-const { approveSettlement, generateSettlements, markSettlementCalculated, markSettlementPaid, recalculateSettlement } =
-  await import("@/actions/settlements");
+const {
+  approveSettlement,
+  createSettlementAdjustment,
+  generateSettlements,
+  markSettlementCalculated,
+  markSettlementPaid,
+  recalculateSettlement,
+} = await import("@/actions/settlements");
 
 function form(values: Record<string, string>) {
   const data = new FormData();
@@ -56,7 +64,10 @@ const stored = (status: string) => ({
 function expectNothingWritten() {
   for (const client of [mocks.db, mocks.tx]) {
     expect(client.employeeSettlement.create).not.toHaveBeenCalled();
+    expect(client.employeeSettlement.update).not.toHaveBeenCalled();
     expect(client.employeeSettlement.updateMany).not.toHaveBeenCalled();
+    expect(client.settlementAdjustment.create).not.toHaveBeenCalled();
+    expect(client.settlementAdjustment.updateMany).not.toHaveBeenCalled();
     expect(client.auditLog.create).not.toHaveBeenCalled();
   }
   expect(mocks.revalidatePath).not.toHaveBeenCalled();
@@ -93,6 +104,10 @@ beforeEach(() => {
   }));
   mocks.tx.employeeSettlement.findUnique.mockResolvedValue(stored("DRAFT"));
   mocks.tx.employeeSettlement.updateMany.mockResolvedValue({ count: 1 });
+  mocks.tx.settlementAdjustment.groupBy.mockResolvedValue([]);
+  mocks.tx.settlementAdjustment.updateMany.mockResolvedValue({ count: 0 });
+  mocks.tx.settlementAdjustment.findMany.mockResolvedValue([]);
+  mocks.tx.settlementAdjustment.create.mockResolvedValue({ id: "adj1", amount: decimal("-150") });
 });
 
 afterEach(() => {
@@ -138,6 +153,56 @@ describe("generateSettlements", () => {
     });
     expect(mocks.db.employeeSettlement.create).not.toHaveBeenCalled();
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/settlements");
+  });
+
+  it("claims earlier pending adjustments into the new settlement", async () => {
+    // emp1 has a -150 correction pending from August; emp3 has none.
+    mocks.tx.settlementAdjustment.findMany.mockImplementation(async ({ where }: { where: { appliedSettlementId: string } }) =>
+      where.appliedSettlementId === "set-emp1" ? [{ id: "adj1", amount: decimal("-150") }] : [],
+    );
+
+    expect(await generate()).toEqual({ success: true, created: 2 });
+
+    expect(mocks.tx.settlementAdjustment.groupBy.mock.calls[0][0].where).toEqual({
+      appliedSettlementId: null,
+      sourceSettlement: { periodStart: { lt: september.periodStart } },
+    });
+    expect(mocks.tx.settlementAdjustment.updateMany).toHaveBeenCalledWith({
+      where: { employeeId: "emp1", appliedSettlementId: null, sourceSettlement: { periodStart: { lt: september.periodStart } } },
+      data: { appliedSettlementId: "set-emp1" },
+    });
+    expect(mocks.tx.employeeSettlement.update).toHaveBeenCalledTimes(1);
+    const { where, data } = mocks.tx.employeeSettlement.update.mock.calls[0][0];
+    expect(where).toEqual({ id: "set-emp1" });
+    expect(data.totalAdjustments.toFixed(2)).toBe("-150.00");
+    expect(data.finalAmount.toFixed(2)).toBe("2050.00");
+    expect(mocks.tx.auditLog.create.mock.calls[0][0].data.newValue).toMatchObject({
+      totalAdjustments: "-150.00",
+      finalAmount: "2050.00",
+      appliedAdjustmentIds: ["adj1"],
+    });
+    // emp3 had nothing to claim: no extra write, no ids in its audit entry.
+    expect(mocks.tx.auditLog.create.mock.calls[1][0].data.newValue).not.toHaveProperty("appliedAdjustmentIds");
+    expect(mocks.db.settlementAdjustment.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("gives an employee with only a pending adjustment a settlement", async () => {
+    mocks.tx.invoice.groupBy.mockResolvedValue([]);
+    mocks.tx.employeeExpense.groupBy.mockResolvedValue([]);
+    mocks.tx.settlementAdjustment.groupBy.mockResolvedValue([{ employeeId: "emp4" }]);
+    mocks.tx.employeeSettlement.findMany.mockResolvedValue([]);
+    mocks.tx.user.findMany.mockResolvedValue([{ id: "emp4", sharePercentage: null }]);
+    mocks.tx.settlementAdjustment.findMany.mockResolvedValue([{ id: "adj9", amount: decimal("75.5") }]);
+    mocks.tx.employeeExpense.aggregate.mockResolvedValue(sum(null));
+
+    expect(await generate()).toEqual({ success: true, created: 1 });
+
+    const created = mocks.tx.employeeSettlement.create.mock.calls[0][0].data;
+    expect(created.employeeId).toBe("emp4");
+    expect(created.totalRevenue.toFixed(2)).toBe("0.00");
+    const { data } = mocks.tx.employeeSettlement.update.mock.calls[0][0];
+    expect(data.totalAdjustments.toFixed(2)).toBe("75.50");
+    expect(data.finalAmount.toFixed(2)).toBe("75.50");
   });
 
   it("succeeds with nothing created when every active employee is settled", async () => {
@@ -208,6 +273,53 @@ describe("status actions", () => {
     expect(audit.oldValue).toMatchObject({ month: "2026-09", status: "CALCULATED", totalRevenue: "4000.00", finalAmount: "1700.00" });
     expect(audit.newValue).toMatchObject({ month: "2026-09", status: "DRAFT", totalRevenue: "5000.00", finalAmount: "2200.00" });
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/settlements/set1");
+  });
+
+  it("recalculates with the adjustments it already has plus newly pending ones", async () => {
+    mocks.tx.settlementAdjustment.findMany.mockResolvedValue([
+      { id: "adj1", amount: decimal("-150") },
+      { id: "adj2", amount: decimal("40") },
+    ]);
+
+    expect(await run(recalculateSettlement)).toEqual({ success: true });
+
+    expect(mocks.tx.settlementAdjustment.updateMany).toHaveBeenCalledWith({
+      where: { employeeId: "emp1", appliedSettlementId: null, sourceSettlement: { periodStart: { lt: september.periodStart } } },
+      data: { appliedSettlementId: "set1" },
+    });
+    expect(mocks.tx.settlementAdjustment.findMany.mock.calls[0][0].where).toEqual({ appliedSettlementId: "set1" });
+    const { data } = mocks.tx.employeeSettlement.updateMany.mock.calls[0][0];
+    expect(data.totalAdjustments.toFixed(2)).toBe("-110.00");
+    expect(data.finalAmount.toFixed(2)).toBe("2090.00");
+    const audit = mocks.tx.auditLog.create.mock.calls[0][0].data;
+    expect(audit.oldValue).toMatchObject({ totalAdjustments: "0.00" });
+    expect(audit.newValue).toMatchObject({ totalAdjustments: "-110.00", appliedAdjustmentIds: ["adj1", "adj2"] });
+  });
+
+  it("never claims adjustments when the status does not allow a recalculation", async () => {
+    for (const status of ["APPROVED", "PAID"]) {
+      mocks.tx.employeeSettlement.findUnique.mockResolvedValue(stored(status));
+      expect(await run(recalculateSettlement)).toEqual({ success: false, error: "invalid_state" });
+    }
+    expect(mocks.tx.settlementAdjustment.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("rolls back a stale recalculation, claims included", async () => {
+    mocks.tx.employeeSettlement.updateMany.mockResolvedValue({ count: 0 });
+    let committed = true;
+    mocks.db.$transaction.mockImplementation(async (callback: (tx: unknown) => unknown) => {
+      try {
+        return await callback(mocks.tx);
+      } catch (error) {
+        committed = false;
+        throw error;
+      }
+    });
+
+    expect(await run(recalculateSettlement)).toEqual({ success: false, error: "invalid_state" });
+    expect(committed).toBe(false);
+    expect(mocks.tx.auditLog.create).not.toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
   });
 
   it("marks a DRAFT calculated without touching its values", async () => {
@@ -308,5 +420,115 @@ describe("status actions", () => {
 
     expect(await run(markSettlementCalculated)).toEqual({ success: false, error: "unexpected" });
     expect(consoleError).toHaveBeenCalled();
+  });
+});
+
+describe("createSettlementAdjustment", () => {
+  const add = (values: Record<string, string> = {}) =>
+    createSettlementAdjustment(null, form({ id: "set1", amount: "-150", reason: "Refunded invoice INV-000012", ...values }));
+
+  beforeEach(() => {
+    mocks.tx.employeeSettlement.findUnique.mockResolvedValue(stored("PAID"));
+  });
+
+  it("records a pending adjustment for the paid settlement's employee, with its audit entry", async () => {
+    expect(await add({ employeeId: "forged" })).toEqual({ success: true });
+
+    expect(mocks.hasPermission).toHaveBeenCalledWith(admin, "settlements.mark_paid");
+    expect(mocks.tx.settlementAdjustment.create).toHaveBeenCalledWith({
+      data: {
+        employeeId: "emp1",
+        amount: "-150",
+        reason: "Refunded invoice INV-000012",
+        sourceSettlementId: "set1",
+        createdById: "admin1",
+      },
+      select: { id: true, amount: true },
+    });
+    expect(mocks.tx.auditLog.create).toHaveBeenCalledWith({
+      data: {
+        userId: "admin1",
+        action: "settlement.adjustment_created",
+        entity: "SettlementAdjustment",
+        entityId: "adj1",
+        newValue: {
+          employeeId: "emp1",
+          sourceSettlementId: "set1",
+          month: "2026-09",
+          amount: "-150.00",
+          reason: "Refunded invoice INV-000012",
+        },
+      },
+    });
+    // The paid settlement itself is never written.
+    expect(mocks.tx.employeeSettlement.update).not.toHaveBeenCalled();
+    expect(mocks.tx.employeeSettlement.updateMany).not.toHaveBeenCalled();
+    expect(mocks.db.settlementAdjustment.create).not.toHaveBeenCalled();
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/settlements/set1");
+  });
+
+  it("rejects an adjustment to a settlement that is not PAID", async () => {
+    for (const status of ["DRAFT", "CALCULATED", "APPROVED"]) {
+      mocks.tx.employeeSettlement.findUnique.mockResolvedValue(stored(status));
+      expect(await add(), status).toEqual({ success: false, error: "invalid_state" });
+    }
+    expectNothingWritten();
+  });
+
+  it("returns not_found for an unknown settlement", async () => {
+    mocks.tx.employeeSettlement.findUnique.mockResolvedValue(null);
+
+    expect(await add()).toEqual({ success: false, error: "not_found" });
+    expectNothingWritten();
+  });
+
+  it("reports field errors for a missing or invalid amount and reason", async () => {
+    expect(await add({ amount: "", reason: " " })).toEqual({
+      success: false,
+      error: "invalid_input",
+      fieldErrors: { amount: "required", reason: "required" },
+    });
+    expect(await add({ amount: "0" })).toEqual({
+      success: false,
+      error: "invalid_input",
+      fieldErrors: { amount: "invalid_input" },
+    });
+    expect(await add({ amount: "12.345", reason: "x".repeat(501) })).toEqual({
+      success: false,
+      error: "invalid_input",
+      fieldErrors: { amount: "invalid_input", reason: "invalid_input" },
+    });
+    expectNothingWritten();
+  });
+
+  it("returns invalid_input without field errors for a missing id", async () => {
+    expect(await createSettlementAdjustment(null, form({ amount: "5", reason: "x" }))).toEqual({
+      success: false,
+      error: "invalid_input",
+    });
+    expectNothingWritten();
+  });
+
+  it("is forbidden without settlements.mark_paid", async () => {
+    mocks.hasPermission.mockResolvedValue(false);
+
+    expect(await add()).toEqual({ success: false, error: "forbidden" });
+    expect(mocks.tx.employeeSettlement.findUnique).not.toHaveBeenCalled();
+    expectNothingWritten();
+  });
+
+  it("is forbidden to Staff even holding every permission", async () => {
+    signIn(staff);
+
+    expect(await add()).toEqual({ success: false, error: "forbidden" });
+    expectNothingWritten();
+  });
+
+  it("reports an unexpected failure", async () => {
+    mocks.tx.settlementAdjustment.create.mockRejectedValue(new Error("down"));
+
+    expect(await add()).toEqual({ success: false, error: "unexpected" });
+    expect(consoleError).toHaveBeenCalled();
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
   });
 });

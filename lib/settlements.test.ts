@@ -1,14 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { PERMISSION_KEYS, ROLE_DEFAULTS, type PermissionKey } from "@/lib/auth/permissions";
 import {
+  ADJUSTMENT_REASON_MAX,
   SETTLEMENT_STATUSES,
+  adjustmentAmountSchema,
+  adjustmentReasonSchema,
   calculateSettlement,
+  canAdjustSettlement,
   canRunSettlementAction,
   expensesWhere,
   isSettleableMonth,
   monthOf,
   monthPeriod,
   parseSettlementMonth,
+  sumAdjustments,
   type SettlementAction,
 } from "@/lib/settlements";
 
@@ -163,5 +168,103 @@ describe("canRunSettlementAction", () => {
     for (const [action, statuses] of Object.entries(allowed) as [SettlementAction, string[]][]) {
       expect(canRunSettlementAction(action, statuses[0] as "DRAFT", all, { role: "STAFF" })).toBe(false);
     }
+  });
+});
+
+describe("adjustmentAmountSchema", () => {
+  const parse = (value: string) => adjustmentAmountSchema.safeParse(value);
+
+  it("accepts signed amounts with up to two decimals", () => {
+    expect(parse("150").data).toBe("150");
+    expect(parse("-150").data).toBe("-150");
+    expect(parse(" -75.50 ").data).toBe("-75.5");
+    expect(parse("0.01").data).toBe("0.01");
+    expect(parse("99999999.99").data).toBe("99999999.99");
+  });
+
+  it("accepts the Unicode minus, Arabic-Indic digits, and the Arabic decimal separator", () => {
+    expect(parse("−75.5").data).toBe("-75.5");
+    expect(parse("-١٥٠٫٢٥").data).toBe("-150.25");
+  });
+
+  it("rejects zero, malformed, and oversized amounts", () => {
+    for (const value of ["0", "-0", "0.00", "1.234", "+5", "abc", "", "  ", "123456789", "5-", "--5", "1e3"]) {
+      expect(parse(value).success, value).toBe(false);
+    }
+  });
+});
+
+describe("adjustmentReasonSchema", () => {
+  const parse = (value: string) => adjustmentReasonSchema.safeParse(value);
+
+  it("trims and keeps line breaks", () => {
+    expect(parse("  Invoice INV-000012 was refunded\r\nafter payment ").data).toBe(
+      "Invoice INV-000012 was refunded\nafter payment",
+    );
+  });
+
+  it("is required", () => {
+    expect(parse("").success).toBe(false);
+    expect(parse("   \n ").success).toBe(false);
+  });
+
+  it("has a length limit", () => {
+    expect(parse("a".repeat(ADJUSTMENT_REASON_MAX)).success).toBe(true);
+    expect(parse("a".repeat(ADJUSTMENT_REASON_MAX + 1)).success).toBe(false);
+  });
+
+  it("rejects control and format characters", () => {
+    expect(parse("bad\u0007bell").success).toBe(false);
+    expect(parse("bad\u202Eoverride").success).toBe(false);
+  });
+});
+
+describe("canAdjustSettlement", () => {
+  const all = new Set(PERMISSION_KEYS);
+
+  it("allows only a PAID settlement", () => {
+    for (const status of SETTLEMENT_STATUSES) {
+      expect(canAdjustSettlement(status, all, { role: "ADMIN" }), status).toBe(status === "PAID");
+    }
+  });
+
+  it("needs settlements.mark_paid", () => {
+    expect(canAdjustSettlement("PAID", new Set(["settlements.mark_paid"] as PermissionKey[]), { role: "SUPERVISOR" })).toBe(
+      true,
+    );
+    expect(canAdjustSettlement("PAID", new Set(["settlements.approve"] as PermissionKey[]), { role: "SUPERVISOR" })).toBe(
+      false,
+    );
+    expect(canAdjustSettlement("PAID", new Set(ROLE_DEFAULTS.SUPERVISOR), { role: "SUPERVISOR" })).toBe(false);
+  });
+
+  it("never allows Staff, whatever they hold", () => {
+    expect(canAdjustSettlement("PAID", all, { role: "STAFF" })).toBe(false);
+  });
+});
+
+describe("sumAdjustments", () => {
+  it("adds signed amounts exactly", () => {
+    expect(sumAdjustments(["0.1", "0.2", "-0.3"]).toFixed(2)).toBe("0.00");
+    expect(sumAdjustments(["-150", "25.25"]).toFixed(2)).toBe("-124.75");
+    expect(sumAdjustments([]).toFixed(2)).toBe("0.00");
+  });
+
+  it("feeds the final amount: the worked example with a -150 correction", () => {
+    const result = calculateSettlement({
+      paidRevenue: "5000",
+      sharePercentage: "50",
+      expenses: "300",
+      adjustments: sumAdjustments(["-150"]),
+    });
+
+    expect(result.totalAdjustments.toFixed(2)).toBe("-150.00");
+    expect(result.finalAmount.toFixed(2)).toBe("2050.00");
+  });
+
+  it("adds a positive correction to the payout", () => {
+    const result = calculateSettlement({ paidRevenue: "5000", sharePercentage: "50", expenses: "300", adjustments: "100" });
+
+    expect(result.finalAmount.toFixed(2)).toBe("2300.00");
   });
 });

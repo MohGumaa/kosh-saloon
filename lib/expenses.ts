@@ -32,7 +32,7 @@ export const expenseIdSchema = z.string().min(1).max(100);
 export const expenseCategorySchema = z.enum(EXPENSE_CATEGORIES);
 
 /** Like `SINGLE_LINE_TEXT`, but line breaks are allowed. */
-const MULTI_LINE_TEXT = /^(?:[^\p{Cc}\p{Cf}\p{Zl}\p{Zp}]|[‌‍\n])*$/u;
+export const MULTI_LINE_TEXT = /^(?:[^\p{Cc}\p{Cf}\p{Zl}\p{Zp}]|[‌‍\n])*$/u;
 
 /** An optional note, shared with employee expenses: empty becomes `null`. */
 export const descriptionSchema = z

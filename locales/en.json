@@ -658,7 +658,7 @@
       "confirmText": "Marking this settlement paid locks it. It cannot be changed afterwards.",
       "submitting": "Saving…",
       "success": "Settlement saved.",
-      "paidNote": "Paid settlements are locked.",
+      "paidNote": "Paid settlements are locked. Corrections are applied to the next settlement.",
       "none": "You have no actions for this settlement in its current status."
     },
     "errors": {
@@ -667,6 +667,28 @@
       "invalid_input": "The submitted details were not valid. Reload the page and try again.",
       "invalid_state": "Settlements changed meanwhile. Reload the page to see the current status.",
       "unexpected": "An unexpected error occurred. Please try again."
+    },
+    "adjustments": {
+      "title": "Corrections",
+      "description": "Signed corrections to this paid settlement. Each is applied to the employee's next settlement.",
+      "includedTitle": "Included adjustments",
+      "includedDescription": "Corrections to earlier paid settlements that this settlement includes.",
+      "empty": "No corrections yet.",
+      "pending": "Pending",
+      "appliedTo": "Applied to {month}",
+      "from": "From {month}",
+      "addedBy": "Added by {name}",
+      "amount": "Amount ({currency})",
+      "amountHint": "Use a minus sign to deduct, for example -150. A positive amount adds to the payout.",
+      "reason": "Reason",
+      "reasonHint": "Why this paid settlement is corrected. Up to {max} characters.",
+      "submit": "Add correction",
+      "submitting": "Saving…",
+      "success": "Correction added. It will be applied to the next settlement.",
+      "pendingNote": {
+        "DRAFT": "{count, plural, one {# correction from an earlier month is not included yet. Recalculate to include it.} other {# corrections from earlier months are not included yet. Recalculate to include them.}}",
+        "CALCULATED": "{count, plural, one {# correction from an earlier month is not included yet. Recalculate to include it, or it moves to the next settlement.} other {# corrections from earlier months are not included yet. Recalculate to include them, or they move to the next settlement.}}"
+      }
     }
   },
   "permissions": {
@@ -811,7 +833,8 @@
         "recalculated": "Recalculated settlement",
         "calculated": "Marked settlement calculated",
         "approved": "Approved settlement",
-        "paid": "Marked settlement paid"
+        "paid": "Marked settlement paid",
+        "adjustment_created": "Added settlement correction"
       }
     },
     "entities": {
@@ -821,7 +844,8 @@
       "Invoice": "Invoice",
       "SalonExpense": "Salon expense",
       "EmployeeExpense": "Employee deduction",
-      "EmployeeSettlement": "Employee settlement"
+      "EmployeeSettlement": "Employee settlement",
+      "SettlementAdjustment": "Settlement correction"
     },
     "fields": {
       "name": "Full name",

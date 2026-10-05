@@ -32,7 +32,7 @@ Your features
 
 - [x] 12. Monthly employee settlements - Generate monthly settlements showing revenue, share percentage, earnings, expenses, adjustments, final payout, approval status, and payment status.
 
-- [ ] 13. Historical settlement protection - Preserve the exact share percentage and financial values used when a settlement was calculated so future global setting changes do not alter historical records, lock paid settlements, and apply corrections as audited adjustments on the next month's settlement.
+- [x] 13. Historical settlement protection - Preserve the exact share percentage and financial values used when a settlement was calculated so future global setting changes do not alter historical records, lock paid settlements, and apply corrections as audited adjustments on the next month's settlement.
 
 - [ ] 14. Admin dashboard - Build the main salon dashboard with revenue, bills, pending amounts, salon expenses, staff count, employee payouts, latest invoices, and revenue charts.
 

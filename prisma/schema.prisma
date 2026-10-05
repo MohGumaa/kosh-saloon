@@ -50,14 +50,16 @@ model User {
   passwordResetTokens     PasswordResetToken[]
   permissions             UserPermission[]
   auditLogs               AuditLog[]
-  invoices                Invoice[]            @relation("InvoiceEmployee")
-  createdInvoices         Invoice[]            @relation("InvoiceCreator")
-  createdSalonExpenses    SalonExpense[]       @relation("SalonExpenseCreator")
-  employeeExpenses        EmployeeExpense[]    @relation("EmployeeExpenseEmployee")
-  createdEmployeeExpenses EmployeeExpense[]    @relation("EmployeeExpenseCreator")
-  settlements             EmployeeSettlement[] @relation("SettlementEmployee")
-  approvedSettlements     EmployeeSettlement[] @relation("SettlementApprover")
-  createdSettlements      EmployeeSettlement[] @relation("SettlementCreator")
+  invoices                Invoice[]              @relation("InvoiceEmployee")
+  createdInvoices         Invoice[]              @relation("InvoiceCreator")
+  createdSalonExpenses    SalonExpense[]         @relation("SalonExpenseCreator")
+  employeeExpenses        EmployeeExpense[]      @relation("EmployeeExpenseEmployee")
+  createdEmployeeExpenses EmployeeExpense[]      @relation("EmployeeExpenseCreator")
+  settlements             EmployeeSettlement[]   @relation("SettlementEmployee")
+  approvedSettlements     EmployeeSettlement[]   @relation("SettlementApprover")
+  createdSettlements      EmployeeSettlement[]   @relation("SettlementCreator")
+  settlementAdjustments   SettlementAdjustment[] @relation("AdjustmentEmployee")
+  createdAdjustments      SettlementAdjustment[] @relation("AdjustmentCreator")
 }
 
 /// The catalog in `lib/auth/permissions.ts`; rows are inserted only by migrations.
@@ -254,32 +256,58 @@ enum SettlementStatus {
 /// One employee's payout for one completed salon month (`periodStart` is the first day,
 /// `periodEnd` the last). Flow: DRAFT -> CALCULATED -> APPROVED -> PAID. A recalculation,
 /// allowed only in DRAFT or CALCULATED, replaces the stored values and returns it to DRAFT;
-/// once APPROVED the values never change, and a PAID settlement has no further actions.
+/// once APPROVED the values never change, and a PAID settlement has no further actions:
+/// it is corrected only by `SettlementAdjustment`s applied to a later settlement.
 /// `finalAmount = employeeShare - totalExpenses + totalAdjustments` and can be negative.
 model EmployeeSettlement {
-  id               String           @id @default(cuid())
+  id               String                 @id @default(cuid())
   employeeId       String
-  employee         User             @relation("SettlementEmployee", fields: [employeeId], references: [id], onDelete: Restrict)
-  periodStart      DateTime         @db.Date
-  periodEnd        DateTime         @db.Date
-  totalRevenue     Decimal          @db.Decimal(12, 2)
-  sharePercentage  Decimal          @db.Decimal(5, 2)
-  employeeShare    Decimal          @db.Decimal(12, 2)
-  totalExpenses    Decimal          @db.Decimal(12, 2)
-  totalAdjustments Decimal          @db.Decimal(12, 2)
-  finalAmount      Decimal          @db.Decimal(12, 2)
-  status           SettlementStatus @default(DRAFT)
+  employee         User                   @relation("SettlementEmployee", fields: [employeeId], references: [id], onDelete: Restrict)
+  periodStart      DateTime               @db.Date
+  periodEnd        DateTime               @db.Date
+  totalRevenue     Decimal                @db.Decimal(12, 2)
+  sharePercentage  Decimal                @db.Decimal(5, 2)
+  employeeShare    Decimal                @db.Decimal(12, 2)
+  totalExpenses    Decimal                @db.Decimal(12, 2)
+  totalAdjustments Decimal                @db.Decimal(12, 2)
+  finalAmount      Decimal                @db.Decimal(12, 2)
+  status           SettlementStatus       @default(DRAFT)
   approvedById     String?
-  approvedBy       User?            @relation("SettlementApprover", fields: [approvedById], references: [id], onDelete: Restrict)
+  approvedBy       User?                  @relation("SettlementApprover", fields: [approvedById], references: [id], onDelete: Restrict)
   approvedAt       DateTime?
   paidAt           DateTime?
   createdById      String
-  createdBy        User             @relation("SettlementCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  createdBy        User                   @relation("SettlementCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  corrections      SettlementAdjustment[] @relation("AdjustmentSource")
+  adjustments      SettlementAdjustment[] @relation("AdjustmentApplied")
 
   @@unique([employeeId, periodStart])
   @@index([periodStart])
+}
+
+/// A signed correction to a PAID settlement (`+` adds to the payout, `-` deducts). It is
+/// pending while `appliedSettlementId` is null; the employee's next settlement for a later
+/// month claims it when generated or recalculated, and it stays there. Immutable: a mistake
+/// is reversed with an opposite adjustment.
+model SettlementAdjustment {
+  id                  String              @id @default(cuid())
+  employeeId          String
+  employee            User                @relation("AdjustmentEmployee", fields: [employeeId], references: [id], onDelete: Restrict)
+  amount              Decimal             @db.Decimal(12, 2)
+  reason              String
+  sourceSettlementId  String
+  sourceSettlement    EmployeeSettlement  @relation("AdjustmentSource", fields: [sourceSettlementId], references: [id], onDelete: Restrict)
+  appliedSettlementId String?
+  appliedSettlement   EmployeeSettlement? @relation("AdjustmentApplied", fields: [appliedSettlementId], references: [id], onDelete: Restrict)
+  createdById         String
+  createdBy           User                @relation("AdjustmentCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt           DateTime            @default(now())
+
+  @@index([employeeId, appliedSettlementId])
+  @@index([sourceSettlementId])
+  @@index([appliedSettlementId])
 }
 
 /// Fixed-window counters for sign-in and password reset requests.
