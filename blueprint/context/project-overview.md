@@ -1,6 +1,6 @@
 # Kosh CRM - Project Overview
 
-<!-- blueprint:source-hash dd10618710b4fe4877cceb5b9a8bb413fa18260e8c89e58a7bbfaf16919f0c6c -->
+<!-- blueprint:source-hash c5cade8000604ad0891317330df8e1f5a08806431c0c0c58a4dfa865bed82694 -->
 
 > Salon management and financial CRM for Kosh Salon: employees, services,
 > invoices, expenses, employee earnings, monthly settlements, reports,
@@ -121,7 +121,12 @@ PostgreSQL via Prisma. Money fields use `Decimal`. All models have `id`
 - `language` (enum: EN | AR), `theme` (enum: LIGHT | DARK | SYSTEM)
 - `lastLoginAt` (DateTime?)
 - has many Invoice (as employee and as creator), EmployeeExpense,
-  EmployeeSettlement, SettlementAdjustment, UserPermission, AuditLog
+  EmployeeSettlement, SettlementAdjustment, UserPermission, Session, AuditLog
+
+### Session (no updatedAt)
+
+- `tokenHash` (string, unique; the raw token lives only in the secure cookie)
+- `userId` -> User, `expiresAt` (DateTime, 7 days), `createdAt`
 
 ### Permission / UserPermission
 
@@ -199,17 +204,15 @@ PostgreSQL via Prisma. Money fields use `Decimal`. All models have `id`
 - **TypeScript** - strict
 - **Tailwind CSS v4 + shadcn/ui** - styling and components
 - **Recharts** - dashboard and report charts
-- **PostgreSQL (cloud) + Prisma** - database and ORM; migrations managed
+- **Prisma Postgres (Vercel integration) + Prisma** - database and ORM via the pg driver adapter; migrations managed
+- **Built-in auth** - no auth library: scrypt password hashes, database-backed sessions (random cookie token, hash stored, 7-day expiry)
 - **Zod** - input validation
-- **Translation files** - `locales/en.json`, `locales/ar.json`
-- **External object storage** - profile images, salon logo (DB stores URL/key)
-- **Email provider** - password reset and login notifications
+- **next-intl** - translations from `locales/en.json`, `locales/ar.json`; locale kept in a cookie
+- **next-themes** - Light/Dark/System switching
+- **Vercel Blob** - profile images, salon logo (DB stores URL/key)
+- **Resend** - password reset and login notification emails
 - **Vercel** - hosting; no reliance on local filesystem storage
 - **pnpm** - package manager
-
-> TODO: auth library, i18n library, storage provider, email provider, and
-> database host are not chosen. Decide each in the spec of the feature that
-> first needs it (features 1, 2, and 6).
 
 ## Monetization
 
@@ -241,14 +244,16 @@ Employee Performance, Employee Earnings, Settlements); Settings.
 
 ## Deployment
 
-- **Host:** Vercel. **Database:** cloud PostgreSQL. **Storage:** external object storage.
+- **Host:** Vercel. **Database:** Prisma Postgres (Vercel integration). **Storage:** Vercel Blob. **Email:** Resend.
 - **Build/start:** `pnpm build` / `pnpm start`; Prisma migrations run on deploy.
-- **Env vars (names to finalize):** `DATABASE_URL`, `AUTH_SECRET`,
-  `STORAGE_URL`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY`, `EMAIL_API_KEY`
+- **Env vars:** `kosh_DATABASE_URL` (prefix injected by the integration),
+  `APP_URL` (email link base), `EMAIL_API_KEY`, `EMAIL_FROM`,
+  `BLOB_READ_WRITE_TOKEN`; seeding only: `SEED_ADMIN_{NAME,USERNAME,EMAIL,PASSWORD}`.
+  No auth secret (sessions are database-backed). `.env.example` lists all.
 - No cron jobs in V1 (scheduled emails are future).
 - Backups and error monitoring are part of feature 27.
 
-> TODO: database host, storage provider, health path, and domain.
+> TODO: health path and domain.
 
 ## Open questions
 

@@ -1516,6 +1516,20 @@ Hosting:
 
 Vercel
 
+Chosen providers and libraries:
+
+Database host: Prisma Postgres through the Vercel integration (Prisma pg driver adapter)
+
+Authentication: built in, no auth library - scrypt password hashes and database-backed sessions (random token in a secure cookie, only its hash stored, 7-day expiry)
+
+Internationalization: next-intl, with the locale stored in a cookie
+
+Themes: next-themes
+
+File storage: Vercel Blob
+
+Email: Resend
+
 # 59. Vercel Architecture
 
     Production architecture:
@@ -1560,16 +1574,20 @@ Database should store the file URL/key, not the actual file.
 
 # 61. Environment Variables
 
-    Production environment variables will include values similar to:
+    Production environment variables:
 
-DATABASE_URL=
-AUTH_SECRET=
-STORAGE_URL=
-STORAGE_ACCESS_KEY=
-STORAGE_SECRET_KEY=
-EMAIL_API_KEY=
+kosh_DATABASE_URL= (PostgreSQL connection; the kosh_ prefix is injected by the Vercel Prisma Postgres integration)
+APP_URL= (absolute base URL for email links)
+EMAIL_API_KEY= (Resend API key)
+EMAIL_FROM= (email sender)
+BLOB_READ_WRITE_TOKEN= (Vercel Blob)
 
-Actual variable names can be finalized during implementation.
+Seeding only (remove after the first admin exists):
+SEED_ADMIN_NAME=, SEED_ADMIN_USERNAME=, SEED_ADMIN_EMAIL=, SEED_ADMIN_PASSWORD=
+
+Sessions are stored in the database, so no auth secret is needed.
+
+`.env.example` lists every variable.
 
 Never commit secrets to Git.
 
