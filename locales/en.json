@@ -718,6 +718,11 @@
     "body": "You do not have permission to open this page. Ask the salon administrator if you need access.",
     "back": "Back to dashboard"
   },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The page you are looking for does not exist or has been moved. Check the address and try again.",
+    "back": "Back to dashboard"
+  },
   "errors": {
     "genericTitle": "Something went wrong",
     "generic": "An unexpected error occurred. Please try again.",
