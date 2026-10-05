@@ -31,12 +31,25 @@ export const AUDIT_ACTIONS = [
   "employee_expense.created",
   "employee_expense.updated",
   "employee_expense.deleted",
+  "settlement.generated",
+  "settlement.recalculated",
+  "settlement.calculated",
+  "settlement.approved",
+  "settlement.paid",
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
 /** Prisma model names an entry can point at; labels live under `audit.entities`. */
-export const AUDIT_ENTITIES = ["User", "SalonSettings", "Service", "Invoice", "SalonExpense", "EmployeeExpense"] as const;
+export const AUDIT_ENTITIES = [
+  "User",
+  "SalonSettings",
+  "Service",
+  "Invoice",
+  "SalonExpense",
+  "EmployeeExpense",
+  "EmployeeSettlement",
+] as const;
 
 export type AuditEntity = (typeof AUDIT_ENTITIES)[number];
 

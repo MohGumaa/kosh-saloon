@@ -85,4 +85,10 @@ describe("NAVIGATION", () => {
 
     expect(expenses?.href).toBe("/expenses");
   });
+
+  it("links the settlements item to the settlement list", () => {
+    const settlements = NAVIGATION.flatMap((group) => group.items).find((item) => item.key === "settlements");
+
+    expect(settlements?.href).toBe("/settlements");
+  });
 });

@@ -595,6 +595,77 @@
       "unexpected": "An unexpected error occurred. Please try again."
     }
   },
+  "settlements": {
+    "title": "Settlements",
+    "description": "Monthly employee payouts: paid revenue, share, deductions, and the final amount.",
+    "month": "Month",
+    "previous": "Previous month",
+    "next": "Next month",
+    "columns": {
+      "employee": "Employee",
+      "revenue": "Paid revenue",
+      "sharePercentage": "Share %",
+      "earnings": "Earnings",
+      "expenses": "Deductions",
+      "adjustments": "Adjustments",
+      "final": "Final payout",
+      "status": "Status"
+    },
+    "statuses": {
+      "DRAFT": "Draft",
+      "CALCULATED": "Calculated",
+      "APPROVED": "Approved",
+      "PAID": "Paid"
+    },
+    "empty": {
+      "title": "No settlements for this month",
+      "create": "Generate settlements to calculate each employee's payout for this month.",
+      "view": "No settlements have been generated for this month yet."
+    },
+    "generate": {
+      "submit": "Generate settlements",
+      "submitting": "Generating…",
+      "hint": "Creates a draft for each employee with paid invoices or deductions this month who has none yet.",
+      "success": "{count, plural, one {# settlement generated.} other {# settlements generated.}}",
+      "nothing": "Nothing to generate. Every employee with activity this month already has a settlement."
+    },
+    "detail": {
+      "back": "All settlements",
+      "title": "Settlement",
+      "description": "The values stored when this settlement was calculated.",
+      "employee": "Employee",
+      "period": "Period",
+      "status": "Status",
+      "shareNote": "Used for this settlement",
+      "negativeNote": "A negative payout is owed by the employee to the salon.",
+      "approvedBy": "Approved by",
+      "approvedAt": "Approved at",
+      "paidAt": "Paid at",
+      "notYet": "Not yet"
+    },
+    "actions": {
+      "title": "Review and payment",
+      "description": "Recalculate, mark calculated, approve, then mark paid.",
+      "recalculate": "Recalculate",
+      "calculate": "Mark calculated",
+      "approve": "Approve",
+      "pay": "Mark paid",
+      "confirmPay": "Yes, mark paid",
+      "keep": "Not yet",
+      "confirmText": "Marking this settlement paid locks it. It cannot be changed afterwards.",
+      "submitting": "Saving…",
+      "success": "Settlement saved.",
+      "paidNote": "Paid settlements are locked.",
+      "none": "You have no actions for this settlement in its current status."
+    },
+    "errors": {
+      "forbidden": "You are not allowed to do this.",
+      "not_found": "This settlement no longer exists.",
+      "invalid_input": "The submitted details were not valid. Reload the page and try again.",
+      "invalid_state": "Settlements changed meanwhile. Reload the page to see the current status.",
+      "unexpected": "An unexpected error occurred. Please try again."
+    }
+  },
   "permissions": {
     "title": "Permissions",
     "description": "Choose what this user can see and do.",
@@ -731,6 +802,13 @@
         "created": "Recorded employee deduction",
         "updated": "Updated employee deduction",
         "deleted": "Deleted employee deduction"
+      },
+      "settlement": {
+        "generated": "Generated settlement",
+        "recalculated": "Recalculated settlement",
+        "calculated": "Marked settlement calculated",
+        "approved": "Approved settlement",
+        "paid": "Marked settlement paid"
       }
     },
     "entities": {
@@ -739,7 +817,8 @@
       "Service": "Service",
       "Invoice": "Invoice",
       "SalonExpense": "Salon expense",
-      "EmployeeExpense": "Employee deduction"
+      "EmployeeExpense": "Employee deduction",
+      "EmployeeSettlement": "Employee settlement"
     },
     "fields": {
       "name": "Full name",

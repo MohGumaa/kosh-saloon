@@ -30,7 +30,7 @@ Your features
 
 - [x] 11. Employee revenue & share calculation - Calculate employee paid revenue, apply the employee's effective share percentage (an optional Admin-set per-employee percentage, otherwise the global one), and calculate employee earnings.
 
-- [ ] 12. Monthly employee settlements - Generate monthly settlements showing revenue, share percentage, earnings, expenses, adjustments, final payout, approval status, and payment status.
+- [x] 12. Monthly employee settlements - Generate monthly settlements showing revenue, share percentage, earnings, expenses, adjustments, final payout, approval status, and payment status.
 
 - [ ] 13. Historical settlement protection - Preserve the exact share percentage and financial values used when a settlement was calculated so future global setting changes do not alter historical records, lock paid settlements, and apply corrections as audited adjustments on the next month's settlement.
 
