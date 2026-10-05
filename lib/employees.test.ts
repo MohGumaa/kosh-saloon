@@ -6,6 +6,7 @@ import {
   canManageEmployeeAccess,
   createEmployeeSchema,
   employeeIdSchema,
+  employeeShareSchema,
   setEmployeePasswordSchema,
   updateEmployeeSchema,
 } from "@/lib/employees";
@@ -153,5 +154,29 @@ describe("employeeIdSchema", () => {
   it("rejects an empty, oversized, or non-string id", () => {
     expect(employeeIdSchema.safeParse("ckv1").success).toBe(true);
     for (const id of ["", "x".repeat(101), null, undefined]) expect(employeeIdSchema.safeParse(id).success).toBe(false);
+  });
+});
+
+describe("employeeShareSchema", () => {
+  const parse = (sharePercentage: string) => employeeShareSchema.safeParse({ sharePercentage });
+
+  it.each(["", "   "])("clears the employee's own percentage for %j", (value) => {
+    expect(parse(value)).toEqual({ success: true, data: { sharePercentage: null } });
+  });
+
+  it.each([
+    ["0", "0"],
+    ["50", "50"],
+    ["62.5", "62.5"],
+    ["62.50", "62.5"],
+    ["100", "100"],
+    [" 40 ", "40"],
+    ["٤٠٫٥", "40.5"],
+  ])("accepts %j as %j", (value, expected) => {
+    expect(parse(value)).toEqual({ success: true, data: { sharePercentage: expected } });
+  });
+
+  it.each(["101", "-1", "abc", "1.234", "100.01", "1e2"])("rejects %j", (value) => {
+    expect(parse(value).success).toBe(false);
   });
 });

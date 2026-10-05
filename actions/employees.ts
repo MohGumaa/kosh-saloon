@@ -18,6 +18,7 @@ import {
   canManageEmployeeAccess,
   createEmployeeSchema,
   employeeIdSchema,
+  employeeShareSchema,
   setEmployeePasswordSchema,
   updateEmployeeSchema,
   type Role,
@@ -321,6 +322,61 @@ export async function setEmployeeActive(_prev: EmployeeFormState, formData: Form
     }
   } catch (error) {
     console.error("[employees] status change failed:", error);
+    return fail("unexpected");
+  }
+
+  revalidateEmployee(actor.id, userId.data);
+  return { success: true };
+}
+
+/** The employee's own share percentage, or none to use the global one. ADMIN only; applies to new calculations. */
+export async function setEmployeeShare(
+  _prev: EmployeeFormState<"sharePercentage">,
+  formData: FormData,
+): Promise<EmployeeFormState<"sharePercentage">> {
+  const { user: actor } = await requireSession();
+  const userId = employeeIdSchema.safeParse(formData.get("userId"));
+  const raw = readForm(formData, ["sharePercentage"] as const);
+
+  try {
+    if (actor.role !== "ADMIN") return fail("forbidden");
+    if (!userId.success) return fail("invalid_input");
+    const parsed = employeeShareSchema.safeParse(raw);
+    if (!parsed.success) {
+      return { success: false, error: "invalid_input", fieldErrors: { sharePercentage: "invalid_input" } };
+    }
+    const next = parsed.data.sharePercentage;
+
+    const outcome = await db.$transaction(async (tx) => {
+      const stored = await tx.user.findUnique({ where: { id: userId.data }, select: { sharePercentage: true } });
+      if (!stored) return "not_found" as const;
+      const before = stored.sharePercentage;
+      // A Decimal: a stored 50 and a submitted "50.00" are the same; 0 is a value, not "none".
+      const unchanged = before === null || next === null ? before === next : before.equals(next);
+      if (unchanged) return null;
+
+      // Only over the value just read: a save that landed in between fails this one rather than being misaudited.
+      const { count } = await tx.user.updateMany({
+        where: { id: userId.data, sharePercentage: before },
+        data: { sharePercentage: next },
+      });
+      if (count === 0) throw new Error("share percentage changed during the save");
+      await recordAudit(
+        {
+          userId: actor.id,
+          action: "user.share_updated",
+          entity: "User",
+          entityId: userId.data,
+          oldValue: { sharePercentage: before === null ? null : before.toString() },
+          newValue: { sharePercentage: next },
+        },
+        tx,
+      );
+      return null;
+    });
+    if (outcome) return fail(outcome);
+  } catch (error) {
+    console.error("[employees] share change failed:", error);
     return fail("unexpected");
   }
 

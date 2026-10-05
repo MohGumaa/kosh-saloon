@@ -515,6 +515,13 @@ Employee Share Percentage
 
 The percentage can be changed globally by an authorized Admin.
 
+An Admin can also set an optional share percentage for an individual employee
+(0-100%). When set, it replaces the global percentage for that employee; when
+empty, the employee uses the global percentage. Example: an employee who takes
+their cut in cash at the time of service and records invoices at the salon's
+portion only is set to 0%, so nothing is owed to them at month end. Changes are
+audited and apply to new calculations only.
+
 # 16. Employee Share Calculation
 
 Employee share:
@@ -972,7 +979,8 @@ Currency
 Tax Rate
 Employee Share Percentage
 
-The employee share percentage is global.
+The employee share percentage is global, with an optional per-employee
+percentage that an Admin can set (see Employee Share Percentage).
 
 Example:
 

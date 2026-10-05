@@ -28,20 +28,23 @@ enum Theme {
 
 /// Employees are users. `username` and `email` are stored trimmed and lowercased.
 model User {
-  id           String    @id @default(cuid())
-  name         String
-  username     String    @unique
-  email        String    @unique
-  phone        String?
-  passwordHash String
-  image        String?
-  role         Role      @default(STAFF)
-  isActive     Boolean   @default(true)
-  language     Language  @default(EN)
-  theme        Theme     @default(DARK)
-  lastLoginAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id              String    @id @default(cuid())
+  name            String
+  username        String    @unique
+  email           String    @unique
+  phone           String?
+  passwordHash    String
+  image           String?
+  role            Role      @default(STAFF)
+  isActive        Boolean   @default(true)
+  language        Language  @default(EN)
+  theme           Theme     @default(DARK)
+  lastLoginAt     DateTime?
+  /// The employee's own share percentage (0-100). Null uses the global
+  /// `SalonSettings.employeeSharePercentage`. Only an ADMIN sets it; each change is audited.
+  sharePercentage Decimal?  @db.Decimal(5, 2)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   sessions                Session[]
   passwordResetTokens     PasswordResetToken[]

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
   ArrowLeft,
+  Percent,
   AtSign,
   CalendarDays,
   Clock,
@@ -19,8 +20,10 @@ import {
 import { getTranslations } from "next-intl/server";
 import { EmployeeExpensesTab } from "@/components/employee-expenses/EmployeeExpensesTab";
 import { EmployeeDetailsForm } from "@/components/employees/EmployeeDetailsForm";
+import { EmployeeEarningsPanel } from "@/components/employees/EmployeeEarningsPanel";
 import { EmployeeImageForm } from "@/components/employees/EmployeeImageForm";
 import { EmployeePasswordForm } from "@/components/employees/EmployeePasswordForm";
+import { EmployeeShareForm } from "@/components/employees/EmployeeShareForm";
 import { EmployeeStatusForm } from "@/components/employees/EmployeeStatusForm";
 import { PermissionsForm } from "@/components/employees/PermissionsForm";
 import { LocalDateTime } from "@/components/layout/LocalDateTime";
@@ -31,6 +34,7 @@ import { requireSession } from "@/lib/auth/current-user";
 import { PERMISSION_KEYS, ROLE_DEFAULTS, changeableKeys, type PermissionKey } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { canChangeEmployeeRole, canManageEmployee, canManageEmployeeAccess } from "@/lib/employees";
+import { getSalonSettings } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -70,6 +74,7 @@ export default async function EmployeePage({ params, searchParams }: PageProps<"
         isActive: true,
         createdAt: true,
         lastLoginAt: true,
+        sharePercentage: true,
         permissions: { select: { permission: { select: { key: true } } } },
       },
     }),
@@ -80,11 +85,14 @@ export default async function EmployeePage({ params, searchParams }: PageProps<"
   const canEdit = permissions.has("employees.edit") && canManageEmployee(viewer, target);
   const canSetPassword = permissions.has("employees.edit") && canManageEmployeeAccess(viewer, target);
   const canSetStatus = permissions.has("employees.activate") && canManageEmployeeAccess(viewer, target);
+  // Pay rules are ADMIN-only; `setEmployeeShare` checks the same on the server.
+  const canSetShare = viewer.role === "ADMIN";
+  const canViewEarnings = permissions.has("reports.view_all_employees");
 
   const tabs: Tab[] = [];
   if (canView) tabs.push("overview");
   if (canViewExpenses) tabs.push("expenses");
-  if (canEdit || canSetPassword || canSetStatus) tabs.push("account");
+  if (canEdit || canSetPassword || canSetStatus || canSetShare) tabs.push("account");
   if (canManagePermissions) tabs.push("permissions");
   const activeTab = tabs.find((key) => key === query.tab) ?? tabs[0];
 
@@ -181,6 +189,10 @@ export default async function EmployeePage({ params, searchParams }: PageProps<"
         </Panel>
       )}
 
+      {activeTab === "overview" && canViewEarnings && (
+        <EmployeeEarningsPanel employeeId={target.id} sharePercentage={target.sharePercentage} month={query.month} />
+      )}
+
       {activeTab === "expenses" && (
         <EmployeeExpensesTab
           employeeId={target.id}
@@ -223,6 +235,16 @@ export default async function EmployeePage({ params, searchParams }: PageProps<"
               description={t(target.isActive ? "status.activeDescription" : "status.inactiveDescription")}
             >
               <EmployeeStatusForm userId={target.id} isActive={target.isActive} />
+            </Panel>
+          )}
+          {canSetShare && (
+            <Panel icon={Percent} title={t("share.title")} description={t("share.description")}>
+              <EmployeeShareForm
+                userId={target.id}
+                // A Decimal cannot cross to a client component; its string form can.
+                value={target.sharePercentage?.toString() ?? ""}
+                salonPercentage={(await getSalonSettings()).employeeSharePercentage.toString()}
+              />
             </Panel>
           )}
         </>

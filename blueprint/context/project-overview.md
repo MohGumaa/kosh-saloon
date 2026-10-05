@@ -1,6 +1,6 @@
 # Kosh CRM - Project Overview
 
-<!-- blueprint:source-hash c5cade8000604ad0891317330df8e1f5a08806431c0c0c58a4dfa865bed82694 -->
+<!-- blueprint:source-hash 158df12a25fd8b5b3a00b4a9f58eea8ad7be3ffc4d4c9c899124768f5cc3a37f -->
 
 > Salon management and financial CRM for Kosh Salon: employees, services,
 > invoices, expenses, employee earnings, monthly settlements, reports,
@@ -21,7 +21,7 @@ individual permissions for Supervisor and Staff users.
 
 | Role | Access |
 | --- | --- |
-| **ADMIN** | All permissions, always: users, roles, permissions, services, invoices, all expenses, settlements, all reports, settings (incl. global share %, currency, tax), audit logs. |
+| **ADMIN** | All permissions, always: users, roles, permissions, services, invoices, all expenses, settlements, all reports, settings (incl. global and per-employee share %, currency, tax), audit logs. |
 | **SUPERVISOR** | Default: `employees.view`, `services.view`, `invoices.{view,create,edit,change_status}`, `expenses.{view,create}`, `employee_expenses.{view,create}`, `reports.{view,view_all_employees}`, `settlements.{view,create}`. Approving or paying settlements, settings, and permission management must be granted explicitly. Never admin accounts or role management by default. |
 | **STAFF** | Default: `services.view`, `invoices.create` and `invoices.view` (own only), `reports.view_own_performance`, `settlements.view` (own only). Creates invoices only for themselves, as Paid or Unpaid; cannot edit, change status, or cancel afterwards. No salon-wide financials or other employees' data. |
 
@@ -44,9 +44,14 @@ individual permissions for Supervisor and Staff users.
 
 - Share percentage is a global setting (`employeeSharePercentage`), default
   **50%**, never hard-coded. A change applies to new calculations only.
+- An ADMIN may set an optional per-employee share % (0-100). The effective
+  `sharePercentage` is the employee's own value when set, otherwise the global
+  one. Example: an employee who takes their cut in cash at service time and
+  invoices only the salon's portion is set to 0%, so nothing is owed at month
+  end. Changes are audited and apply to new calculations only.
 - `paidRevenue` = sum of the employee's **PAID** invoices in the period.
   UNPAID invoices show in performance reports only; CANCELLED count nowhere.
-- `employeeShare` = `paidRevenue * sharePercentage / 100`
+- `employeeShare` = `paidRevenue * sharePercentage / 100` (effective %)
 - `finalAmount` = `employeeShare - employeeExpenses + adjustments`
 - Salon expenses feed salon reports only; they never reduce employee payout.
 - **No tax math in V1:** the tax rate and tax ID are stored for future receipts;
@@ -80,7 +85,7 @@ passes.
 8. **Invoice & transaction management** - create, view, edit, search, filter, pay, cancel invoices.
 9. **Salon expense management** - rent, utilities, supplies, maintenance, marketing, other.
 10. **Employee expense management** - advances, withdrawals, personal purchases, other deductions.
-11. **Employee revenue & share calculation** - paid revenue x global share % = earnings.
+11. **Employee revenue & share calculation** - paid revenue x effective share % (optional Admin-set per-employee %, else global) = earnings.
 12. **Monthly employee settlements** - revenue, share %, earnings, expenses, adjustments, payout, approval and payment status.
 13. **Historical settlement protection** - freeze values, lock paid settlements, corrections via next-month adjustments.
 14. **Admin dashboard** - revenue, bills, pending, expenses, staff count, payouts, latest invoices, revenue chart.
@@ -117,6 +122,7 @@ PostgreSQL via Prisma. Money fields use `Decimal`. All models have `id`
 - `passwordHash` (string)
 - `image` (string?, object-storage URL/key)
 - `role` (enum `Role`: ADMIN | SUPERVISOR | STAFF; no Role table)
+- `sharePercentage` (Decimal?, 0-100; null = use the global setting; ADMIN-set, audited)
 - `isActive` (boolean)
 - `language` (enum: EN | AR), `theme` (enum: LIGHT | DARK | SYSTEM)
 - `lastLoginAt` (DateTime?)

@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Prisma } from "@/generated/prisma/client";
 import { ROLE_DEFAULTS } from "@/lib/auth/permissions";
 
 const mocks = vi.hoisted(() => {
   const db = {
-    user: { findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
+    user: { findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     permission: { findMany: vi.fn() },
     userPermission: { deleteMany: vi.fn(), createMany: vi.fn() },
     session: { deleteMany: vi.fn() },
@@ -34,6 +35,7 @@ const {
   removeEmployeeImage,
   setEmployeeActive,
   setEmployeePassword,
+  setEmployeeShare,
   updateEmployee,
   updateEmployeeImage,
 } = await import("@/actions/employees");
@@ -84,6 +86,7 @@ const newEmployeeValues = { name: " Lina Omar ", username: "Lina", email: "Lina@
 function expectNothingWritten() {
   expect(mocks.db.user.create).not.toHaveBeenCalled();
   expect(mocks.db.user.update).not.toHaveBeenCalled();
+  expect(mocks.db.user.updateMany).not.toHaveBeenCalled();
   expect(mocks.db.userPermission.deleteMany).not.toHaveBeenCalled();
   expect(mocks.db.session.deleteMany).not.toHaveBeenCalled();
   expect(mocks.db.passwordResetToken.deleteMany).not.toHaveBeenCalled();
@@ -496,6 +499,102 @@ describe("setEmployeeActive", () => {
 
     mocks.db.$transaction.mockRejectedValueOnce(new Error("db down"));
     expect(await setActive("false")).toEqual({ success: false, error: "unexpected" });
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("setEmployeeShare", () => {
+  const setShare = (sharePercentage: string, userId = "staff1") =>
+    setEmployeeShare(null, form({ userId, sharePercentage }));
+  const stored = (value: string | null) =>
+    mocks.db.user.findUnique.mockResolvedValue({ sharePercentage: value === null ? null : new Prisma.Decimal(value) });
+
+  beforeEach(() => {
+    stored(null);
+    mocks.db.user.updateMany.mockResolvedValue({ count: 1 });
+  });
+
+  it.each(["SUPERVISOR", "STAFF"] as const)("returns forbidden for a %s, even with employees.edit", async (role) => {
+    signInAs("other1", role);
+
+    expect(await setShare("0")).toEqual({ success: false, error: "forbidden" });
+    expect(mocks.db.user.findUnique).not.toHaveBeenCalled();
+    expectNothingWritten();
+  });
+
+  it("sets 0% and audits the change from the salon default", async () => {
+    expect(await setShare("٠")).toEqual({ success: true });
+    expect(mocks.db.user.updateMany).toHaveBeenCalledWith({
+      where: { id: "staff1", sharePercentage: null },
+      data: { sharePercentage: "0" },
+    });
+    expect(mocks.db.auditLog.create).toHaveBeenCalledWith({
+      data: {
+        userId: "admin1",
+        action: "user.share_updated",
+        entity: "User",
+        entityId: "staff1",
+        oldValue: { sharePercentage: null },
+        newValue: { sharePercentage: "0" },
+      },
+    });
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/employees/staff1");
+  });
+
+  it("changes 0% to 62.5%, guarded by the value it read", async () => {
+    stored("0");
+
+    expect(await setShare("62.50")).toEqual({ success: true });
+    expect(mocks.db.user.updateMany.mock.calls[0][0].where.sharePercentage.toString()).toBe("0");
+    expect(mocks.db.auditLog.create.mock.calls[0][0].data).toMatchObject({
+      oldValue: { sharePercentage: "0" },
+      newValue: { sharePercentage: "62.5" },
+    });
+  });
+
+  it("clears the employee's own percentage when empty", async () => {
+    stored("40");
+
+    expect(await setShare("")).toEqual({ success: true });
+    expect(mocks.db.user.updateMany.mock.calls[0][0].data).toEqual({ sharePercentage: null });
+    expect(mocks.db.auditLog.create.mock.calls[0][0].data).toMatchObject({
+      oldValue: { sharePercentage: "40" },
+      newValue: { sharePercentage: null },
+    });
+  });
+
+  it.each([
+    ["the same value", "50", "50.00"],
+    ["no value", null, ""],
+  ])("writes nothing for %s", async (_label, value, submitted) => {
+    stored(value);
+
+    expect(await setShare(submitted)).toEqual({ success: true });
+    expect(mocks.db.user.updateMany).not.toHaveBeenCalled();
+    expect(mocks.db.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it.each(["101", "-1", "abc", "1.234"])("rejects %j with a field error", async (value) => {
+    expect(await setShare(value)).toEqual({
+      success: false,
+      error: "invalid_input",
+      fieldErrors: { sharePercentage: "invalid_input" },
+    });
+    expectNothingWritten();
+  });
+
+  it("returns not_found for a missing employee", async () => {
+    mocks.db.user.findUnique.mockResolvedValue(null);
+
+    expect(await setShare("0", "ghost")).toEqual({ success: false, error: "not_found" });
+    expectNothingWritten();
+  });
+
+  it("fails without auditing when the value changed during the save", async () => {
+    mocks.db.user.updateMany.mockResolvedValue({ count: 0 });
+
+    expect(await setShare("0")).toEqual({ success: false, error: "unexpected" });
+    expect(mocks.db.auditLog.create).not.toHaveBeenCalled();
     expect(mocks.revalidatePath).not.toHaveBeenCalled();
   });
 });

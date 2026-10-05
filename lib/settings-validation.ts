@@ -24,7 +24,7 @@ export type SalonInformation = z.infer<typeof salonInformationSchema>;
  * 0 to 100 with at most two decimal places, returned in its shortest form ("50.0" becomes "50").
  * Accepts Arabic-Indic digits and the Arabic decimal separator.
  */
-const percentageSchema = z
+export const percentageSchema = z
   .string()
   .transform((value) => normalizeDigitsAndSpaces(value).replace("٫", ".").trim())
   .pipe(

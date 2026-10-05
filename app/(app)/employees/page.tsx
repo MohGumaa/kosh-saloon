@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { UserPlus } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { UserAvatar } from "@/components/layout/UserAvatar";
 import { requirePermission } from "@/lib/auth/authorize";
 import { db } from "@/lib/db";
+import { paidRevenueWhere, salonMonth } from "@/lib/earnings";
+import { getSalonSettings } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -14,20 +16,34 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const COLUMNS = ["name", "username", "email", "role", "status"] as const;
 
+/** This salon month's paid revenue per employee, and its currency format. Employees with none are absent. */
+async function monthRevenue() {
+  const [locale, { currency }, rows] = await Promise.all([
+    getLocale(),
+    getSalonSettings(),
+    db.invoice.groupBy({ by: ["employeeId"], where: paidRevenueWhere(salonMonth()), _sum: { amount: true } }),
+  ]);
+  return {
+    price: new Intl.NumberFormat(locale, { style: "currency", currency }),
+    byEmployee: new Map(rows.map((row) => [row.employeeId, row._sum.amount?.toNumber() ?? 0])),
+  };
+}
+
 const linkClass =
   "rounded-md font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring";
 
-// The Revenue column arrives with invoices (feature 8).
 export default async function EmployeesPage() {
   const { permissions } = await requirePermission("employees.view");
   const canManagePermissions = permissions.has("permissions.manage");
-  const [t, tRoles, users] = await Promise.all([
+  const canViewRevenue = permissions.has("reports.view_all_employees");
+  const [t, tRoles, users, revenue] = await Promise.all([
     getTranslations("employees"),
     getTranslations("auth.roles"),
     db.user.findMany({
       orderBy: { name: "asc" },
       select: { id: true, name: true, username: true, email: true, image: true, role: true, isActive: true },
     }),
+    canViewRevenue ? monthRevenue() : null,
   ]);
 
   return (
@@ -59,6 +75,11 @@ export default async function EmployeesPage() {
                     {t(`columns.${column}`)}
                   </th>
                 ))}
+                {revenue && (
+                  <th scope="col" className="px-3 py-2.5 text-start font-medium whitespace-nowrap">
+                    {t("columns.revenue")}
+                  </th>
+                )}
                 {canManagePermissions && (
                   <th scope="col" className="px-3 py-2.5 text-end font-medium">
                     <span className="sr-only">{t("columns.actions")}</span>
@@ -94,6 +115,11 @@ export default async function EmployeesPage() {
                       {t(user.isActive ? "active" : "inactive")}
                     </span>
                   </td>
+                  {revenue && (
+                    <td className="px-3 py-3 tabular-nums whitespace-nowrap">
+                      <span dir="ltr">{revenue.price.format(revenue.byEmployee.get(user.id) ?? 0)}</span>
+                    </td>
+                  )}
                   {canManagePermissions && (
                     <td className="px-3 py-3 text-end">
                       {user.role !== "ADMIN" && (

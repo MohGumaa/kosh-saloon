@@ -28,7 +28,7 @@ Your features
 
 - [x] 10. Employee expense management - Record employee deductions such as cash advances, withdrawals, personal expenses, and other amounts deducted from employee earnings.
 
-- [ ] 11. Employee revenue & share calculation - Calculate employee paid revenue, apply the globally configured share percentage, and calculate employee earnings.
+- [x] 11. Employee revenue & share calculation - Calculate employee paid revenue, apply the employee's effective share percentage (an optional Admin-set per-employee percentage, otherwise the global one), and calculate employee earnings.
 
 - [ ] 12. Monthly employee settlements - Generate monthly settlements showing revenue, share percentage, earnings, expenses, adjustments, final payout, approval status, and payment status.
 

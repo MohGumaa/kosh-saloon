@@ -126,6 +126,7 @@
       "email": "Email",
       "role": "Role",
       "status": "Status",
+      "revenue": "Revenue (this month)",
       "actions": "Actions"
     },
     "active": "Active",
@@ -202,6 +203,30 @@
       "deactivate": "Deactivate account",
       "submitting": "Saving…",
       "success": "Account status saved."
+    },
+    "share": {
+      "title": "Share percentage",
+      "description": "This employee's own share of their paid revenue. Changes apply to new calculations only.",
+      "label": "Employee share percentage",
+      "hint": "0 to 100, up to two decimals. Leave empty to use the salon default ({salon}%).",
+      "submit": "Save share",
+      "submitting": "Saving…",
+      "success": "Share percentage saved."
+    },
+    "earnings": {
+      "title": "Earnings",
+      "description": "Paid revenue and earnings for one month.",
+      "month": "Month",
+      "previous": "Previous month",
+      "next": "Next month",
+      "paidRevenue": "Paid revenue",
+      "sharePercentage": "Share percentage",
+      "source": {
+        "employee": "Employee's own",
+        "salon": "Salon default"
+      },
+      "employeeShare": "Earnings",
+      "empty": "No paid invoices this month."
     },
     "errors": {
       "forbidden": "You are not allowed to do this.",
@@ -675,7 +700,8 @@
         "updated": "Updated employee",
         "activated": "Activated employee",
         "deactivated": "Deactivated employee",
-        "password_set": "Set employee password"
+        "password_set": "Set employee password",
+        "share_updated": "Changed employee share percentage"
       },
       "permissions": {
         "updated": "Changed permissions"

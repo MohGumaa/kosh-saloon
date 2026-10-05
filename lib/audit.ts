@@ -13,6 +13,7 @@ export const AUDIT_ACTIONS = [
   "user.activated",
   "user.deactivated",
   "user.password_set",
+  "user.share_updated",
   "permissions.updated",
   "settings.updated",
   "service.created",
