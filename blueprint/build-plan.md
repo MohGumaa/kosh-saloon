@@ -24,7 +24,7 @@ Your features
 
 - [x] 8. Invoice & transaction management - Create, view, edit, search, filter, pay, and cancel invoices while associating each transaction with an employee and service.
 
-- [ ] 9. Salon expense management - Record and manage salon expenses such as rent, utilities, supplies, maintenance, marketing, and other business costs.
+- [x] 9. Salon expense management - Record and manage salon expenses such as rent, utilities, supplies, maintenance, marketing, and other business costs.
 
 - [ ] 10. Employee expense management - Record employee deductions such as cash advances, withdrawals, personal expenses, and other amounts deducted from employee earnings.
 

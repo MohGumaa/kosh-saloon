@@ -100,7 +100,8 @@ const filterAmountSchema = z
       .transform((value) => String(Number(value))),
   );
 
-function isCalendarDate(value: string): boolean {
+/** A real `YYYY-MM-DD` calendar day. */
+export function isCalendarDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const [year, month, day] = value.split("-").map(Number);
   const date = new Date(Date.UTC(year, month - 1, day));

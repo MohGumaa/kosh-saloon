@@ -43,12 +43,13 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  sessions            Session[]
-  passwordResetTokens PasswordResetToken[]
-  permissions         UserPermission[]
-  auditLogs           AuditLog[]
-  invoices            Invoice[]            @relation("InvoiceEmployee")
-  createdInvoices     Invoice[]            @relation("InvoiceCreator")
+  sessions             Session[]
+  passwordResetTokens  PasswordResetToken[]
+  permissions          UserPermission[]
+  auditLogs            AuditLog[]
+  invoices             Invoice[]            @relation("InvoiceEmployee")
+  createdInvoices      Invoice[]            @relation("InvoiceCreator")
+  createdSalonExpenses SalonExpense[]       @relation("SalonExpenseCreator")
 }
 
 /// The catalog in `lib/auth/permissions.ts`; rows are inserted only by migrations.
@@ -175,6 +176,36 @@ model Invoice {
   @@index([createdAt])
   @@index([employeeId, createdAt])
   @@index([serviceId])
+}
+
+enum ExpenseCategory {
+  RENT
+  ELECTRICITY
+  WATER
+  INTERNET
+  SUPPLIES
+  EQUIPMENT
+  MAINTENANCE
+  MARKETING
+  OTHER
+}
+
+/// A salon business cost. Feeds salon reports only; never an employee payout. Deleting
+/// one removes the row; the `expense.deleted` audit entry keeps the full record.
+/// `date` is the salon calendar day the cost belongs to.
+model SalonExpense {
+  id          String          @id @default(cuid())
+  title       String
+  description String?
+  category    ExpenseCategory
+  amount      Decimal         @db.Decimal(10, 2)
+  date        DateTime        @db.Date
+  createdById String
+  createdBy   User            @relation("SalonExpenseCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([date])
 }
 
 /// Fixed-window counters for sign-in and password reset requests.

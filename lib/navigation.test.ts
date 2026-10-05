@@ -79,4 +79,10 @@ describe("NAVIGATION", () => {
 
     expect(invoices?.href).toBe("/transactions");
   });
+
+  it("links the salon expenses item to the expense list", () => {
+    const expenses = NAVIGATION.flatMap((group) => group.items).find((item) => item.key === "salonExpenses");
+
+    expect(expenses?.href).toBe("/expenses");
+  });
 });

@@ -35,7 +35,7 @@ export const NAVIGATION: NavGroup[] = [
     key: "transactions",
     items: [
       { key: "invoices", icon: FileText, href: "/transactions", permissions: ["invoices.view"] },
-      { key: "salonExpenses", icon: Wallet, permissions: ["expenses.view"] },
+      { key: "salonExpenses", icon: Wallet, href: "/expenses", permissions: ["expenses.view"] },
     ],
   },
   {
