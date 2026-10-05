@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Plus, Wallet } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
+import { DatePicker } from "@/components/ui/date-picker";
+import { FormSelect } from "@/components/ui/form-select";
+import { Input } from "@/components/ui/input";
 import { resolvePage } from "@/lib/audit";
 import { requirePermission } from "@/lib/auth/authorize";
 import { db } from "@/lib/db";
@@ -25,8 +28,7 @@ const COLUMNS = ["date", "title", "category", "amount", "createdBy"] as const;
 const linkClass =
   "rounded-md font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring";
 
-const controlClass =
-  "h-11 w-full rounded-xl border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
+const controlClass = "h-11 rounded-xl px-3 md:text-sm";
 
 export default async function ExpensesPage({ searchParams }: PageProps<"/expenses">) {
   const { permissions } = await requirePermission("expenses.view");
@@ -97,7 +99,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
           <label htmlFor="filter-q" className="text-sm font-medium">
             {t("filters.q")}
           </label>
-          <input
+          <Input
             id="filter-q"
             name="q"
             type="search"
@@ -112,28 +114,22 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
           <label htmlFor="filter-category" className="text-sm font-medium">
             {t("filters.category")}
           </label>
-          <select id="filter-category" name="category" defaultValue={filters.category ?? ""} className={controlClass}>
-            <option value="">{t("filters.all")}</option>
-            {EXPENSE_CATEGORIES.map((category) => (
-              <option key={category} value={category}>
-                {t(`categories.${category}`)}
-              </option>
-            ))}
-          </select>
+          <FormSelect
+            id="filter-category"
+            name="category"
+            defaultValue={filters.category ?? ""}
+            options={[
+              { value: "", label: t("filters.all") },
+              ...EXPENSE_CATEGORIES.map((category) => ({ value: category, label: t(`categories.${category}`) })),
+            ]}
+          />
         </div>
         {(["from", "to"] as const).map((key) => (
           <div key={key} className="flex flex-col gap-2">
             <label htmlFor={`filter-${key}`} className="text-sm font-medium">
               {t(`filters.${key}`)}
             </label>
-            <input
-              id={`filter-${key}`}
-              name={key}
-              type="date"
-              dir="ltr"
-              defaultValue={filters[key]}
-              className={controlClass}
-            />
+            <DatePicker id={`filter-${key}`} name={key} defaultValue={filters[key]} clearable />
           </div>
         ))}
         <div className="flex flex-wrap items-center gap-4 sm:col-span-2 lg:col-span-4">

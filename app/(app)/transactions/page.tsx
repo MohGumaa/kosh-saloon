@@ -4,6 +4,9 @@ import { FileText, Plus } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { LocalDateTime } from "@/components/layout/LocalDateTime";
+import { DatePicker } from "@/components/ui/date-picker";
+import { FormSelect } from "@/components/ui/form-select";
+import { Input } from "@/components/ui/input";
 import { resolvePage } from "@/lib/audit";
 import { requirePermission } from "@/lib/auth/authorize";
 import { db } from "@/lib/db";
@@ -28,8 +31,7 @@ const COLUMNS = ["invoiceNumber", "employee", "service", "amount", "status", "da
 const linkClass =
   "rounded-md font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring";
 
-const controlClass =
-  "h-11 w-full rounded-xl border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
+const controlClass = "h-11 rounded-xl px-3 md:text-sm";
 
 export default async function InvoicesPage({ searchParams }: PageProps<"/transactions">) {
   const { user, permissions } = await requirePermission("invoices.view");
@@ -106,7 +108,7 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/transac
           <label htmlFor="filter-q" className="text-sm font-medium">
             {t("filters.q")}
           </label>
-          <input
+          <Input
             id="filter-q"
             name="q"
             type="search"
@@ -122,55 +124,51 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/transac
             <label htmlFor="filter-employee" className="text-sm font-medium">
               {t("filters.employee")}
             </label>
-            <select id="filter-employee" name="employee" defaultValue={filters.employee ?? ""} className={controlClass}>
-              <option value="">{t("filters.all")}</option>
-              {employees.map((employee) => (
-                <option key={employee.id} value={employee.id}>
-                  {employee.name}
-                </option>
-              ))}
-            </select>
+            <FormSelect
+              id="filter-employee"
+              name="employee"
+              defaultValue={filters.employee ?? ""}
+              options={[
+                { value: "", label: t("filters.all") },
+                ...employees.map((employee) => ({ value: employee.id, label: employee.name })),
+              ]}
+            />
           </div>
         )}
         <div className="flex flex-col gap-2">
           <label htmlFor="filter-service" className="text-sm font-medium">
             {t("filters.service")}
           </label>
-          <select id="filter-service" name="service" defaultValue={filters.service ?? ""} className={controlClass}>
-            <option value="">{t("filters.all")}</option>
-            {services.map((service) => (
-              <option key={service.id} value={service.id}>
-                {serviceName(service)}
-              </option>
-            ))}
-          </select>
+          <FormSelect
+            id="filter-service"
+            name="service"
+            defaultValue={filters.service ?? ""}
+            options={[
+              { value: "", label: t("filters.all") },
+              ...services.map((service) => ({ value: service.id, label: serviceName(service) })),
+            ]}
+          />
         </div>
         <div className="flex flex-col gap-2">
           <label htmlFor="filter-status" className="text-sm font-medium">
             {t("filters.status")}
           </label>
-          <select id="filter-status" name="status" defaultValue={filters.status ?? ""} className={controlClass}>
-            <option value="">{t("filters.all")}</option>
-            {INVOICE_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {t(`statuses.${status}`)}
-              </option>
-            ))}
-          </select>
+          <FormSelect
+            id="filter-status"
+            name="status"
+            defaultValue={filters.status ?? ""}
+            options={[
+              { value: "", label: t("filters.all") },
+              ...INVOICE_STATUSES.map((status) => ({ value: status, label: t(`statuses.${status}`) })),
+            ]}
+          />
         </div>
         {(["from", "to"] as const).map((key) => (
           <div key={key} className="flex flex-col gap-2">
             <label htmlFor={`filter-${key}`} className="text-sm font-medium">
               {t(`filters.${key}`)}
             </label>
-            <input
-              id={`filter-${key}`}
-              name={key}
-              type="date"
-              dir="ltr"
-              defaultValue={filters[key]}
-              className={controlClass}
-            />
+            <DatePicker id={`filter-${key}`} name={key} defaultValue={filters[key]} clearable />
           </div>
         ))}
         {(["min", "max"] as const).map((key) => (
@@ -178,7 +176,7 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/transac
             <label htmlFor={`filter-${key}`} className="text-sm font-medium">
               {t(`filters.${key}`)}
             </label>
-            <input
+            <Input
               id={`filter-${key}`}
               name={key}
               inputMode="decimal"

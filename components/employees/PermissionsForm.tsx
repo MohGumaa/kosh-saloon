@@ -6,6 +6,7 @@ import { updateUserPermissions, type PermissionsFormState } from "@/actions/perm
 import { FormMessage } from "@/components/auth/FormMessage";
 import { useSuccessToast } from "@/components/auth/useSuccessToast";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   PERMISSION_GROUPS,
   PERMISSION_KEYS,
@@ -81,16 +82,14 @@ export function PermissionsForm({ userId, current, changeable, defaults, readOnl
                 return (
                   <label
                     key={key}
-                    className="flex min-h-9 items-center gap-3 text-sm has-disabled:text-muted-foreground"
+                    className="flex min-h-9 items-center gap-3 text-sm has-data-disabled:text-muted-foreground"
                   >
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       name="permissions"
                       value={key}
                       checked={checked.has(key)}
                       disabled={disabled}
-                      onChange={(event) => toggle(key, event.target.checked)}
-                      className="size-4 shrink-0 accent-primary outline-none focus-visible:ring-3 focus-visible:ring-ring"
+                      onCheckedChange={(on) => toggle(key, on)}
                     />
                     {t(`keys.${key}`)}
                   </label>

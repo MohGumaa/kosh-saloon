@@ -5,6 +5,7 @@ import { Banknote } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { InvoiceField, InvoiceFieldErrorCode } from "@/actions/invoices";
 import { FormField } from "@/components/auth/FormField";
+import { FormSelect, fieldSelectClass } from "@/components/ui/form-select";
 import { Label } from "@/components/ui/label";
 
 export interface InvoiceChoice {
@@ -31,9 +32,6 @@ interface InvoiceFieldsProps {
   prefillAmount?: boolean;
 }
 
-const selectClass =
-  "h-12 w-full rounded-xl border border-input bg-transparent px-4 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive md:text-base dark:bg-input/30";
-
 interface SelectFieldProps {
   name: "employeeId" | "serviceId";
   label: string;
@@ -52,27 +50,23 @@ function SelectField({ name, label, placeholder, choices, defaultValue, error, o
   return (
     <div className="flex flex-col gap-2">
       <Label htmlFor={id}>{label}</Label>
-      <select
+      <FormSelect
         // Remount with the latest value after a failed submit resets the form.
         key={`${name}:${defaultValue}`}
         id={id}
         name={name}
         required
         defaultValue={defaultValue}
-        onChange={onChange && ((event) => onChange(event.target.value))}
+        placeholder={placeholder}
+        options={choices.map((choice) => ({
+          value: choice.id,
+          label: choice.isActive ? choice.name : t("inactive", { name: choice.name }),
+        }))}
+        onValueChange={onChange}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${id}-error` : undefined}
-        className={selectClass}
-      >
-        <option value="" disabled>
-          {placeholder}
-        </option>
-        {choices.map((choice) => (
-          <option key={choice.id} value={choice.id}>
-            {choice.isActive ? choice.name : t("inactive", { name: choice.name })}
-          </option>
-        ))}
-      </select>
+        className={fieldSelectClass}
+      />
       {error && (
         <p id={`${id}-error`} className="text-sm text-destructive">
           {tAuth(`errors.${error}`)}

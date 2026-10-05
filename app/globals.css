@@ -207,5 +207,10 @@
   }
   html {
     @apply font-sans;
+    /* Native widgets (date pickers, scrollbars) follow the app theme, not the OS one. */
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
   }
 }

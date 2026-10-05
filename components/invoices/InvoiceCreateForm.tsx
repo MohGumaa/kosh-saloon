@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { createInvoice, type InvoiceFormState } from "@/actions/invoices";
@@ -9,6 +9,7 @@ import { useFocusOnError } from "@/components/auth/useFocusOnError";
 import { useSuccessToast } from "@/components/auth/useSuccessToast";
 import { InvoiceFields, type InvoiceChoice, type ServiceChoice } from "@/components/invoices/InvoiceFields";
 import { Button } from "@/components/ui/button";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface InvoiceCreateFormProps {
   employees: InvoiceChoice[] | { ownName: string };
@@ -30,15 +31,15 @@ export function InvoiceCreateForm({ employees, services, currency }: InvoiceCrea
   const values = { employeeId: "", serviceId: "", amount: "", status: "", ...failure?.values };
   const statusError = failure?.fieldErrors?.status;
 
-  const firstStatusRef = useRef<HTMLInputElement>(null);
-
   useEffect(() => {
     if (createdId) router.push(`/transactions/${createdId}`);
   }, [createdId, router]);
 
   // Radios cannot carry aria-invalid, so when the status is the only problem, focus moves here instead.
   useEffect(() => {
-    if (statusError && !formRef.current?.querySelector("[aria-invalid='true']")) firstStatusRef.current?.focus();
+    if (statusError && !formRef.current?.querySelector("[aria-invalid='true']")) {
+      formRef.current?.querySelector<HTMLElement>("[role='radio']")?.focus();
+    }
   }, [state, statusError, formRef]);
 
   return (
@@ -60,26 +61,23 @@ export function InvoiceCreateForm({ employees, services, currency }: InvoiceCrea
       />
       <fieldset key={`status:${values.status}`} className="flex flex-col gap-2">
         <legend className="mb-2 text-sm font-medium">{t("fields.status")}</legend>
-        <div className="flex flex-wrap gap-3">
-          {STATUSES.map((status, index) => (
+        <RadioGroup
+          name="status"
+          required
+          defaultValue={values.status || undefined}
+          aria-describedby={statusError ? "field-status-error" : undefined}
+          className="flex flex-wrap gap-3"
+        >
+          {STATUSES.map((status) => (
             <label
               key={status}
-              className="flex h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 text-sm has-checked:border-primary has-checked:bg-primary-soft has-focus-visible:ring-3 has-focus-visible:ring-ring/50 md:text-base"
+              className="flex h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 text-sm has-data-checked:border-primary has-data-checked:bg-primary-soft has-focus-visible:ring-3 has-focus-visible:ring-ring/50 md:text-base"
             >
-              <input
-                type="radio"
-                name="status"
-                value={status}
-                required
-                ref={index === 0 ? firstStatusRef : undefined}
-                defaultChecked={values.status === status}
-                aria-describedby={statusError ? "field-status-error" : undefined}
-                className="size-4 accent-primary outline-none"
-              />
+              <RadioGroupItem value={status} className="focus-visible:ring-0" />
               {t(`statuses.${status}`)}
             </label>
           ))}
-        </div>
+        </RadioGroup>
         {statusError && (
           <p id="field-status-error" className="text-sm text-destructive">
             {tAuth(`errors.${statusError}`)}

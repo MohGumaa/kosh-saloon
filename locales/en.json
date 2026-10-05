@@ -718,6 +718,10 @@
     "body": "You do not have permission to open this page. Ask the salon administrator if you need access.",
     "back": "Back to dashboard"
   },
+  "datePicker": {
+    "placeholder": "Pick a date",
+    "clear": "Clear date"
+  },
   "notFound": {
     "title": "Page not found",
     "body": "The page you are looking for does not exist or has been moved. Check the address and try again.",

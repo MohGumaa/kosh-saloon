@@ -4,6 +4,7 @@ import { AtSign, Mail, Phone, User } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { DetailsField, EmployeeFieldErrorCode } from "@/actions/employees";
 import { FormField } from "@/components/auth/FormField";
+import { FormSelect, fieldSelectClass } from "@/components/ui/form-select";
 import { Label } from "@/components/ui/label";
 import { ROLES } from "@/lib/employees";
 
@@ -78,22 +79,17 @@ export function EmployeeFields({ values, errors, showRole }: EmployeeFieldsProps
       {showRole && (
         <div className="flex flex-col gap-2">
           <Label htmlFor="field-role">{t("role")}</Label>
-          <select
+          <FormSelect
             key={`role:${values.role}`}
             id="field-role"
             name="role"
             required
             defaultValue={values.role}
+            options={ROLES.map((role) => ({ value: role, label: tAuth(`roles.${role}`) }))}
             aria-invalid={errors?.role ? true : undefined}
             aria-describedby={errors?.role ? "field-role-error" : undefined}
-            className="h-12 w-full rounded-xl border border-input bg-transparent px-4 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive md:text-base dark:bg-input/30"
-          >
-            {ROLES.map((role) => (
-              <option key={role} value={role}>
-                {tAuth(`roles.${role}`)}
-              </option>
-            ))}
-          </select>
+            className={fieldSelectClass}
+          />
           {errors?.role && (
             <p id="field-role-error" className="text-sm text-destructive">
               {tAuth(`errors.${errors.role}`)}
