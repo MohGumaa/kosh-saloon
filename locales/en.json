@@ -137,6 +137,7 @@
       "label": "Employee sections",
       "permissions": "Permissions",
       "overview": "Overview",
+      "expenses": "Expenses",
       "account": "Account"
     },
     "new": "New employee",
@@ -474,6 +475,101 @@
       "unexpected": "An unexpected error occurred. Please try again."
     }
   },
+  "employeeExpenses": {
+    "title": "Expenses",
+    "description": "Amounts deducted from this employee's earnings, newest first.",
+    "new": "Add deduction",
+    "back": "Back to expenses",
+    "columns": {
+      "date": "Date",
+      "category": "Category",
+      "amount": "Amount",
+      "description": "Description",
+      "createdBy": "Recorded by"
+    },
+    "categories": {
+      "CASH_ADVANCE": "Cash advance",
+      "ADVANCE_SALARY": "Salary advance",
+      "WITHDRAWAL": "Withdrawal",
+      "PERSONAL_PURCHASE": "Personal purchase",
+      "OTHER": "Other"
+    },
+    "filters": {
+      "label": "Filter deductions",
+      "category": "Category",
+      "all": "All",
+      "from": "From",
+      "to": "To",
+      "apply": "Apply filters",
+      "clear": "Clear filters"
+    },
+    "empty": {
+      "title": "No deductions yet",
+      "create": "Add a cash advance, withdrawal, or other deduction for this employee.",
+      "view": "No deductions have been recorded for this employee.",
+      "noMatchTitle": "No matching deductions",
+      "noMatch": "No deductions match these filters."
+    },
+    "pagination": {
+      "label": "Deduction pages",
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page {page} of {total}"
+    },
+    "fields": {
+      "category": "Category",
+      "chooseCategory": "Choose a category",
+      "amount": "Amount",
+      "amountHint": "In {currency}, up to two decimal places.",
+      "date": "Date",
+      "dateHint": "The day the deduction belongs to, which decides its settlement month. It cannot be after today.",
+      "description": "Description (optional)",
+      "descriptionHint": "Up to {max} characters."
+    },
+    "create": {
+      "title": "New deduction",
+      "description": "Record an amount to deduct from this employee's earnings.",
+      "submit": "Add deduction",
+      "submitting": "Adding…",
+      "success": "Deduction added."
+    },
+    "detail": {
+      "title": "Deduction details",
+      "description": "What was deducted, why, and when.",
+      "employee": "Employee",
+      "category": "Category",
+      "amount": "Amount",
+      "date": "Date",
+      "descriptionLabel": "Description",
+      "noDescription": "No description",
+      "createdBy": "Recorded by",
+      "createdAt": "Recorded",
+      "updatedAt": "Last updated"
+    },
+    "edit": {
+      "title": "Edit deduction",
+      "description": "Category, amount, date, and description.",
+      "submit": "Save changes",
+      "submitting": "Saving…",
+      "success": "Deduction saved."
+    },
+    "deleteForm": {
+      "title": "Delete deduction",
+      "description": "Remove this deduction from the employee's records.",
+      "delete": "Delete deduction",
+      "confirmText": "Deleting cannot be undone. The audit log keeps a copy of the deleted deduction.",
+      "confirmDelete": "Yes, delete deduction",
+      "keep": "Keep deduction",
+      "submitting": "Deleting…",
+      "success": "Deduction deleted."
+    },
+    "errors": {
+      "forbidden": "You are not allowed to do this.",
+      "not_found": "This deduction or employee no longer exists.",
+      "invalid_input": "The submitted details were not valid. Reload the page and try again.",
+      "unexpected": "An unexpected error occurred. Please try again."
+    }
+  },
   "permissions": {
     "title": "Permissions",
     "description": "Choose what this user can see and do.",
@@ -604,6 +700,11 @@
         "created": "Created salon expense",
         "updated": "Updated salon expense",
         "deleted": "Deleted salon expense"
+      },
+      "employee_expense": {
+        "created": "Recorded employee deduction",
+        "updated": "Updated employee deduction",
+        "deleted": "Deleted employee deduction"
       }
     },
     "entities": {
@@ -611,7 +712,8 @@
       "SalonSettings": "Salon settings",
       "Service": "Service",
       "Invoice": "Invoice",
-      "SalonExpense": "Salon expense"
+      "SalonExpense": "Salon expense",
+      "EmployeeExpense": "Employee deduction"
     },
     "fields": {
       "name": "Full name",

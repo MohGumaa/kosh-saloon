@@ -43,13 +43,15 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  sessions             Session[]
-  passwordResetTokens  PasswordResetToken[]
-  permissions          UserPermission[]
-  auditLogs            AuditLog[]
-  invoices             Invoice[]            @relation("InvoiceEmployee")
-  createdInvoices      Invoice[]            @relation("InvoiceCreator")
-  createdSalonExpenses SalonExpense[]       @relation("SalonExpenseCreator")
+  sessions                Session[]
+  passwordResetTokens     PasswordResetToken[]
+  permissions             UserPermission[]
+  auditLogs               AuditLog[]
+  invoices                Invoice[]            @relation("InvoiceEmployee")
+  createdInvoices         Invoice[]            @relation("InvoiceCreator")
+  createdSalonExpenses    SalonExpense[]       @relation("SalonExpenseCreator")
+  employeeExpenses        EmployeeExpense[]    @relation("EmployeeExpenseEmployee")
+  createdEmployeeExpenses EmployeeExpense[]    @relation("EmployeeExpenseCreator")
 }
 
 /// The catalog in `lib/auth/permissions.ts`; rows are inserted only by migrations.
@@ -206,6 +208,34 @@ model SalonExpense {
   updatedAt   DateTime        @updatedAt
 
   @@index([date])
+}
+
+enum EmployeeExpenseCategory {
+  CASH_ADVANCE
+  ADVANCE_SALARY
+  WITHDRAWAL
+  PERSONAL_PURCHASE
+  OTHER
+}
+
+/// An amount deducted from an employee's earnings (`finalAmount = employeeShare -
+/// employeeExpenses + adjustments`). Never a salon cost. Deleting one removes the row;
+/// the `employee_expense.deleted` audit entry keeps the full record. `date` is the
+/// salon calendar day the deduction belongs to, which decides its settlement month.
+model EmployeeExpense {
+  id          String                  @id @default(cuid())
+  employeeId  String
+  employee    User                    @relation("EmployeeExpenseEmployee", fields: [employeeId], references: [id], onDelete: Restrict)
+  category    EmployeeExpenseCategory
+  amount      Decimal                 @db.Decimal(10, 2)
+  description String?
+  date        DateTime                @db.Date
+  createdById String
+  createdBy   User                    @relation("EmployeeExpenseCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  @@index([employeeId, date])
 }
 
 /// Fixed-window counters for sign-in and password reset requests.

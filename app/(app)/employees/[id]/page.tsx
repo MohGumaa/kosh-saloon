@@ -14,8 +14,10 @@ import {
   ShieldCheck,
   UserCog,
   UserRound,
+  Wallet,
 } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { EmployeeExpensesTab } from "@/components/employee-expenses/EmployeeExpensesTab";
 import { EmployeeDetailsForm } from "@/components/employees/EmployeeDetailsForm";
 import { EmployeeImageForm } from "@/components/employees/EmployeeImageForm";
 import { EmployeePasswordForm } from "@/components/employees/EmployeePasswordForm";
@@ -36,8 +38,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("title") };
 }
 
-// Invoices, Performance, and Expenses join these with features 8, 10, and 18.
-const TAB_ICONS = { overview: UserRound, account: UserCog, permissions: KeyRound } as const;
+// Invoices and Performance join these with feature 18.
+const TAB_ICONS = { overview: UserRound, expenses: Wallet, account: UserCog, permissions: KeyRound } as const;
 
 type Tab = keyof typeof TAB_ICONS;
 
@@ -46,10 +48,11 @@ export default async function EmployeePage({ params, searchParams }: PageProps<"
   const permissions = await getPermissions(viewer);
   const canView = permissions.has("employees.view");
   const canManagePermissions = permissions.has("permissions.manage");
-  if (!canView && !canManagePermissions) redirect("/forbidden");
+  const canViewExpenses = permissions.has("employee_expenses.view");
+  if (!canView && !canManagePermissions && !canViewExpenses) redirect("/forbidden");
 
   const { id } = await params;
-  const [{ tab }, t, tPermissions, tRoles, target] = await Promise.all([
+  const [query, t, tPermissions, tRoles, target] = await Promise.all([
     searchParams,
     getTranslations("employees"),
     getTranslations("permissions"),
@@ -80,9 +83,10 @@ export default async function EmployeePage({ params, searchParams }: PageProps<"
 
   const tabs: Tab[] = [];
   if (canView) tabs.push("overview");
+  if (canViewExpenses) tabs.push("expenses");
   if (canEdit || canSetPassword || canSetStatus) tabs.push("account");
   if (canManagePermissions) tabs.push("permissions");
-  const activeTab = tabs.find((key) => key === tab) ?? tabs[0];
+  const activeTab = tabs.find((key) => key === query.tab) ?? tabs[0];
 
   const isAdmin = target.role === "ADMIN";
   const isSelf = target.id === viewer.id;
@@ -175,6 +179,14 @@ export default async function EmployeePage({ params, searchParams }: PageProps<"
             </Detail>
           </dl>
         </Panel>
+      )}
+
+      {activeTab === "expenses" && (
+        <EmployeeExpensesTab
+          employeeId={target.id}
+          searchParams={query}
+          canCreate={permissions.has("employee_expenses.create")}
+        />
       )}
 
       {activeTab === "account" && (

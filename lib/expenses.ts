@@ -34,7 +34,8 @@ export const expenseCategorySchema = z.enum(EXPENSE_CATEGORIES);
 /** Like `SINGLE_LINE_TEXT`, but line breaks are allowed. */
 const MULTI_LINE_TEXT = /^(?:[^\p{Cc}\p{Cf}\p{Zl}\p{Zp}]|[‌‍\n])*$/u;
 
-const descriptionSchema = z
+/** An optional note, shared with employee expenses: empty becomes `null`. */
+export const descriptionSchema = z
   .string()
   .transform((value) => value.replace(/\r\n?/g, "\n").trim())
   .pipe(z.string().max(DESCRIPTION_MAX).regex(MULTI_LINE_TEXT))
