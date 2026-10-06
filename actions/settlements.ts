@@ -57,6 +57,12 @@ const VALUE_FIELDS = [
 
 const fail = (error: SettlementErrorCode): SettlementFormState => ({ success: false, error });
 
+/**
+ * The hosted database can take seconds to hand out a connection, and Generate's work grows
+ * with the number of employees, so Prisma's 2 s wait and 5 s limit are too tight.
+ */
+const TX_OPTIONS = { maxWait: 10_000, timeout: 30_000 };
+
 /** Thrown inside a transaction to roll back its writes when the settlement moved meanwhile. */
 class StaleSettlementError extends Error {}
 
@@ -136,9 +142,10 @@ export async function generateSettlements(_prev: SettlementFormState, formData: 
     const { periodStart, periodEnd } = monthPeriod(month);
 
     result = await db.$transaction(async (tx): Promise<SettlementFormState> => {
+      // The sums come with the groupBys, so no employee needs queries of their own for them.
       const [revenue, expenses, pendingAdjustments] = await Promise.all([
-        tx.invoice.groupBy({ by: ["employeeId"], where: paidRevenueWhere(month) }),
-        tx.employeeExpense.groupBy({ by: ["employeeId"], where: expensesWhere(month) }),
+        tx.invoice.groupBy({ by: ["employeeId"], where: paidRevenueWhere(month), _sum: { amount: true } }),
+        tx.employeeExpense.groupBy({ by: ["employeeId"], where: expensesWhere(month), _sum: { amount: true } }),
         // A pending correction is never stranded: its employee gets a settlement to carry it.
         tx.settlementAdjustment.groupBy({
           by: ["employeeId"],
@@ -156,18 +163,30 @@ export async function generateSettlements(_prev: SettlementFormState, formData: 
       const pending = active.filter((id) => !settled.has(id));
       if (pending.length === 0) return { success: true, created: 0, nothing: "already_settled" };
 
+      const revenueOf = new Map(revenue.map((row) => [row.employeeId, row._sum.amount]));
+      const expensesOf = new Map(expenses.map((row) => [row.employeeId, row._sum.amount]));
+      const withAdjustments = new Set(pendingAdjustments.map((row) => row.employeeId));
+
       const [settings, employees] = await Promise.all([
         getSalonSettings(tx),
         tx.user.findMany({ where: { id: { in: pending } }, select: { id: true, sharePercentage: true } }),
       ]);
       for (const employee of employees) {
-        let values = await freshValues(tx, employee, month, settings.employeeSharePercentage, sumAdjustments([]));
+        let values = calculateSettlement({
+          paidRevenue: revenueOf.get(employee.id) ?? 0,
+          sharePercentage: effectiveSharePercentage(employee.sharePercentage, settings.employeeSharePercentage).value,
+          expenses: expensesOf.get(employee.id) ?? 0,
+          adjustments: 0,
+        });
         const settlement = await tx.employeeSettlement.create({
           data: { ...values, employeeId: employee.id, periodStart, periodEnd, status: "DRAFT", createdById: actor.id },
           select: { id: true },
         });
-        // Adjustments are claimed by settlement id, so they are applied once the row exists.
-        const adjustments = await applyAdjustments(tx, { id: settlement.id, employeeId: employee.id, periodStart });
+        // Adjustments are claimed by settlement id, so they are applied once the row exists. An
+        // employee without pending ones skips the claim; one created meanwhile stays pending.
+        const adjustments = withAdjustments.has(employee.id)
+          ? await applyAdjustments(tx, { id: settlement.id, employeeId: employee.id, periodStart })
+          : { ids: [], total: sumAdjustments([]) };
         if (adjustments.ids.length > 0) {
           values = calculateSettlement({
             paidRevenue: values.totalRevenue,
@@ -195,7 +214,7 @@ export async function generateSettlements(_prev: SettlementFormState, formData: 
         );
       }
       return { success: true, created: employees.length };
-    });
+    }, TX_OPTIONS);
   } catch (error) {
     // Another generate for the same month got there first.
     if (isUniqueViolation(error)) return fail("invalid_state");
@@ -284,7 +303,7 @@ async function transition(action: SettlementAction, formData: FormData): Promise
         tx,
       );
       return null;
-    });
+    }, TX_OPTIONS);
     if (outcome) return fail(outcome);
   } catch (error) {
     if (error instanceof StaleSettlementError) return fail("invalid_state");
@@ -375,7 +394,7 @@ export async function createSettlementAdjustment(
         tx,
       );
       return null;
-    });
+    }, TX_OPTIONS);
     if (outcome) return fail(outcome);
   } catch (error) {
     console.error("[settlements] adjustment failed:", error);

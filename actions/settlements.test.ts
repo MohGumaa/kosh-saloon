@@ -85,8 +85,14 @@ beforeEach(() => {
   mocks.hasPermission.mockResolvedValue(true);
   mocks.db.$transaction.mockImplementation(async (callback: (tx: unknown) => unknown) => callback(mocks.tx));
   mocks.tx.salonSettings.findUnique.mockResolvedValue({ employeeSharePercentage: decimal("50") });
-  mocks.tx.invoice.groupBy.mockResolvedValue([{ employeeId: "emp1" }, { employeeId: "emp2" }]);
-  mocks.tx.employeeExpense.groupBy.mockResolvedValue([{ employeeId: "emp1" }, { employeeId: "emp3" }]);
+  mocks.tx.invoice.groupBy.mockResolvedValue([
+    { employeeId: "emp1", ...sum("5000") },
+    { employeeId: "emp2", ...sum("800") },
+  ]);
+  mocks.tx.employeeExpense.groupBy.mockResolvedValue([
+    { employeeId: "emp1", ...sum("300") },
+    { employeeId: "emp3", ...sum("150") },
+  ]);
   mocks.tx.employeeSettlement.findMany.mockResolvedValue([{ employeeId: "emp2" }]);
   mocks.tx.user.findMany.mockResolvedValue([
     { id: "emp1", sharePercentage: null },
@@ -153,10 +159,19 @@ describe("generateSettlements", () => {
     });
     expect(mocks.db.employeeSettlement.create).not.toHaveBeenCalled();
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/settlements");
+    // The sums come from the groupBys, and nobody has a pending adjustment to claim.
+    expect(mocks.tx.invoice.groupBy.mock.calls[0][0]._sum).toEqual({ amount: true });
+    expect(mocks.tx.employeeExpense.groupBy.mock.calls[0][0]._sum).toEqual({ amount: true });
+    expect(mocks.tx.invoice.aggregate).not.toHaveBeenCalled();
+    expect(mocks.tx.employeeExpense.aggregate).not.toHaveBeenCalled();
+    expect(mocks.tx.settlementAdjustment.updateMany).not.toHaveBeenCalled();
+    expect(mocks.tx.settlementAdjustment.findMany).not.toHaveBeenCalled();
+    expect(mocks.db.$transaction.mock.calls[0][1]).toEqual({ maxWait: 10_000, timeout: 30_000 });
   });
 
   it("claims earlier pending adjustments into the new settlement", async () => {
     // emp1 has a -150 correction pending from August; emp3 has none.
+    mocks.tx.settlementAdjustment.groupBy.mockResolvedValue([{ employeeId: "emp1" }]);
     mocks.tx.settlementAdjustment.findMany.mockImplementation(async ({ where }: { where: { appliedSettlementId: string } }) =>
       where.appliedSettlementId === "set-emp1" ? [{ id: "adj1", amount: decimal("-150") }] : [],
     );
@@ -171,6 +186,8 @@ describe("generateSettlements", () => {
       where: { employeeId: "emp1", appliedSettlementId: null, sourceSettlement: { periodStart: { lt: september.periodStart } } },
       data: { appliedSettlementId: "set-emp1" },
     });
+    // Only emp1 is claimed for: emp3 is absent from the pending groupBy.
+    expect(mocks.tx.settlementAdjustment.updateMany).toHaveBeenCalledTimes(1);
     expect(mocks.tx.employeeSettlement.update).toHaveBeenCalledTimes(1);
     const { where, data } = mocks.tx.employeeSettlement.update.mock.calls[0][0];
     expect(where).toEqual({ id: "set-emp1" });
@@ -193,7 +210,6 @@ describe("generateSettlements", () => {
     mocks.tx.employeeSettlement.findMany.mockResolvedValue([]);
     mocks.tx.user.findMany.mockResolvedValue([{ id: "emp4", sharePercentage: null }]);
     mocks.tx.settlementAdjustment.findMany.mockResolvedValue([{ id: "adj9", amount: decimal("75.5") }]);
-    mocks.tx.employeeExpense.aggregate.mockResolvedValue(sum(null));
 
     expect(await generate()).toEqual({ success: true, created: 1 });
 
@@ -324,6 +340,7 @@ describe("status actions", () => {
 
   it("marks a DRAFT calculated without touching its values", async () => {
     expect(await run(markSettlementCalculated)).toEqual({ success: true });
+    expect(mocks.db.$transaction.mock.calls[0][1]).toEqual({ maxWait: 10_000, timeout: 30_000 });
     expect(mocks.hasPermission).toHaveBeenCalledWith(admin, "settlements.create");
     expect(mocks.tx.employeeSettlement.updateMany).toHaveBeenCalledWith({
       where: { id: "set1", status: "DRAFT" },
@@ -465,6 +482,7 @@ describe("createSettlementAdjustment", () => {
     expect(mocks.tx.employeeSettlement.updateMany).not.toHaveBeenCalled();
     expect(mocks.db.settlementAdjustment.create).not.toHaveBeenCalled();
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/settlements/set1");
+    expect(mocks.db.$transaction.mock.calls[0][1]).toEqual({ maxWait: 10_000, timeout: 30_000 });
   });
 
   it("rejects an adjustment to a settlement that is not PAID", async () => {
