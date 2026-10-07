@@ -49,19 +49,64 @@
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Welcome back, {name}",
-    "welcomeBody": "Your salon's numbers appear here as invoices and expenses are recorded.",
-    "lastSignIn": "Last sign-in",
-    "noValue": "–",
-    "noData": "No data yet",
+    "welcomeBody": "Here is how the salon is doing.",
+    "personalBody": "Your account details are below.",
+    "loading": "Loading the dashboard",
+    "periods": {
+      "label": "Period",
+      "today": "Today",
+      "last7": "Last 7 days",
+      "week": "This week",
+      "month": "This month",
+      "previousMonth": "Previous month",
+      "last12": "Last 12 months",
+      "custom": "Custom range"
+    },
+    "custom": {
+      "from": "From",
+      "to": "To",
+      "apply": "Apply range",
+      "invalid": "Choose both dates, with the start on or before the end, no later than today, and at most 366 days apart. Showing this month instead."
+    },
+    "sections": {
+      "overview": "At a glance"
+    },
     "stats": {
-      "revenue": "Revenue this month",
-      "invoices": "Invoices this month",
-      "pending": "Pending amount",
-      "expenses": "Salon expenses"
+      "paidRevenue": "Paid revenue",
+      "bills": "Total bills",
+      "pendingRevenue": "Pending revenue",
+      "averageBill": "Average bill",
+      "salonExpenses": "Salon expenses",
+      "employeePayouts": "Employee payouts",
+      "todayRevenue": "Today's revenue",
+      "weekRevenue": "This week's revenue",
+      "monthRevenue": "This month's revenue",
+      "activeStaff": "Active staff",
+      "sharePercentage": "Employee share",
+      "activeServices": "Active services"
+    },
+    "hints": {
+      "paidRevenue": "Paid invoices in this period",
+      "bills": "Paid and unpaid invoices",
+      "pendingRevenue": "Unpaid invoices in this period",
+      "averageBill": "Per paid or unpaid invoice",
+      "salonExpenses": "Salon costs dated in this period",
+      "employeePayouts": "Settlements paid in this period",
+      "todayRevenue": "Paid invoices today",
+      "weekRevenue": "Paid invoices since Monday",
+      "monthRevenue": "Paid invoices this month",
+      "activeStaff": "Active accounts",
+      "sharePercentage": "Global default share",
+      "activeServices": "Active in the catalog"
     },
     "revenueChart": {
-      "title": "Monthly revenue",
-      "empty": "Revenue appears here once invoices are recorded."
+      "title": "Revenue",
+      "period": "Period",
+      "paid": "Paid",
+      "unpaid": "Unpaid",
+      "expenses": "Salon expenses",
+      "caption": "Revenue and salon expenses, {range}",
+      "empty": "No revenue or expenses in this period."
     },
     "latestInvoices": {
       "title": "Latest invoices",
@@ -70,12 +115,15 @@
       "date": "Date",
       "amount": "Amount",
       "status": "Status",
+      "viewAll": "View all invoices",
       "empty": "No invoices yet."
     },
     "topServices": {
       "title": "Top services",
-      "empty": "Your most requested services appear here once invoices are recorded."
+      "empty": "No paid revenue in this period."
     },
+    "lastSignIn": "Last sign-in",
+    "noValue": "–",
     "account": {
       "title": "Your account",
       "username": "Username",
