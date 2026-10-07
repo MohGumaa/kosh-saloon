@@ -202,3 +202,13 @@ export function dashboardSections(permissions: ReadonlySet<PermissionKey>) {
     latestInvoices: permissions.has("invoices.view"),
   };
 }
+
+/** The Staff personal dashboard's sections. Their queries run only when true. */
+export function personalSections(permissions: ReadonlySet<PermissionKey>) {
+  return {
+    figures: permissions.has("reports.view_own_performance"),
+    settlement: permissions.has("settlements.view"),
+  };
+}
+
+export type PersonalSections = ReturnType<typeof personalSections>;

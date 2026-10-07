@@ -36,7 +36,7 @@ Your features
 
 - [x] 14. Admin dashboard - Build the main salon dashboard with revenue, bills, pending amounts, salon expenses, staff count, employee payouts, latest invoices, and revenue charts.
 
-- [ ] 15. Staff personal dashboard - Build a staff-focused dashboard showing personal revenue, paid/unpaid bills, share percentage, earnings, expenses, and current/final payout.
+- [x] 15. Staff personal dashboard - Build a staff-focused dashboard showing personal revenue, paid/unpaid bills, share percentage, earnings, expenses, and current/final payout.
 
 - [ ] 16. Revenue reports - Provide daily, weekly, monthly, yearly, and custom-range revenue reports with paid/unpaid breakdowns and revenue by employee and service.
 

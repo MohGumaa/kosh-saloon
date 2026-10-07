@@ -204,3 +204,19 @@
 **Why it matters:** For the chart, `loadDashboard` reads every PAID and UNPAID invoice in the range (`createdAt`, `amount`, `status`) and sums them in JavaScript (`bucketInvoices`). For `last12` or a 366-day custom range that is a full year of invoice rows on each dashboard load, and the same rows are summed again by the `groupBy` on line 62. For a single salon this is likely a few tens of thousands of small rows, which is fine today and is what the spec asked for, but it grows without a bound with history and runs on every period change. Salon expenses (line 87) have the same shape with far fewer rows. Derived from the code; no profiling or production data volume was measured.
 **Suggested fix:** No change is needed to close this feature. If the 12-month view becomes slow, bucket in the database instead (for example a `$queryRaw` with `date_trunc` on `createdAt AT TIME ZONE 'Asia/Dubai'` grouped by status), keeping `chartBuckets` for zero-filling. To confirm, time `/dashboard?period=last12` against a realistic invoice count.
 **Resolution:**
+
+### F-47 [P3] open - A Staff user with only `settlements.view` is told "Here is how your month is going" but sees no month figures
+
+**File:** app/(app)/dashboard/page.tsx:103
+**Found:** 2026-10-07 by /audit independent (scope: current; lens: quality)
+**Why it matters:** `personal` is set when either section is allowed (line 90), and the welcome text then switches to `dashboard.personal.body` ("Here is how your month is going." / "إليك ملخص شهرك."). For a Staff user who keeps `settlements.view` but loses `reports.view_own_performance`, the "This month" section is not rendered (`figures` is null), so the only personal content is the latest settlement panel, which is for a past month. The welcome sentence then promises figures the user cannot see, the same mismatch the implementation note avoided for account-only users. Derived from the code path; not observed in a browser. Default Staff permissions are unaffected.
+**Suggested fix:** Use `personal.body` only when `personal.figures` is true and keep `personalBody` (or a short settlement-specific line in both locales) otherwise. No current requirement is lost.
+**Resolution:**
+
+### F-48 [P3] open - No test pins that the personal dashboard skips the gated queries when a permission is missing
+
+**File:** lib/dashboard-data.ts:180
+**Found:** 2026-10-07 by /audit independent (scope: current; lens: tests)
+**Why it matters:** The spec requires permission gating "enforced on the server, with gated queries not run when the check fails", and that every personal query filters by the session `userId`. `personalSections` is tested (`lib/dashboard.test.ts`), but the wiring in `loadPersonalDashboard` that turns `sections.figures` and `sections.settlement` into skipped `invoice.groupBy`, `employeeExpense.aggregate`, and `employeeSettlement.findFirst` calls (lines 180 to 197), and the `employeeId: userId` filters, have no test. The code is correct today. A later edit that drops a ternary or the `employeeId` filter would still pass `pnpm test`, `tsc`, and lint. The spec's Testing section deliberately listed only the helper cases, and the existing `loadDashboard` has no loader test either, so this is a gap against the spec's gating contract, not a missing configured gate.
+**Suggested fix:** Add `lib/dashboard-data.test.ts` with a mocked `db` (the pattern `actions/settlements.test.ts` already uses) covering: neither section runs only `getSalonSettings`; figures-only runs the two figure queries and not `findFirst`, returning `latestSettlement` as `undefined`; every call's `where.employeeId` equals the passed id; and a PAID/UNPAID/expense fixture yields the expected rounded earnings and a negative estimate. No current requirement is lost.
+**Resolution:**

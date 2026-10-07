@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PERMISSION_KEYS, type PermissionKey } from "@/lib/auth/permissions";
+import { PERMISSION_KEYS, ROLE_DEFAULTS, type PermissionKey } from "@/lib/auth/permissions";
 import {
   addDays,
   averageBill,
@@ -9,6 +9,7 @@ import {
   chartBuckets,
   dashboardSections,
   parseDashboardPeriod,
+  personalSections,
   weekStart,
 } from "@/lib/dashboard";
 
@@ -204,5 +205,20 @@ describe("dashboard access", () => {
       payouts: false,
       latestInvoices: false,
     });
+  });
+});
+
+describe("personalSections", () => {
+  it("shows both sections with the Staff defaults", () => {
+    expect(personalSections(new Set(ROLE_DEFAULTS.STAFF))).toEqual({ figures: true, settlement: true });
+  });
+
+  it("shows neither without the permissions", () => {
+    expect(personalSections(new Set())).toEqual({ figures: false, settlement: false });
+  });
+
+  it("shows each section only with its own permission", () => {
+    expect(personalSections(new Set(["reports.view_own_performance"]))).toEqual({ figures: true, settlement: false });
+    expect(personalSections(new Set(["settlements.view"]))).toEqual({ figures: false, settlement: true });
   });
 });

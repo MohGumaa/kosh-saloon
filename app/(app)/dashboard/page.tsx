@@ -4,6 +4,7 @@ import {
   CalendarDays,
   CalendarRange,
   Calculator,
+  Coins,
   FileText,
   HandCoins,
   Hourglass,
@@ -22,15 +23,24 @@ import { RevenueChart } from "@/components/dashboard/RevenueChart";
 import { PeriodSelector } from "@/components/dashboard/PeriodSelector";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
+import { SettlementStatusBadge } from "@/components/settlements/SettlementStatusBadge";
 import { buttonVariants } from "@/components/ui/button";
 import { LocalDateTime } from "@/components/layout/LocalDateTime";
 import { UserAvatar } from "@/components/layout/UserAvatar";
 import { getPermissions } from "@/lib/auth/authorize";
 import { requireSession } from "@/lib/auth/current-user";
-import { averageBill, canViewSalonDashboard, dashboardSections, parseDashboardPeriod } from "@/lib/dashboard";
-import { loadDashboard } from "@/lib/dashboard-data";
+import {
+  averageBill,
+  canViewSalonDashboard,
+  dashboardSections,
+  parseDashboardPeriod,
+  personalSections,
+} from "@/lib/dashboard";
+import { loadDashboard, loadPersonalDashboard } from "@/lib/dashboard-data";
 import { db } from "@/lib/db";
+import { salonMonth } from "@/lib/earnings";
 import { dateValue, salonToday } from "@/lib/expenses";
+import { isOwnScope } from "@/lib/invoices";
 import { getDirection, isLocale } from "@/i18n/locales";
 import { cn } from "@/lib/utils";
 
@@ -67,8 +77,17 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
     getTranslations("dashboard"),
     getTranslations("auth.roles"),
     getLocale(),
-    salonView ? null : db.user.findUnique({ where: { id: user.id }, select: { username: true, lastLoginAt: true } }),
+    salonView
+      ? null
+      : db.user.findUnique({
+          where: { id: user.id },
+          select: { username: true, lastLoginAt: true, sharePercentage: true },
+        }),
   ]);
+
+  // Staff get their own figures; anyone else without the salon dashboard sees only their account.
+  const ownSections = salonView || !isOwnScope(user) ? null : personalSections(permissions);
+  const personal = ownSections && (ownSections.figures || ownSections.settlement) ? ownSections : null;
 
   const welcome = (
     <section className={cn(panelClass, "relative overflow-hidden")}>
@@ -80,7 +99,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             <LocalDateTime iso={new Date().toISOString()} dateStyle="full" />
           </p>
           <h1 className="text-2xl font-semibold break-words lg:text-3xl">{t("welcome", { name: user.name })}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t(salonView ? "welcomeBody" : "personalBody")}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t(salonView ? "welcomeBody" : personal ? "personal.body" : "personalBody")}
+          </p>
         </div>
         <span className="rounded-full bg-primary-soft px-3 py-1 text-sm font-medium">{tRoles(user.role)}</span>
       </div>
@@ -88,42 +109,145 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   );
 
   if (!salonView) {
+    const accountCard = (
+      <section className={cn(panelClass, !personal && "max-w-md")}>
+        <h2 className="text-lg font-semibold">{t("account.title")}</h2>
+        <div className="mt-5 flex items-center gap-3">
+          <UserAvatar name={user.name} image={user.image} className="size-12 text-base" />
+          <div className="min-w-0">
+            <div className="truncate font-medium">{user.name}</div>
+            <div className="truncate text-sm text-muted-foreground">{user.email}</div>
+          </div>
+        </div>
+        <dl className="mt-5 flex flex-col gap-3 text-sm">
+          <div className="flex items-center justify-between gap-3">
+            <dt className="text-muted-foreground">{t("account.username")}</dt>
+            <dd className="truncate font-medium" dir="ltr">
+              {account?.username}
+            </dd>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <dt className="text-muted-foreground">{t("account.role")}</dt>
+            <dd className="font-medium">{tRoles(user.role)}</dd>
+          </div>
+          {account?.lastLoginAt && (
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-muted-foreground">{t("lastSignIn")}</dt>
+              <dd className="font-medium">
+                <LocalDateTime iso={account.lastLoginAt.toISOString()} timeStyle="short" />
+              </dd>
+            </div>
+          )}
+        </dl>
+        <Link href="/account" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "mt-6 h-10 w-full")}>
+          {t("account.viewProfile")}
+        </Link>
+      </section>
+    );
+
+    if (!personal) {
+      return (
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+          {welcome}
+          {accountCard}
+        </div>
+      );
+    }
+
+    const month = salonMonth();
+    const [data, tSettlements] = await Promise.all([
+      loadPersonalDashboard(user.id, account?.sharePercentage ?? null, personal, month),
+      getTranslations("settlements"),
+    ]);
+    const price = new Intl.NumberFormat(locale, { style: "currency", currency: data.currency });
+    const percent = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 2 });
+    const count = new Intl.NumberFormat(locale);
+    // The first of a month at UTC midnight, formatted in UTC, names the same month for every viewer.
+    const monthName = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric", timeZone: "UTC" });
+    const { figures, latestSettlement } = data;
+
+    const figureCards: { key: string; value: string; hint: string; icon: LucideIcon }[] = figures
+      ? [
+          { key: "paidRevenue", value: price.format(figures.paidRevenue.toNumber()), icon: TrendingUp },
+          { key: "paidBills", value: count.format(figures.paidBills), icon: FileText },
+          {
+            key: "unpaidBills",
+            value: count.format(figures.unpaidBills),
+            hint: t("personal.hints.unpaidBills", { amount: price.format(figures.unpaidAmount.toNumber()) }),
+            icon: Hourglass,
+          },
+          {
+            key: "sharePercentage",
+            value: percent.format(figures.sharePercentage.dividedBy(100).toNumber()),
+            hint: t(figures.shareSource === "employee" ? "personal.hints.shareEmployee" : "personal.hints.shareSalon"),
+            icon: Percent,
+          },
+          { key: "earnings", value: price.format(figures.earnings.toNumber()), icon: Coins },
+          { key: "expenses", value: price.format(figures.expenses.toNumber()), icon: Wallet },
+          { key: "estimatedPayout", value: price.format(figures.estimatedPayout.toNumber()), icon: HandCoins },
+        ].map((card) => ({ ...card, hint: card.hint ?? t(`personal.hints.${card.key}`) }))
+      : [];
+
     return (
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
         {welcome}
-        <section className={cn(panelClass, "max-w-md")}>
-          <h2 className="text-lg font-semibold">{t("account.title")}</h2>
-          <div className="mt-5 flex items-center gap-3">
-            <UserAvatar name={user.name} image={user.image} className="size-12 text-base" />
-            <div className="min-w-0">
-              <div className="truncate font-medium">{user.name}</div>
-              <div className="truncate text-sm text-muted-foreground">{user.email}</div>
+
+        {figures && (
+          <section aria-labelledby="dashboard-month" className="flex flex-col gap-4">
+            <h2 id="dashboard-month" className="text-lg font-semibold">
+              {t("personal.month")}
+              <span className="ms-2 text-sm font-normal text-muted-foreground">
+                {monthName.format(dateValue(`${month}-01`))}
+              </span>
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {figureCards.map(({ key, value, hint, icon }) => (
+                <StatCard key={key} title={t(`personal.stats.${key}`)} value={value} hint={hint} icon={icon} />
+              ))}
             </div>
-          </div>
-          <dl className="mt-5 flex flex-col gap-3 text-sm">
-            <div className="flex items-center justify-between gap-3">
-              <dt className="text-muted-foreground">{t("account.username")}</dt>
-              <dd className="truncate font-medium" dir="ltr">
-                {account?.username}
-              </dd>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <dt className="text-muted-foreground">{t("account.role")}</dt>
-              <dd className="font-medium">{tRoles(user.role)}</dd>
-            </div>
-            {account?.lastLoginAt && (
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-muted-foreground">{t("lastSignIn")}</dt>
-                <dd className="font-medium">
-                  <LocalDateTime iso={account.lastLoginAt.toISOString()} timeStyle="short" />
-                </dd>
-              </div>
-            )}
-          </dl>
-          <Link href="/account" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "mt-6 h-10 w-full")}>
-            {t("account.viewProfile")}
-          </Link>
-        </section>
+          </section>
+        )}
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          {latestSettlement !== undefined && (
+            <section className={panelClass}>
+              <h2 className="text-lg font-semibold">{t("personal.settlement.title")}</h2>
+              {latestSettlement === null ? (
+                <div className="py-10">
+                  <EmptyState icon={HandCoins}>{t("personal.settlement.empty")}</EmptyState>
+                </div>
+              ) : (
+                <>
+                  <p className="mt-1 text-sm text-muted-foreground">{monthName.format(latestSettlement.periodStart)}</p>
+                  <dl className="mt-5 flex flex-col gap-3 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <dt className="text-muted-foreground">{t("personal.settlement.finalPayout")}</dt>
+                      <dd className="text-xl font-semibold tabular-nums">
+                        <span dir="ltr">{price.format(latestSettlement.finalAmount.toNumber())}</span>
+                      </dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <dt className="text-muted-foreground">{t("personal.settlement.status")}</dt>
+                      <dd>
+                        <SettlementStatusBadge
+                          status={latestSettlement.status}
+                          label={tSettlements(`statuses.${latestSettlement.status}`)}
+                        />
+                      </dd>
+                    </div>
+                  </dl>
+                  <Link
+                    href={`/settlements/${latestSettlement.id}`}
+                    className={cn(buttonVariants({ variant: "outline", size: "lg" }), "mt-6 h-10 w-full")}
+                  >
+                    {t("personal.settlement.view")}
+                  </Link>
+                </>
+              )}
+            </section>
+          )}
+          {accountCard}
+        </div>
       </div>
     );
   }

@@ -129,6 +129,36 @@
       "username": "Username",
       "role": "Role",
       "viewProfile": "View profile"
+    },
+    "personal": {
+      "body": "Here is how your month is going.",
+      "month": "This month",
+      "stats": {
+        "paidRevenue": "Paid revenue",
+        "paidBills": "Paid bills",
+        "unpaidBills": "Unpaid bills",
+        "sharePercentage": "Your share",
+        "earnings": "Earnings",
+        "expenses": "Expenses",
+        "estimatedPayout": "Estimated payout"
+      },
+      "hints": {
+        "paidRevenue": "Your paid invoices this month",
+        "paidBills": "Paid invoices this month",
+        "unpaidBills": "{amount} unpaid; not counted until paid",
+        "shareEmployee": "Your own rate",
+        "shareSalon": "Salon default rate",
+        "earnings": "Your share of paid revenue",
+        "expenses": "Deductions dated this month",
+        "estimatedPayout": "Earnings minus expenses. Your settlement sets the final amount."
+      },
+      "settlement": {
+        "title": "Latest settlement",
+        "finalPayout": "Final payout",
+        "status": "Status",
+        "view": "View settlement",
+        "empty": "No settlement yet. Settlements are made after each month ends."
+      }
     }
   },
   "account": {

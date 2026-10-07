@@ -1,6 +1,6 @@
 /**
- * The admin dashboard's queries. Run only after `canViewSalonDashboard`; each gated
- * widget's query runs only when `dashboardSections` allows it.
+ * The dashboard queries. `loadDashboard` runs only after `canViewSalonDashboard`; each
+ * gated widget's query runs only when `dashboardSections` allows it.
  */
 import { Prisma } from "@/generated/prisma/client";
 import type { PermissionKey } from "@/lib/auth/permissions";
@@ -11,11 +11,14 @@ import {
   dashboardSections,
   presetRange,
   type DashboardRange,
+  type PersonalSections,
 } from "@/lib/dashboard";
 import { db } from "@/lib/db";
+import { effectiveSharePercentage, salonMonthRange } from "@/lib/earnings";
 import { dateValue } from "@/lib/expenses";
 import { SALON_TIME_ZONE, salonDayRange } from "@/lib/invoices";
 import { getSalonSettings } from "@/lib/settings";
+import { calculateSettlement, expensesWhere } from "@/lib/settlements";
 
 const TOP_SERVICES = 5;
 const LATEST_INVOICES = 5;
@@ -160,3 +163,64 @@ export async function loadDashboard(
 }
 
 export type DashboardData = Awaited<ReturnType<typeof loadDashboard>>;
+
+/**
+ * One Staff user's figures for a salon month. Every query is scoped to `userId`, which
+ * must come from the session; each section's queries run only when `sections` allows it.
+ */
+export async function loadPersonalDashboard(
+  userId: string,
+  sharePercentage: Prisma.Decimal | null,
+  sections: PersonalSections,
+  month: string,
+  timeZone: string = SALON_TIME_ZONE,
+) {
+  const [settings, byStatus, expenses, latestSettlement] = await Promise.all([
+    getSalonSettings(),
+    sections.figures
+      ? db.invoice.groupBy({
+          by: ["status"],
+          where: { employeeId: userId, status: { in: ["PAID", "UNPAID"] }, createdAt: salonMonthRange(month, timeZone) },
+          _sum: { amount: true },
+          _count: { _all: true },
+        })
+      : null,
+    sections.figures
+      ? db.employeeExpense.aggregate({ where: { employeeId: userId, ...expensesWhere(month) }, _sum: { amount: true } })
+      : null,
+    sections.settlement
+      ? db.employeeSettlement.findFirst({
+          where: { employeeId: userId },
+          orderBy: { periodStart: "desc" },
+          select: { id: true, periodStart: true, finalAmount: true, status: true },
+        })
+      : undefined,
+  ]);
+
+  let figures = null;
+  if (byStatus && expenses) {
+    const paid = byStatus.find((row) => row.status === "PAID");
+    const unpaid = byStatus.find((row) => row.status === "UNPAID");
+    const share = effectiveSharePercentage(sharePercentage, settings.employeeSharePercentage);
+    // Pending adjustments are left out: the next settlement generated, possibly last month's, claims them.
+    const settlement = calculateSettlement({
+      paidRevenue: paid?._sum.amount ?? zero(),
+      sharePercentage: share.value,
+      expenses: expenses._sum.amount ?? zero(),
+      adjustments: 0,
+    });
+    figures = {
+      paidRevenue: settlement.totalRevenue,
+      paidBills: paid?._count._all ?? 0,
+      unpaidBills: unpaid?._count._all ?? 0,
+      unpaidAmount: unpaid?._sum.amount ?? zero(),
+      sharePercentage: settlement.sharePercentage,
+      shareSource: share.source,
+      earnings: settlement.employeeShare,
+      expenses: settlement.totalExpenses,
+      estimatedPayout: settlement.finalAmount,
+    };
+  }
+
+  return { currency: settings.currency, figures, latestSettlement };
+}
