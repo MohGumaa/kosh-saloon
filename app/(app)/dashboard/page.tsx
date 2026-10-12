@@ -26,6 +26,7 @@ import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { SettlementStatusBadge } from "@/components/settlements/SettlementStatusBadge";
 import { buttonVariants } from "@/components/ui/button";
 import { LocalDateTime } from "@/components/layout/LocalDateTime";
+import { PersonName } from "@/components/layout/PersonName";
 import { UserAvatar } from "@/components/layout/UserAvatar";
 import { getPermissions } from "@/lib/auth/authorize";
 import { requireSession } from "@/lib/auth/current-user";
@@ -41,6 +42,7 @@ import { db } from "@/lib/db";
 import { salonMonth } from "@/lib/earnings";
 import { dateValue, salonToday } from "@/lib/expenses";
 import { isOwnScope } from "@/lib/invoices";
+import { firstName, nameLabels } from "@/lib/names";
 import { getDirection, isLocale } from "@/i18n/locales";
 import { cn } from "@/lib/utils";
 
@@ -98,7 +100,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
           <p className="text-sm text-muted-foreground">
             <LocalDateTime iso={new Date().toISOString()} dateStyle="full" />
           </p>
-          <h1 className="text-2xl font-semibold break-words lg:text-3xl">{t("welcome", { name: user.name })}</h1>
+          <h1 className="text-2xl font-semibold break-words lg:text-3xl">{t("welcome", { name: firstName(user.name) })}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {t(salonView ? "welcomeBody" : personal ? "personal.body" : "personalBody")}
           </p>
@@ -272,6 +274,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const average = averageBill(data.period.billsTotal, data.period.bills);
   const serviceName = (service: { nameEn: string; nameAr: string }) => (locale === "ar" ? service.nameAr : service.nameEn);
   const topAmount = data.topServices[0]?.amount;
+  const employeeLabel = nameLabels(data.latestInvoices?.map((invoice) => invoice.employee) ?? [], locale);
 
   const periodCards: { key: string; value: string; icon: LucideIcon }[] = [
     { key: "paidRevenue", value: price.format(data.period.paidRevenue.toNumber()), icon: TrendingUp },
@@ -415,9 +418,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                         </Link>
                       </th>
                       <td className="px-3 py-3">
-                        <span dir="auto" className="break-words">
-                          {invoice.employee.name}
-                        </span>
+                        <PersonName name={invoice.employee.name} label={employeeLabel.get(invoice.employee.id)} />
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap">
                         <LocalDateTime iso={invoice.createdAt.toISOString()} timeStyle="short" />

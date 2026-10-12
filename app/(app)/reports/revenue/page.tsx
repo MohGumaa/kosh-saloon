@@ -10,14 +10,8 @@ import { getPermissions } from "@/lib/auth/authorize";
 import { requireSession } from "@/lib/auth/current-user";
 import { addDays } from "@/lib/dashboard";
 import { dateValue, salonToday } from "@/lib/expenses";
-import {
-  breakdownRows,
-  canViewRevenueReport,
-  employeeLabels,
-  parseRevenueReport,
-  revenueSections,
-  type BreakdownRow,
-} from "@/lib/reports";
+import { employeeLabels } from "@/lib/names";
+import { breakdownRows, canViewRevenueReport, parseRevenueReport, revenueSections, type BreakdownRow } from "@/lib/reports";
 import { loadRevenueReport } from "@/lib/reports-data";
 import { getDirection, isLocale } from "@/i18n/locales";
 import { cn } from "@/lib/utils";

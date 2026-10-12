@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { UserPlus } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
+import { PersonName } from "@/components/layout/PersonName";
 import { UserAvatar } from "@/components/layout/UserAvatar";
 import { requirePermission } from "@/lib/auth/authorize";
 import { db } from "@/lib/db";
 import { paidRevenueWhere, salonMonth } from "@/lib/earnings";
+import { nameLabels } from "@/lib/names";
 import { getSalonSettings } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 
@@ -36,7 +38,8 @@ export default async function EmployeesPage() {
   const { permissions } = await requirePermission("employees.view");
   const canManagePermissions = permissions.has("permissions.manage");
   const canViewRevenue = permissions.has("reports.view_all_employees");
-  const [t, tRoles, users, revenue] = await Promise.all([
+  const [locale, t, tRoles, users, revenue] = await Promise.all([
+    getLocale(),
     getTranslations("employees"),
     getTranslations("auth.roles"),
     db.user.findMany({
@@ -45,6 +48,7 @@ export default async function EmployeesPage() {
     }),
     canViewRevenue ? monthRevenue() : null,
   ]);
+  const nameLabel = nameLabels(users, locale);
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
@@ -93,8 +97,8 @@ export default async function EmployeesPage() {
                   <th scope="row" className="px-3 py-3 text-start font-medium">
                     <div className="flex items-center gap-3">
                       <UserAvatar name={user.name} image={user.image} className="size-8 text-xs" />
-                      <Link href={`/employees/${user.id}`} className={cn(linkClass, "break-words")}>
-                        {user.name}
+                      <Link href={`/employees/${user.id}`} className={linkClass}>
+                        <PersonName name={user.name} label={nameLabel.get(user.id)} />
                       </Link>
                     </div>
                   </th>

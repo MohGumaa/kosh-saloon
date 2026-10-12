@@ -4,6 +4,7 @@ import { FileText, Plus } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { LocalDateTime } from "@/components/layout/LocalDateTime";
+import { PersonName } from "@/components/layout/PersonName";
 import { DatePicker } from "@/components/ui/date-picker";
 import { FormSelect } from "@/components/ui/form-select";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,7 @@ import {
   isOwnScope,
   parseInvoiceFilters,
 } from "@/lib/invoices";
+import { nameLabels } from "@/lib/names";
 import { getSalonSettings } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 
@@ -71,14 +73,15 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/transac
             amount: true,
             status: true,
             createdAt: true,
-            employee: { select: { name: true } },
+            employee: { select: { id: true, name: true } },
             service: { select: { nameEn: true, nameAr: true } },
-            createdBy: { select: { name: true } },
+            createdBy: { select: { id: true, name: true } },
           },
         });
 
   const price = new Intl.NumberFormat(locale, { style: "currency", currency });
   const serviceName = (service: { nameEn: string; nameAr: string }) => (locale === "ar" ? service.nameAr : service.nameEn);
+  const personLabel = nameLabels(invoices.flatMap((invoice) => [invoice.employee, invoice.createdBy]), locale);
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
@@ -246,9 +249,7 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/transac
                         </Link>
                       </th>
                       <td className="px-3 py-3">
-                        <span dir="auto" className="break-words">
-                          {invoice.employee.name}
-                        </span>
+                        <PersonName name={invoice.employee.name} label={personLabel.get(invoice.employee.id)} />
                       </td>
                       <td className="px-3 py-3">
                         <span dir="auto" className="break-words">
@@ -267,9 +268,7 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/transac
                         <LocalDateTime iso={invoice.createdAt.toISOString()} timeStyle="short" />
                       </td>
                       <td className="px-3 py-3">
-                        <span dir="auto" className="break-words">
-                          {invoice.createdBy.name}
-                        </span>
+                        <PersonName name={invoice.createdBy.name} label={personLabel.get(invoice.createdBy.id)} />
                       </td>
                     </tr>
                   ))}

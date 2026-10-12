@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { LocalDateTime } from "@/components/layout/LocalDateTime";
+import { PersonName } from "@/components/layout/PersonName";
 import { AUDIT_PAGE_SIZE, auditChanges, resolvePage } from "@/lib/audit";
 import { requireSession } from "@/lib/auth/current-user";
 import { db } from "@/lib/db";
+import { nameLabels } from "@/lib/names";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("audit");
@@ -24,7 +26,12 @@ export default async function AuditLogPage({ searchParams }: PageProps<"/audit-l
   const { user } = await requireSession();
   if (user.role !== "ADMIN") redirect("/forbidden");
 
-  const [t, params, total] = await Promise.all([getTranslations("audit"), searchParams, db.auditLog.count()]);
+  const [t, locale, params, total] = await Promise.all([
+    getTranslations("audit"),
+    getLocale(),
+    searchParams,
+    db.auditLog.count(),
+  ]);
   const totalPages = Math.ceil(total / AUDIT_PAGE_SIZE);
   const page = resolvePage(params.page, totalPages);
 
@@ -44,7 +51,7 @@ export default async function AuditLogPage({ searchParams }: PageProps<"/audit-l
             oldValue: true,
             newValue: true,
             createdAt: true,
-            user: { select: { name: true, username: true } },
+            user: { select: { id: true, name: true, username: true } },
           },
         });
 
@@ -54,6 +61,7 @@ export default async function AuditLogPage({ searchParams }: PageProps<"/audit-l
       ? []
       : await db.user.findMany({ where: { id: { in: userIds } }, select: { id: true, name: true } });
   const userNames = new Map(users.map((row) => [row.id, row.name]));
+  const actorLabel = nameLabels(entries.map((entry) => entry.user), locale);
 
   // An action, entity, or field a later feature logs without a label still shows, by its stored name.
   const label = (key: string, fallback: string) => (t.has(key) ? t(key) : fallback);
@@ -92,8 +100,8 @@ export default async function AuditLogPage({ searchParams }: PageProps<"/audit-l
                           <LocalDateTime iso={entry.createdAt.toISOString()} timeStyle="short" />
                         </td>
                         <td className="px-3 py-3">
-                          <div className="break-words" dir="auto">
-                            {entry.user.name}
+                          <div>
+                            <PersonName name={entry.user.name} label={actorLabel.get(entry.user.id)} />
                           </div>
                           <div className="text-xs text-muted-foreground">
                             <span dir="ltr">{entry.user.username}</span>

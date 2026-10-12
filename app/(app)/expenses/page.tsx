@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Plus, Wallet } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
+import { PersonName } from "@/components/layout/PersonName";
 import { DatePicker } from "@/components/ui/date-picker";
 import { FormSelect } from "@/components/ui/form-select";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ import {
   expenseWhere,
   parseExpenseFilters,
 } from "@/lib/expenses";
+import { nameLabels } from "@/lib/names";
 import { getSalonSettings } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 
@@ -63,11 +65,12 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
             category: true,
             amount: true,
             date: true,
-            createdBy: { select: { name: true } },
+            createdBy: { select: { id: true, name: true } },
           },
         });
 
   const price = new Intl.NumberFormat(locale, { style: "currency", currency });
+  const personLabel = nameLabels(expenses.map((expense) => expense.createdBy), locale);
   // A calendar day stored as UTC midnight; formatting it in UTC keeps the same day for every viewer.
   const day = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" });
 
@@ -201,9 +204,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
                         <span dir="ltr">{price.format(expense.amount.toNumber())}</span>
                       </td>
                       <td className="px-3 py-3">
-                        <span dir="auto" className="break-words">
-                          {expense.createdBy.name}
-                        </span>
+                        <PersonName name={expense.createdBy.name} label={personLabel.get(expense.createdBy.id)} />
                       </td>
                     </tr>
                   ))}

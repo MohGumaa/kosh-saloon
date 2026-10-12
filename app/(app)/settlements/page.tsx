@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, HandCoins } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
+import { PersonName } from "@/components/layout/PersonName";
 import { GenerateSettlementsForm } from "@/components/settlements/GenerateSettlementsForm";
 import { SettlementStatusBadge } from "@/components/settlements/SettlementStatusBadge";
 import { requirePermission } from "@/lib/auth/authorize";
 import { db } from "@/lib/db";
 import { salonMonth, shiftMonth } from "@/lib/earnings";
 import { isOwnScope } from "@/lib/invoices";
+import { nameLabels } from "@/lib/names";
 import { getSalonSettings } from "@/lib/settings";
 import { canManageSettlements, isSettleableMonth, monthPeriod, parseSettlementMonth } from "@/lib/settlements";
 import { cn } from "@/lib/utils";
@@ -61,12 +63,13 @@ export default async function SettlementsPage({ searchParams }: PageProps<"/sett
         totalAdjustments: true,
         finalAmount: true,
         status: true,
-        employee: { select: { name: true } },
+        employee: { select: { id: true, name: true } },
       },
     }),
   ]);
 
   const price = new Intl.NumberFormat(locale, { style: "currency", currency });
+  const employeeLabel = nameLabels(settlements.map((settlement) => settlement.employee), locale);
   const percent = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 2 });
   // The first of the month at UTC midnight, formatted in UTC, names the same month for every viewer.
   const monthName = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric", timeZone: "UTC" }).format(
@@ -130,9 +133,7 @@ export default async function SettlementsPage({ searchParams }: PageProps<"/sett
                   <tr key={settlement.id}>
                     <th scope="row" className="px-3 py-3 text-start font-medium">
                       <Link href={`/settlements/${settlement.id}`} className={linkClass}>
-                        <span dir="auto" className="break-words">
-                          {settlement.employee.name}
-                        </span>
+                        <PersonName name={settlement.employee.name} label={employeeLabel.get(settlement.employee.id)} />
                       </Link>
                     </th>
                     <td className={numberCell}>

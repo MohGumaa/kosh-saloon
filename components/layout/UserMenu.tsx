@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { UserAvatar } from "@/components/layout/UserAvatar";
+import { firstName } from "@/lib/names";
 
 export interface HeaderUser {
   name: string;
@@ -40,7 +41,7 @@ export function UserMenu({ user }: { user: HeaderUser }) {
       >
         <UserAvatar name={user.name} image={user.image} />
         <span className="hidden max-w-40 flex-col text-start leading-tight sm:flex">
-          <span className="truncate text-sm font-medium">{user.name}</span>
+          <span className="truncate text-sm font-medium">{firstName(user.name)}</span>
           <span className="truncate text-xs font-normal text-muted-foreground">{t(`roles.${user.role}`)}</span>
         </span>
         <ChevronDown aria-hidden className="size-4 text-muted-foreground" />

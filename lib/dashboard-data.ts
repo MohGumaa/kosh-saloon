@@ -106,7 +106,7 @@ export async function loadDashboard(
             amount: true,
             status: true,
             createdAt: true,
-            employee: { select: { name: true } },
+            employee: { select: { id: true, name: true } },
           },
         })
       : null,
