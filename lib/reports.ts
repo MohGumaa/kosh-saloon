@@ -167,3 +167,15 @@ export function breakdownRows<T>(
     (a, b) => b.gross.comparedTo(a.gross) || nameOf(a.detail).localeCompare(nameOf(b.detail), locale),
   );
 }
+
+/**
+ * The label for each employee row: the first name, or the full name when another row
+ * has the same first name (case-insensitive), so rows stay distinguishable.
+ */
+export function employeeLabels(names: readonly string[], locale?: string): string[] {
+  const firstNames = names.map((name) => name.trim().split(/\s+/)[0]);
+  const key = (firstName: string) => firstName.toLocaleLowerCase(locale);
+  const counts = new Map<string, number>();
+  for (const firstName of firstNames) counts.set(key(firstName), (counts.get(key(firstName)) ?? 0) + 1);
+  return firstNames.map((firstName, i) => (counts.get(key(firstName))! > 1 ? names[i].trim() : firstName));
+}

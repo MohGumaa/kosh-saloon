@@ -4,6 +4,7 @@ import { PERMISSION_KEYS, ROLE_DEFAULTS, type PermissionKey } from "@/lib/auth/p
 import {
   breakdownRows,
   canViewRevenueReport,
+  employeeLabels,
   parseRevenueReport,
   revenueReportHref,
   revenueSections,
@@ -178,6 +179,33 @@ describe("breakdownRows", () => {
       ["a", 4, "60", "40", "100"],
       ["b", 2, "100", "0", "100"],
       ["c", 0, "0", "0", "0"],
+    ]);
+  });
+});
+
+describe("employeeLabels", () => {
+  it("shows the first name", () => {
+    expect(employeeLabels(["Tamir Abdelrahman", "Sara Ali"])).toEqual(["Tamir", "Sara"]);
+  });
+
+  it("keeps a single-word name and trims extra spaces", () => {
+    expect(employeeLabels(["Huda", "  Omar   Khalid  "])).toEqual(["Huda", "Omar"]);
+  });
+
+  it("shows full names when first names clash, ignoring case", () => {
+    expect(employeeLabels(["Tamir Abdelrahman", "tamir Hassan", "Sara Ali"], "en")).toEqual([
+      "Tamir Abdelrahman",
+      "tamir Hassan",
+      "Sara",
+    ]);
+  });
+
+  it("applies the same rules to Arabic names", () => {
+    expect(employeeLabels(["تامر عبدالرحمن", "سارة علي", "سارة محمد", "هدى"], "ar")).toEqual([
+      "تامر",
+      "سارة علي",
+      "سارة محمد",
+      "هدى",
     ]);
   });
 });

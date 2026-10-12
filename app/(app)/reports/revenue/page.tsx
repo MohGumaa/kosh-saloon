@@ -10,7 +10,14 @@ import { getPermissions } from "@/lib/auth/authorize";
 import { requireSession } from "@/lib/auth/current-user";
 import { addDays } from "@/lib/dashboard";
 import { dateValue, salonToday } from "@/lib/expenses";
-import { breakdownRows, canViewRevenueReport, parseRevenueReport, revenueSections, type BreakdownRow } from "@/lib/reports";
+import {
+  breakdownRows,
+  canViewRevenueReport,
+  employeeLabels,
+  parseRevenueReport,
+  revenueSections,
+  type BreakdownRow,
+} from "@/lib/reports";
 import { loadRevenueReport } from "@/lib/reports-data";
 import { getDirection, isLocale } from "@/i18n/locales";
 import { cn } from "@/lib/utils";
@@ -100,6 +107,8 @@ export default async function RevenueReportPage({ searchParams }: PageProps<"/re
   const employees = data.byEmployee
     ? breakdownRows(data.byEmployee.rows, data.byEmployee.details, (employee) => employee.name, locale)
     : null;
+  const labels = employees ? employeeLabels(employees.map((row) => row.detail.name), locale) : [];
+  const employeeLabel = new Map(employees?.map((row, i) => [row.id, labels[i]]));
 
   const summary: { key: string; value: string; icon: LucideIcon }[] = [
     { key: "gross", value: price.format(data.totals.gross.toNumber()), icon: Wallet },
@@ -153,6 +162,7 @@ export default async function RevenueReportPage({ searchParams }: PageProps<"/re
     isActive: (detail: T) => boolean,
     icon: LucideIcon,
     imageOf?: (detail: T) => string | null,
+    labelOf?: (row: BreakdownRow<T>) => string,
   ) => (
     <section aria-labelledby={id} className={panelClass}>
       <h2 id={id} className="text-lg font-semibold">
@@ -165,26 +175,30 @@ export default async function RevenueReportPage({ searchParams }: PageProps<"/re
           <table className="w-full min-w-md text-sm">
             {headings(first, BREAKDOWN_COLUMNS)}
             <tbody className="divide-y">
-              {rows.map((row) => (
-                <tr key={row.id}>
-                  <th scope="row" className="px-3 py-3 text-start font-medium">
-                    <div className="flex items-center gap-3">
-                      {imageOf && <UserAvatar name={nameOf(row.detail)} image={imageOf(row.detail)} className="size-8 text-xs" />}
-                      <span className="min-w-0">
-                        <span dir="auto" className="break-words">
-                          {nameOf(row.detail)}
-                        </span>
-                        {!isActive(row.detail) && (
-                          <span className="ms-2 rounded-full bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
-                            {t("inactive")}
+              {rows.map((row) => {
+                const name = nameOf(row.detail);
+                const label = labelOf?.(row) ?? name;
+                return (
+                  <tr key={row.id}>
+                    <th scope="row" className="px-3 py-3 text-start font-medium">
+                      <div className="flex items-center gap-3">
+                        {imageOf && <UserAvatar name={name} image={imageOf(row.detail)} className="size-8 text-xs" />}
+                        <span className="min-w-0">
+                          <span dir="auto" className="break-words" title={label === name ? undefined : name}>
+                            {label}
                           </span>
-                        )}
-                      </span>
-                    </div>
-                  </th>
-                  {amountCells(row, BREAKDOWN_COLUMNS)}
-                </tr>
-              ))}
+                          {!isActive(row.detail) && (
+                            <span className="ms-2 rounded-full bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
+                              {t("inactive")}
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    </th>
+                    {amountCells(row, BREAKDOWN_COLUMNS)}
+                  </tr>
+                );
+              })}
             </tbody>
             {totalsRow(BREAKDOWN_COLUMNS)}
           </table>
@@ -271,6 +285,7 @@ export default async function RevenueReportPage({ searchParams }: PageProps<"/re
             (employee) => employee.isActive,
             Users,
             (employee) => employee.image,
+            (row) => employeeLabel.get(row.id) ?? row.detail.name,
           )}
       </div>
     </div>
