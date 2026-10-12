@@ -25,7 +25,8 @@ export const CUSTOM_MAX_DAYS = 366;
 /** Ranges up to this many days get one chart bar per day; longer ones one per month. */
 export const DAILY_MAX_DAYS = 62;
 
-export type Granularity = "day" | "month";
+/** The dashboard uses day or month; the revenue report can also group by Monday-start week. */
+export type Granularity = "day" | "week" | "month";
 
 export interface DashboardRange {
   period: DashboardPeriod;
@@ -87,12 +88,26 @@ export function presetRange(period: Exclude<DashboardPeriod, "custom">, today: s
   }
 }
 
-function granularityOf(from: string, to: string): Granularity {
+function granularityOf(from: string, to: string): "day" | "month" {
   return daysInRange(from, to) <= DAILY_MAX_DAYS ? "day" : "month";
 }
 
-function first(value: string | string[] | undefined): string | undefined {
+export function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
+}
+
+/** A usable custom range: real calendar days, `from <= to <= today`, at most `CUSTOM_MAX_DAYS` long. */
+export function isValidCustomRange(from: string | undefined, to: string | undefined, today: string): boolean {
+  // `YYYY-MM-DD` strings compare in calendar order.
+  return (
+    from !== undefined &&
+    to !== undefined &&
+    isCalendarDate(from) &&
+    isCalendarDate(to) &&
+    from <= to &&
+    to <= today &&
+    daysInRange(from, to) <= CUSTOM_MAX_DAYS
+  );
 }
 
 /** The period in the dashboard URL. An unknown period is the default; a bad custom range is flagged. */
@@ -103,16 +118,7 @@ export function parseDashboardPeriod(params: SearchParams, today: string): Dashb
   if (period === "custom") {
     const from = first(params.from)?.trim() || undefined;
     const to = first(params.to)?.trim() || undefined;
-    // `YYYY-MM-DD` strings compare in calendar order.
-    const valid =
-      from !== undefined &&
-      to !== undefined &&
-      isCalendarDate(from) &&
-      isCalendarDate(to) &&
-      from <= to &&
-      to <= today &&
-      daysInRange(from, to) <= CUSTOM_MAX_DAYS;
-    if (valid) return { period, from, to, granularity: granularityOf(from, to), invalidCustom: false, submitted: { from, to } };
+    if (isValidCustomRange(from, to, today) && from && to) return { period, from, to, granularity: granularityOf(from, to), invalidCustom: false, submitted: { from, to } };
     const fallback = presetRange(DEFAULT_PERIOD, today);
     return {
       period: DEFAULT_PERIOD,
@@ -127,11 +133,16 @@ export function parseDashboardPeriod(params: SearchParams, today: string): Dashb
   return { period, ...range, granularity: granularityOf(range.from, range.to), invalidCustom: false };
 }
 
-/** The chart's bucket keys in order: every `YYYY-MM-DD` day, or every `YYYY-MM` month, in the range. */
+/**
+ * The chart's bucket keys in order: every `YYYY-MM-DD` day, every week's `YYYY-MM-DD` Monday
+ * (the first may fall before `from`), or every `YYYY-MM` month, in the range.
+ */
 export function chartBuckets(from: string, to: string, granularity: Granularity): string[] {
   const keys: string[] = [];
   if (granularity === "day") {
     for (let day = from; day <= to; day = addDays(day, 1)) keys.push(day);
+  } else if (granularity === "week") {
+    for (let monday = weekStart(from); monday <= to; monday = addDays(monday, 7)) keys.push(monday);
   } else {
     const last = to.slice(0, 7);
     for (let month = from.slice(0, 7); month <= last; month = shiftMonth(month, 1)) keys.push(month);
@@ -140,28 +151,38 @@ export function chartBuckets(from: string, to: string, granularity: Granularity)
 }
 
 function bucketKey(day: string, granularity: Granularity): string {
-  return granularity === "day" ? day : day.slice(0, 7);
+  if (granularity === "day") return day;
+  return granularity === "week" ? weekStart(day) : day.slice(0, 7);
 }
 
 export interface InvoiceBucket {
   key: string;
   paid: Prisma.Decimal;
   unpaid: Prisma.Decimal;
+  paidCount: number;
+  unpaidCount: number;
 }
 
-/** Paid and unpaid totals per bucket, by the salon day of `createdAt`. CANCELLED and out-of-range rows are skipped. */
+/** Paid and unpaid totals and counts per bucket, by the salon day of `createdAt`. CANCELLED and out-of-range rows are skipped. */
 export function bucketInvoices(
   rows: readonly { createdAt: Date; amount: DecimalInput; status: string }[],
   keys: readonly string[],
   granularity: Granularity,
   timeZone: string = SALON_TIME_ZONE,
 ): InvoiceBucket[] {
-  const buckets = new Map(keys.map((key) => [key, { key, paid: new Prisma.Decimal(0), unpaid: new Prisma.Decimal(0) }]));
+  const buckets = new Map<string, InvoiceBucket>(
+    keys.map((key) => [key, { key, paid: new Prisma.Decimal(0), unpaid: new Prisma.Decimal(0), paidCount: 0, unpaidCount: 0 }]),
+  );
   for (const row of rows) {
     const bucket = buckets.get(bucketKey(salonToday(row.createdAt, timeZone), granularity));
     if (!bucket) continue;
-    if (row.status === "PAID") bucket.paid = bucket.paid.plus(row.amount);
-    else if (row.status === "UNPAID") bucket.unpaid = bucket.unpaid.plus(row.amount);
+    if (row.status === "PAID") {
+      bucket.paid = bucket.paid.plus(row.amount);
+      bucket.paidCount += 1;
+    } else if (row.status === "UNPAID") {
+      bucket.unpaid = bucket.unpaid.plus(row.amount);
+      bucket.unpaidCount += 1;
+    }
   }
   return [...buckets.values()];
 }

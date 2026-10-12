@@ -769,6 +769,67 @@
       }
     }
   },
+  "revenueReport": {
+    "title": "Revenue report",
+    "description": "Gross, paid, and unpaid revenue over time, by service, and by employee.",
+    "loading": "Loading the revenue report",
+    "periods": {
+      "label": "Period",
+      "today": "Today",
+      "week": "This week",
+      "month": "This month",
+      "year": "This year",
+      "custom": "Custom range"
+    },
+    "custom": {
+      "from": "From",
+      "to": "To",
+      "apply": "Apply range",
+      "invalid": "Choose both dates, with the start on or before the end, no later than today, and at most 366 days apart. Showing this month instead."
+    },
+    "group": {
+      "label": "Group by",
+      "day": "Day",
+      "week": "Week",
+      "month": "Month"
+    },
+    "summary": {
+      "gross": "Gross revenue",
+      "paid": "Paid revenue",
+      "unpaid": "Unpaid revenue",
+      "invoices": "Invoices"
+    },
+    "hints": {
+      "gross": "Paid and unpaid invoices together",
+      "paid": "Collected revenue",
+      "unpaid": "Still to be collected",
+      "invoices": "Paid and unpaid; cancelled invoices are not counted"
+    },
+    "overTime": {
+      "title": "Revenue over time",
+      "caption": "Paid and unpaid revenue, {range}",
+      "empty": "No revenue in this period."
+    },
+    "byService": {
+      "title": "Revenue by service",
+      "empty": "No service earned revenue in this period."
+    },
+    "byEmployee": {
+      "title": "Revenue by employee",
+      "empty": "No employee earned revenue in this period."
+    },
+    "columns": {
+      "period": "Period",
+      "service": "Service",
+      "employee": "Employee",
+      "invoices": "Invoices",
+      "paid": "Paid",
+      "unpaid": "Unpaid",
+      "gross": "Gross"
+    },
+    "total": "Total",
+    "inactive": "Inactive"
+  },
   "permissions": {
     "title": "Permissions",
     "description": "Choose what this user can see and do.",

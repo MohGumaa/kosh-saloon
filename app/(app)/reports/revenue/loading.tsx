@@ -1,0 +1,25 @@
+import { getTranslations } from "next-intl/server";
+
+const panelClass = "rounded-2xl border bg-card shadow-card";
+
+/** Shown while a period or grouping change loads. */
+export default async function RevenueReportLoading() {
+  const t = await getTranslations("revenueReport");
+  return (
+    <div role="status" className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+      <span className="sr-only">{t("loading")}</span>
+      <div aria-hidden className="h-14 w-64 animate-pulse rounded-xl bg-muted" />
+      <div aria-hidden className={`${panelClass} h-40 animate-pulse`} />
+      <div aria-hidden className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }, (_, index) => (
+          <div key={index} className={`${panelClass} h-32 animate-pulse`} />
+        ))}
+      </div>
+      <div aria-hidden className={`${panelClass} h-96 animate-pulse`} />
+      <div aria-hidden className="grid gap-6 xl:grid-cols-2">
+        <div className={`${panelClass} h-64 animate-pulse`} />
+        <div className={`${panelClass} h-64 animate-pulse`} />
+      </div>
+    </div>
+  );
+}

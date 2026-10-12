@@ -38,7 +38,7 @@ Your features
 
 - [x] 15. Staff personal dashboard - Build a staff-focused dashboard showing personal revenue, paid/unpaid bills, share percentage, earnings, expenses, and current/final payout.
 
-- [ ] 16. Revenue reports - Provide daily, weekly, monthly, yearly, and custom-range revenue reports with paid/unpaid breakdowns and revenue by employee and service.
+- [x] 16. Revenue reports - Provide daily, weekly, monthly, yearly, and custom-range revenue reports with paid/unpaid breakdowns and revenue by employee and service.
 
 - [ ] 17. Expense reports - Provide salon and employee expense reports with categories, date ranges, totals, and financial summaries.
 

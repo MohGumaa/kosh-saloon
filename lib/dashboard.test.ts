@@ -113,6 +113,15 @@ describe("chartBuckets", () => {
   it("lists every month, across a year boundary", () => {
     expect(chartBuckets("2026-11-15", "2027-02-03", "month")).toEqual(["2026-11", "2026-12", "2027-01", "2027-02"]);
   });
+
+  it("lists every week's Monday, starting before `from` and across a year boundary", () => {
+    // 2026-12-24 is a Thursday; 2027-01-04 is a Monday.
+    expect(chartBuckets("2026-12-24", "2027-01-04", "week")).toEqual(["2026-12-21", "2026-12-28", "2027-01-04"]);
+  });
+
+  it("lists one week when the range sits inside it", () => {
+    expect(chartBuckets("2026-10-06", "2026-10-07", "week")).toEqual(["2026-10-05"]);
+  });
 });
 
 describe("bucketInvoices", () => {
@@ -155,6 +164,37 @@ describe("bucketInvoices", () => {
       "month",
     );
     expect(buckets.map((b) => b.paid.toString())).toEqual(["25", "0"]);
+  });
+
+  it("counts paid and unpaid invoices per bucket, never cancelled ones", () => {
+    const [empty, full] = bucketInvoices(
+      [
+        { createdAt: new Date("2026-10-07T08:00:00Z"), amount: "100", status: "PAID" },
+        { createdAt: new Date("2026-10-07T08:30:00Z"), amount: "20", status: "PAID" },
+        { createdAt: new Date("2026-10-07T09:00:00Z"), amount: "40", status: "UNPAID" },
+        { createdAt: new Date("2026-10-07T10:00:00Z"), amount: "999", status: "CANCELLED" },
+      ],
+      keys,
+      "day",
+    );
+    expect([empty.paidCount, empty.unpaidCount]).toEqual([0, 0]);
+    expect([full.paidCount, full.unpaidCount]).toEqual([2, 1]);
+  });
+
+  it("groups by week, across a month boundary, by salon day", () => {
+    const buckets = bucketInvoices(
+      [
+        { createdAt: new Date("2026-09-28T08:00:00Z"), amount: "10", status: "PAID" }, // Monday
+        { createdAt: new Date("2026-10-04T08:00:00Z"), amount: "15", status: "UNPAID" }, // Sunday, same week
+        { createdAt: new Date("2026-10-04T21:00:00Z"), amount: "5", status: "PAID" }, // Monday 01:00 in Dubai
+      ],
+      ["2026-09-28", "2026-10-05"],
+      "week",
+    );
+    expect(buckets.map((b) => [b.key, b.paid.toString(), b.unpaid.toString()])).toEqual([
+      ["2026-09-28", "10", "15"],
+      ["2026-10-05", "5", "0"],
+    ]);
   });
 });
 

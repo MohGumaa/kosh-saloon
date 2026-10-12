@@ -68,6 +68,12 @@ describe("visibleNavGroups", () => {
 });
 
 describe("NAVIGATION", () => {
+  it("links the revenue report item to its page", () => {
+    const revenue = NAVIGATION.flatMap((group) => group.items).find((item) => item.key === "revenue");
+
+    expect(revenue?.href).toBe("/reports/revenue");
+  });
+
   it("links the services item to the catalog", () => {
     const services = NAVIGATION.flatMap((group) => group.items).find((item) => item.key === "services");
 
