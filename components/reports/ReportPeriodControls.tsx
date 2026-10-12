@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { DatePicker } from "@/components/ui/date-picker";
-import { REVENUE_PERIODS, revenueReportHref, type RevenueReportRange } from "@/lib/reports";
+import { REVENUE_PERIODS, reportHref, type RevenueReportRange } from "@/lib/reports";
 import { cn } from "@/lib/utils";
 
-const ERROR_ID = "revenue-range-error";
+const ERROR_ID = "report-range-error";
 
 const chipClass =
   "flex h-9 items-center rounded-xl border px-3 text-sm font-medium outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50";
@@ -12,8 +12,17 @@ const chipClass =
 const activeClass = "border-primary bg-primary text-primary-foreground hover:bg-primary/80";
 
 /** Preset and grouping links plus a custom-range GET form. The server parses the result; there is no client state. */
-export async function RevenueReportControls({ range, today }: { range: RevenueReportRange; today: string }) {
-  const t = await getTranslations("revenueReport");
+export async function ReportPeriodControls({
+  path,
+  range,
+  today,
+}: {
+  /** The report page the links and the custom form point at. */
+  path: string;
+  range: RevenueReportRange;
+  today: string;
+}) {
+  const t = await getTranslations("reportPeriod");
   const customValues = range.period === "custom" || range.invalidCustom ? range.submitted : undefined;
 
   return (
@@ -25,7 +34,7 @@ export async function RevenueReportControls({ range, today }: { range: RevenueRe
             return (
               <li key={period}>
                 <Link
-                  href={revenueReportHref(range, { period }, today)}
+                  href={reportHref(path, range, { period }, today)}
                   aria-current={active ? "page" : undefined}
                   className={cn(chipClass, active && activeClass)}
                 >
@@ -37,18 +46,18 @@ export async function RevenueReportControls({ range, today }: { range: RevenueRe
         </ul>
       </nav>
 
-      <form method="get" action="/reports/revenue" aria-label={t("periods.custom")} className="flex flex-wrap items-end gap-3">
+      <form method="get" action={path} aria-label={t("periods.custom")} className="flex flex-wrap items-end gap-3">
         <input type="hidden" name="period" value="custom" />
         <input type="hidden" name="group" value={range.group} />
         {(["from", "to"] as const).map((key) => (
           <div key={key} className="flex flex-col gap-2">
-            <label htmlFor={`revenue-${key}`} className="text-sm font-medium">
+            <label htmlFor={`report-${key}`} className="text-sm font-medium">
               {t(`custom.${key}`)}
             </label>
             <DatePicker
               // Remount on navigation so the picker shows the values the server used.
               key={`${range.period}-${customValues?.[key] ?? ""}`}
-              id={`revenue-${key}`}
+              id={`report-${key}`}
               name={key}
               max={today}
               defaultValue={customValues?.[key]}
@@ -84,7 +93,7 @@ export async function RevenueReportControls({ range, today }: { range: RevenueRe
             return (
               <li key={group}>
                 <Link
-                  href={revenueReportHref(range, { group }, today)}
+                  href={reportHref(path, range, { group }, today)}
                   aria-current={active ? "page" : undefined}
                   className={cn(chipClass, active && activeClass)}
                 >

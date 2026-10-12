@@ -79,10 +79,11 @@ export function parseRevenueReport(params: SearchParams, today: string): Revenue
 }
 
 /**
- * A link to the report with the period or grouping changed and everything else kept.
+ * A link to the report at `path` with the period or grouping changed and everything else kept.
  * Default values are left out; a grouping the target range does not offer is dropped.
  */
-export function revenueReportHref(
+export function reportHref(
+  path: string,
   range: Pick<RevenueReportRange, "period" | "from" | "to" | "group">,
   change: { period?: RevenuePreset; group?: RevenueGroup },
   today: string,
@@ -101,7 +102,7 @@ export function revenueReportHref(
     params.set("group", group);
   }
   const query = params.toString();
-  return query ? `/reports/revenue?${query}` : "/reports/revenue";
+  return query ? `${path}?${query}` : path;
 }
 
 /** Salon-wide revenue: never for Staff, otherwise with `reports.view` (an ADMIN holds every key). */
@@ -166,4 +167,61 @@ export function breakdownRows<T>(
   return [...byId.values()].sort(
     (a, b) => b.gross.comparedTo(a.gross) || nameOf(a.detail).localeCompare(nameOf(b.detail), locale),
   );
+}
+
+/**
+ * Salon expenses and employee deductions: never for Staff, otherwise with `reports.view` and
+ * at least one of the two expense views (an ADMIN holds every key).
+ */
+export function canViewExpenseReport(
+  user: Pick<SessionUser, "role">,
+  permissions: ReadonlySet<PermissionKey>,
+): boolean {
+  return (
+    !isOwnScope(user) &&
+    permissions.has("reports.view") &&
+    (permissions.has("expenses.view") || permissions.has("employee_expenses.view"))
+  );
+}
+
+/** The expense report sections the viewer may see. Their queries run only when true. */
+export function expenseSections(permissions: ReadonlySet<PermissionKey>) {
+  const employee = permissions.has("employee_expenses.view");
+  return {
+    salon: permissions.has("expenses.view"),
+    employee,
+    byEmployee: employee && permissions.has("reports.view_all_employees"),
+  };
+}
+
+export type ExpenseSections = ReturnType<typeof expenseSections>;
+
+/** One `groupBy` row, keyed by a category or employee id. */
+export interface GroupedExpense {
+  id: string;
+  amount: Prisma.Decimal | null;
+  count: number;
+}
+
+export interface ExpenseBreakdownRow<T> {
+  id: string;
+  detail: T;
+  count: number;
+  total: Prisma.Decimal;
+}
+
+/** Per-id expense totals, highest first, then by name. An id without details (deleted since) is left out. */
+export function expenseBreakdown<T>(
+  rows: readonly GroupedExpense[],
+  details: ReadonlyMap<string, T>,
+  nameOf: (detail: T) => string,
+  locale?: string,
+): ExpenseBreakdownRow<T>[] {
+  return rows
+    .flatMap((row) => {
+      const detail = details.get(row.id);
+      if (detail === undefined) return [];
+      return [{ id: row.id, detail, count: row.count, total: row.amount ?? new Prisma.Decimal(0) }];
+    })
+    .sort((a, b) => b.total.comparedTo(a.total) || nameOf(a.detail).localeCompare(nameOf(b.detail), locale));
 }

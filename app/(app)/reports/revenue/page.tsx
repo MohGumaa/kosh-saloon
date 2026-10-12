@@ -5,7 +5,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { RevenueChart } from "@/components/dashboard/RevenueChart";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { UserAvatar } from "@/components/layout/UserAvatar";
-import { RevenueReportControls } from "@/components/reports/RevenueReportControls";
+import { ReportPeriodControls } from "@/components/reports/ReportPeriodControls";
 import { getPermissions } from "@/lib/auth/authorize";
 import { requireSession } from "@/lib/auth/current-user";
 import { addDays } from "@/lib/dashboard";
@@ -62,9 +62,10 @@ export default async function RevenueReportPage({ searchParams }: PageProps<"/re
   const today = salonToday();
   const range = parseRevenueReport(await searchParams, today);
   const sections = revenueSections(permissions);
-  const [data, t, locale] = await Promise.all([
+  const [data, t, tPeriod, locale] = await Promise.all([
     loadRevenueReport(range, sections),
     getTranslations("revenueReport"),
+    getTranslations("reportPeriod"),
     getLocale(),
   ]);
 
@@ -208,11 +209,11 @@ export default async function RevenueReportPage({ searchParams }: PageProps<"/re
         <p className="mt-1 text-sm text-muted-foreground">{t("description")}</p>
       </div>
 
-      <RevenueReportControls range={range} today={today} />
+      <ReportPeriodControls path="/reports/revenue" range={range} today={today} />
 
       <section aria-labelledby="revenue-period" className="flex flex-col gap-4">
         <h2 id="revenue-period" className="text-lg font-semibold">
-          {t(`periods.${range.period}`)}
+          {tPeriod(`periods.${range.period}`)}
           <span className="ms-2 text-sm font-normal text-muted-foreground">{rangeLabel}</span>
         </h2>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

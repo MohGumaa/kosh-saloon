@@ -3,10 +3,14 @@ import { Prisma } from "@/generated/prisma/client";
 import { PERMISSION_KEYS, ROLE_DEFAULTS, type PermissionKey } from "@/lib/auth/permissions";
 import {
   breakdownRows,
+  canViewExpenseReport,
   canViewRevenueReport,
+  expenseBreakdown,
+  expenseSections,
   parseRevenueReport,
-  revenueReportHref,
+  reportHref,
   revenueSections,
+  type GroupedExpense,
   type GroupedRevenue,
 } from "@/lib/reports";
 
@@ -101,27 +105,33 @@ describe("parseRevenueReport grouping", () => {
   });
 });
 
-describe("revenueReportHref", () => {
+describe("reportHref", () => {
+  const PATH = "/reports/revenue";
   const month = parseRevenueReport({}, today);
 
   it("leaves out default values", () => {
-    expect(revenueReportHref(month, { period: "month" }, today)).toBe("/reports/revenue");
-    expect(revenueReportHref(month, { group: "day" }, today)).toBe("/reports/revenue");
+    expect(reportHref(PATH, month, { period: "month" }, today)).toBe("/reports/revenue");
+    expect(reportHref(PATH, month, { group: "day" }, today)).toBe("/reports/revenue");
   });
 
   it("keeps the grouping when changing the period, unless the new range refuses it", () => {
     const weekly = parseRevenueReport({ group: "week" }, today);
-    expect(revenueReportHref(weekly, { period: "today" }, today)).toBe("/reports/revenue?period=today&group=week");
+    expect(reportHref(PATH, weekly, { period: "today" }, today)).toBe("/reports/revenue?period=today&group=week");
 
     const daily = parseRevenueReport({ period: "week" }, today);
-    expect(revenueReportHref(daily, { period: "year" }, today)).toBe("/reports/revenue?period=year");
+    expect(reportHref(PATH, daily, { period: "year" }, today)).toBe("/reports/revenue?period=year");
   });
 
   it("keeps a custom range when changing the grouping", () => {
     const custom = parseRevenueReport({ period: "custom", from: "2026-09-01", to: "2026-09-30" }, today);
-    expect(revenueReportHref(custom, { group: "week" }, today)).toBe(
+    expect(reportHref(PATH, custom, { group: "week" }, today)).toBe(
       "/reports/revenue?period=custom&from=2026-09-01&to=2026-09-30&group=week",
     );
+  });
+
+  it("links to the given report path", () => {
+    expect(reportHref("/reports/expenses", month, { period: "month" }, today)).toBe("/reports/expenses");
+    expect(reportHref("/reports/expenses", month, { period: "week" }, today)).toBe("/reports/expenses?period=week");
   });
 });
 
@@ -178,6 +188,72 @@ describe("breakdownRows", () => {
       ["a", 4, "60", "40", "100"],
       ["b", 2, "100", "0", "100"],
       ["c", 0, "0", "0", "0"],
+    ]);
+  });
+});
+
+describe("expense report access", () => {
+  const set = (keys: readonly PermissionKey[]) => new Set(keys);
+  const without = (...drop: PermissionKey[]) => ROLE_DEFAULTS.SUPERVISOR.filter((key) => !drop.includes(key));
+
+  it("allows an ADMIN and a default Supervisor with every section", () => {
+    expect(canViewExpenseReport({ role: "ADMIN" }, set(PERMISSION_KEYS))).toBe(true);
+    expect(canViewExpenseReport({ role: "SUPERVISOR" }, set(ROLE_DEFAULTS.SUPERVISOR))).toBe(true);
+    expect(expenseSections(set(ROLE_DEFAULTS.SUPERVISOR))).toEqual({ salon: true, employee: true, byEmployee: true });
+  });
+
+  it("denies a Supervisor without reports.view or without either expense view", () => {
+    expect(canViewExpenseReport({ role: "SUPERVISOR" }, set(without("reports.view")))).toBe(false);
+    const neither = without("expenses.view", "employee_expenses.view");
+    expect(canViewExpenseReport({ role: "SUPERVISOR" }, set(neither))).toBe(false);
+  });
+
+  it("allows one expense view alone, with only its section", () => {
+    const salonOnly = set(without("employee_expenses.view"));
+    expect(canViewExpenseReport({ role: "SUPERVISOR" }, salonOnly)).toBe(true);
+    expect(expenseSections(salonOnly)).toEqual({ salon: true, employee: false, byEmployee: false });
+
+    const employeeOnly = set(without("expenses.view"));
+    expect(canViewExpenseReport({ role: "SUPERVISOR" }, employeeOnly)).toBe(true);
+    expect(expenseSections(employeeOnly)).toEqual({ salon: false, employee: true, byEmployee: true });
+  });
+
+  it("shows deductions by employee only with reports.view_all_employees", () => {
+    expect(expenseSections(set(without("reports.view_all_employees")))).toEqual({
+      salon: true,
+      employee: true,
+      byEmployee: false,
+    });
+  });
+
+  it("denies Staff even when granted every key", () => {
+    expect(canViewExpenseReport({ role: "STAFF" }, set(PERMISSION_KEYS))).toBe(false);
+  });
+});
+
+describe("expenseBreakdown", () => {
+  const row = (id: string, amount: string | null, count: number): GroupedExpense => ({
+    id,
+    amount: amount === null ? null : new Prisma.Decimal(amount),
+    count,
+  });
+  const names = new Map([
+    ["RENT", "Rent"],
+    ["WATER", "Water"],
+    ["OTHER", "Other"],
+  ]);
+
+  it("skips unknown ids, treats a null sum as zero, and sorts by total then name", () => {
+    const rows = expenseBreakdown(
+      [row("WATER", "50", 1), row("gone", "900", 2), row("RENT", "3000", 1), row("OTHER", "50", 3), row("x", null, 0)],
+      new Map([...names, ["x", "Zero"]]),
+      (name) => name,
+    );
+    expect(rows.map((r) => [r.id, r.count, r.total.toString()])).toEqual([
+      ["RENT", 1, "3000"],
+      ["OTHER", 3, "50"],
+      ["WATER", 1, "50"],
+      ["x", 0, "0"],
     ]);
   });
 });

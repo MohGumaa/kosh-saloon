@@ -769,10 +769,7 @@
       }
     }
   },
-  "revenueReport": {
-    "title": "Revenue report",
-    "description": "Gross, paid, and unpaid revenue over time, by service, and by employee.",
-    "loading": "Loading the revenue report",
+  "reportPeriod": {
     "periods": {
       "label": "Period",
       "today": "Today",
@@ -792,7 +789,12 @@
       "day": "Day",
       "week": "Week",
       "month": "Month"
-    },
+    }
+  },
+  "revenueReport": {
+    "title": "Revenue report",
+    "description": "Gross, paid, and unpaid revenue over time, by service, and by employee.",
+    "loading": "Loading the revenue report",
     "summary": {
       "gross": "Gross revenue",
       "paid": "Paid revenue",
@@ -826,6 +828,46 @@
       "paid": "Paid",
       "unpaid": "Unpaid",
       "gross": "Gross"
+    },
+    "total": "Total",
+    "inactive": "Inactive"
+  },
+  "expenseReport": {
+    "title": "Expense report",
+    "description": "Salon expenses and employee deductions over time, by category, and by employee.",
+    "loading": "Loading the expense report",
+    "summary": {
+      "salon": "Salon expenses",
+      "employee": "Employee deductions"
+    },
+    "hints": {
+      "entries": "{count, plural, =0 {No entries} one {# entry} other {# entries}}"
+    },
+    "overTime": {
+      "title": "Expenses over time",
+      "caption": "Expenses by period, {range}",
+      "empty": "No expenses or deductions in this period."
+    },
+    "salonByCategory": {
+      "title": "Salon expenses by category",
+      "empty": "No salon expenses in this period."
+    },
+    "employeeByCategory": {
+      "title": "Employee deductions by category",
+      "empty": "No employee deductions in this period."
+    },
+    "byEmployee": {
+      "title": "Deductions by employee",
+      "empty": "No employee deductions in this period."
+    },
+    "columns": {
+      "period": "Period",
+      "category": "Category",
+      "employee": "Employee",
+      "entries": "Entries",
+      "amount": "Amount",
+      "salon": "Salon expenses",
+      "employeeDeductions": "Employee deductions"
     },
     "total": "Total",
     "inactive": "Inactive"

@@ -1,12 +1,19 @@
 /**
- * The revenue report queries. `loadRevenueReport` runs only after `canViewRevenueReport`;
- * the by-employee queries run only when `revenueSections` allows them.
+ * The report queries. Each loader runs only after its page's `canView…Report` check; a
+ * section's queries run only when its `…Sections` flag allows them.
  */
 import { Prisma } from "@/generated/prisma/client";
-import { bucketInvoices, chartBuckets } from "@/lib/dashboard";
+import { bucketExpenses, bucketInvoices, chartBuckets } from "@/lib/dashboard";
 import { db } from "@/lib/db";
+import { dateValue } from "@/lib/expenses";
 import { SALON_TIME_ZONE, salonDayRange } from "@/lib/invoices";
-import type { GroupedRevenue, RevenueReportRange, RevenueSections } from "@/lib/reports";
+import type {
+  ExpenseSections,
+  GroupedExpense,
+  GroupedRevenue,
+  RevenueReportRange,
+  RevenueSections,
+} from "@/lib/reports";
 import { getSalonSettings } from "@/lib/settings";
 
 const STATUSES: ("PAID" | "UNPAID")[] = ["PAID", "UNPAID"];
@@ -78,3 +85,68 @@ export async function loadRevenueReport(
 }
 
 export type RevenueReportData = Awaited<ReturnType<typeof loadRevenueReport>>;
+
+/**
+ * The expense report queries, by each entry's calendar `date`. Runs only after
+ * `canViewExpenseReport`; each section's queries run only when `expenseSections` allows them.
+ */
+export async function loadExpenseReport(
+  range: Pick<RevenueReportRange, "from" | "to" | "group">,
+  sections: ExpenseSections,
+) {
+  const where = { date: { gte: dateValue(range.from), lte: dateValue(range.to) } };
+  const grouped = { _sum: { amount: true }, _count: { _all: true } } as const;
+
+  const [settings, salonRows, salonByCategory, employeeRows, employeeByCategory, byEmployee] = await Promise.all([
+    getSalonSettings(),
+    sections.salon ? db.salonExpense.findMany({ where, select: { date: true, amount: true } }) : null,
+    sections.salon ? db.salonExpense.groupBy({ by: ["category"], where, ...grouped }) : null,
+    sections.employee ? db.employeeExpense.findMany({ where, select: { date: true, amount: true } }) : null,
+    sections.employee ? db.employeeExpense.groupBy({ by: ["category"], where, ...grouped }) : null,
+    sections.byEmployee ? db.employeeExpense.groupBy({ by: ["employeeId"], where, ...grouped }) : null,
+  ]);
+
+  const employees =
+    !byEmployee || byEmployee.length === 0
+      ? []
+      : await db.user.findMany({
+          where: { id: { in: byEmployee.map((row) => row.employeeId) } },
+          select: { id: true, name: true, image: true, isActive: true },
+        });
+
+  const keys = chartBuckets(range.from, range.to, range.group);
+  const section = (
+    rows: { date: Date; amount: Prisma.Decimal }[] | null,
+    byCategory: { category: string; _sum: { amount: Prisma.Decimal | null }; _count: { _all: number } }[] | null,
+  ) => {
+    if (!rows || !byCategory) return null;
+    const buckets = bucketExpenses(rows, keys, range.group);
+    return {
+      total: buckets.reduce((sum, bucket) => sum.plus(bucket), new Prisma.Decimal(0)),
+      count: rows.length,
+      buckets,
+      byCategory: byCategory.map((row): GroupedExpense => ({
+        id: row.category,
+        amount: row._sum.amount,
+        count: row._count._all,
+      })),
+    };
+  };
+
+  return {
+    currency: settings.currency,
+    keys,
+    salon: section(salonRows, salonByCategory),
+    employee: section(employeeRows, employeeByCategory),
+    byEmployee: byEmployee && {
+      rows: byEmployee.map((row): GroupedExpense => ({
+        id: row.employeeId,
+        amount: row._sum.amount,
+        count: row._count._all,
+      })),
+      details: new Map(employees.map((employee) => [employee.id, employee])),
+    },
+  };
+}
+
+export type ExpenseReportData = Awaited<ReturnType<typeof loadExpenseReport>>;

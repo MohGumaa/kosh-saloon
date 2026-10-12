@@ -74,6 +74,12 @@ describe("NAVIGATION", () => {
     expect(revenue?.href).toBe("/reports/revenue");
   });
 
+  it("links the expense report item to its page", () => {
+    const expenses = NAVIGATION.flatMap((group) => group.items).find((item) => item.key === "expenses");
+
+    expect(expenses?.href).toBe("/reports/expenses");
+  });
+
   it("links the services item to the catalog", () => {
     const services = NAVIGATION.flatMap((group) => group.items).find((item) => item.key === "services");
 

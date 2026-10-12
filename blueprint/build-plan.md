@@ -40,7 +40,7 @@ Your features
 
 - [x] 16. Revenue reports - Provide daily, weekly, monthly, yearly, and custom-range revenue reports with paid/unpaid breakdowns and revenue by employee and service.
 
-- [ ] 17. Expense reports - Provide salon and employee expense reports with categories, date ranges, totals, and financial summaries.
+- [x] 17. Expense reports - Provide salon and employee expense reports with categories, date ranges, totals, and financial summaries.
 
 - [ ] 18. Employee performance reports - Show employee services, invoices, revenue, earnings, expenses, payout, trends, and service performance.
 
