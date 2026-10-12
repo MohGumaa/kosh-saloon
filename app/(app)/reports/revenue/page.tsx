@@ -4,6 +4,7 @@ import { BarChart3, FileText, Hourglass, Scissors, TrendingUp, Users, Wallet, ty
 import { getLocale, getTranslations } from "next-intl/server";
 import { RevenueChart } from "@/components/dashboard/RevenueChart";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { UserAvatar } from "@/components/layout/UserAvatar";
 import { RevenueReportControls } from "@/components/reports/RevenueReportControls";
 import { getPermissions } from "@/lib/auth/authorize";
 import { requireSession } from "@/lib/auth/current-user";
@@ -22,9 +23,17 @@ export async function generateMetadata(): Promise<Metadata> {
 // min-w-0 lets a grid cell shrink below its content, so a wide table scrolls instead of widening the page.
 const panelClass = "min-w-0 rounded-2xl border bg-card p-5 text-card-foreground shadow-card lg:p-6";
 
-const numberCell = "px-3 py-3 text-end tabular-nums whitespace-nowrap";
+const numberCell = "px-3 py-3 tabular-nums whitespace-nowrap";
 
-const AMOUNT_COLUMNS = ["invoices", "paid", "unpaid", "gross"] as const;
+const TIME_COLUMNS = ["invoices", "paid", "unpaid", "gross"] as const;
+
+/** The service and employee tables leave out unpaid; their gross still includes it. */
+const BREAKDOWN_COLUMNS = ["invoices", "paid", "gross"] as const;
+
+type AmountColumn = (typeof TIME_COLUMNS)[number];
+
+// The invoice count is centered; money lines up at the end of its column.
+const align = (column: AmountColumn) => (column === "invoices" ? "text-center" : "text-end");
 
 function EmptyState({ icon: Icon, children }: { icon: LucideIcon; children: string }) {
   return (
@@ -99,25 +108,25 @@ export default async function RevenueReportPage({ searchParams }: PageProps<"/re
     { key: "invoices", value: count.format(data.totals.count), icon: FileText },
   ];
 
-  const amountCells = (row: Amounts) => (
-    <>
-      <td className={numberCell}>{count.format(row.count)}</td>
-      {[row.paid, row.unpaid, row.gross].map((amount, index) => (
-        <td key={index} className={numberCell}>
-          <span dir="ltr">{price.format(amount.toNumber())}</span>
-        </td>
-      ))}
-    </>
-  );
+  const amountCells = (row: Amounts, columns: readonly AmountColumn[]) =>
+    columns.map((column) => (
+      <td key={column} className={cn(numberCell, align(column))}>
+        {column === "invoices" ? (
+          count.format(row.count)
+        ) : (
+          <span dir="ltr">{price.format(row[column].toNumber())}</span>
+        )}
+      </td>
+    ));
 
-  const headings = (first: "period" | "service" | "employee") => (
+  const headings = (first: "period" | "service" | "employee", columns: readonly AmountColumn[]) => (
     <thead>
       <tr className="border-b text-muted-foreground">
         <th scope="col" className="px-3 py-2.5 text-start font-medium">
           {t(`columns.${first}`)}
         </th>
-        {AMOUNT_COLUMNS.map((column) => (
-          <th key={column} scope="col" className="px-3 py-2.5 text-end font-medium">
+        {columns.map((column) => (
+          <th key={column} scope="col" className={cn("px-3 py-2.5 font-medium", align(column))}>
             {t(`columns.${column}`)}
           </th>
         ))}
@@ -125,13 +134,13 @@ export default async function RevenueReportPage({ searchParams }: PageProps<"/re
     </thead>
   );
 
-  const totalsRow = (
+  const totalsRow = (columns: readonly AmountColumn[]) => (
     <tfoot>
       <tr className="border-t font-semibold">
         <th scope="row" className="px-3 py-3 text-start">
           {t("total")}
         </th>
-        {amountCells(data.totals)}
+        {amountCells(data.totals, columns)}
       </tr>
     </tfoot>
   );
@@ -143,6 +152,7 @@ export default async function RevenueReportPage({ searchParams }: PageProps<"/re
     nameOf: (detail: T) => string,
     isActive: (detail: T) => boolean,
     icon: LucideIcon,
+    imageOf?: (detail: T) => string | null,
   ) => (
     <section aria-labelledby={id} className={panelClass}>
       <h2 id={id} className="text-lg font-semibold">
@@ -152,26 +162,31 @@ export default async function RevenueReportPage({ searchParams }: PageProps<"/re
         <EmptyState icon={icon}>{t(first === "service" ? "byService.empty" : "byEmployee.empty")}</EmptyState>
       ) : (
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-lg text-sm">
-            {headings(first)}
+          <table className="w-full min-w-md text-sm">
+            {headings(first, BREAKDOWN_COLUMNS)}
             <tbody className="divide-y">
               {rows.map((row) => (
                 <tr key={row.id}>
                   <th scope="row" className="px-3 py-3 text-start font-medium">
-                    <span dir="auto" className="break-words">
-                      {nameOf(row.detail)}
-                    </span>
-                    {!isActive(row.detail) && (
-                      <span className="ms-2 rounded-full bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
-                        {t("inactive")}
+                    <div className="flex items-center gap-3">
+                      {imageOf && <UserAvatar name={nameOf(row.detail)} image={imageOf(row.detail)} className="size-8 text-xs" />}
+                      <span className="min-w-0">
+                        <span dir="auto" className="break-words">
+                          {nameOf(row.detail)}
+                        </span>
+                        {!isActive(row.detail) && (
+                          <span className="ms-2 rounded-full bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
+                            {t("inactive")}
+                          </span>
+                        )}
                       </span>
-                    )}
+                    </div>
                   </th>
-                  {amountCells(row)}
+                  {amountCells(row, BREAKDOWN_COLUMNS)}
                 </tr>
               ))}
             </tbody>
-            {totalsRow}
+            {totalsRow(BREAKDOWN_COLUMNS)}
           </table>
         </div>
       )}
@@ -227,18 +242,18 @@ export default async function RevenueReportPage({ searchParams }: PageProps<"/re
             <div className="mt-6 overflow-x-auto">
               <table className="w-full min-w-lg text-sm">
                 <caption className="sr-only">{t("overTime.caption", { range: rangeLabel })}</caption>
-                {headings("period")}
+                {headings("period", TIME_COLUMNS)}
                 <tbody className="divide-y">
                   {timeRows.map((row) => (
                     <tr key={row.key}>
                       <th scope="row" className="px-3 py-3 text-start font-medium whitespace-nowrap">
                         {row.label}
                       </th>
-                      {amountCells(row)}
+                      {amountCells(row, TIME_COLUMNS)}
                     </tr>
                   ))}
                 </tbody>
-                {totalsRow}
+                {totalsRow(TIME_COLUMNS)}
               </table>
             </div>
           </>
@@ -255,6 +270,7 @@ export default async function RevenueReportPage({ searchParams }: PageProps<"/re
             (employee) => employee.name,
             (employee) => employee.isActive,
             Users,
+            (employee) => employee.image,
           )}
       </div>
     </div>

@@ -38,7 +38,7 @@ export async function loadRevenueReport(
       ? []
       : db.user.findMany({
           where: { id: { in: [...new Set(byEmployee.map((row) => row.employeeId))] } },
-          select: { id: true, name: true, isActive: true },
+          select: { id: true, name: true, image: true, isActive: true },
         }),
   ]);
 
