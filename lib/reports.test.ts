@@ -3,6 +3,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { PERMISSION_KEYS, ROLE_DEFAULTS, type PermissionKey } from "@/lib/auth/permissions";
 import {
   breakdownRows,
+  canViewEmployeePerformance,
   canViewExpenseReport,
   employeePerformanceRows,
   employeeReportScope,
@@ -299,6 +300,20 @@ describe("employee performance report access", () => {
     expect(employeeReportScope({ role: "STAFF" }, set(without(ROLE_DEFAULTS.STAFF, "reports.view_own_performance")))).toBe(
       null,
     );
+  });
+
+  it("shows the profile Performance tab for any employee in scope all, otherwise only on the viewer's own", () => {
+    const admin = { id: "a1", role: "ADMIN" } as const;
+    const supervisor = { id: "s1", role: "SUPERVISOR" } as const;
+    const staff = { id: "t1", role: "STAFF" } as const;
+    expect(canViewEmployeePerformance(admin, set(PERMISSION_KEYS), "u2")).toBe(true);
+    expect(canViewEmployeePerformance(supervisor, set(ROLE_DEFAULTS.SUPERVISOR), "u2")).toBe(true);
+    const own = [...without(ROLE_DEFAULTS.SUPERVISOR, "reports.view_all_employees"), "reports.view_own_performance"] as const;
+    expect(canViewEmployeePerformance(supervisor, set(own), "u2")).toBe(false);
+    expect(canViewEmployeePerformance(supervisor, set(own), "s1")).toBe(true);
+    expect(canViewEmployeePerformance(supervisor, set(without(ROLE_DEFAULTS.SUPERVISOR, "reports.view_all_employees")), "s1")).toBe(false);
+    expect(canViewEmployeePerformance(staff, set(PERMISSION_KEYS), "u2")).toBe(false);
+    expect(canViewEmployeePerformance(staff, set(PERMISSION_KEYS), "t1")).toBe(true);
   });
 
   it("shows deductions with employee_expenses.view, and always for the viewer's own", () => {

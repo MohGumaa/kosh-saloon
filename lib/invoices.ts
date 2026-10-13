@@ -4,6 +4,7 @@
  */
 import { z } from "zod";
 import type { Prisma } from "@/generated/prisma/client";
+import type { PermissionKey } from "@/lib/auth/permissions";
 import type { SessionUser } from "@/lib/auth/session";
 import { SINGLE_LINE_TEXT, normalizeDigitsAndSpaces } from "@/lib/auth/validation";
 import { priceSchema } from "@/lib/services";
@@ -62,6 +63,15 @@ export function nextInvoiceNumber(highest: string | null): string {
 /** Staff see and create only their own invoices. */
 export function isOwnScope(user: Pick<SessionUser, "role">): boolean {
   return user.role === "STAFF";
+}
+
+/** The profile's Invoices tab: `invoices.view`, and for Staff only their own profile. */
+export function canViewEmployeeInvoices(
+  viewer: Pick<SessionUser, "id" | "role">,
+  permissions: ReadonlySet<PermissionKey>,
+  targetId: string,
+): boolean {
+  return permissions.has("invoices.view") && (!isOwnScope(viewer) || targetId === viewer.id);
 }
 
 /** Editing and status changes also need the permission; Staff never get them. */
@@ -224,4 +234,18 @@ export function invoiceListHref(filters: InvoiceFilters, page = 1): string {
   if (page > 1) params.set("page", String(page));
   const query = params.toString();
   return query ? `/transactions?${query}` : "/transactions";
+}
+
+/** The filters the profile's Invoices tab offers. */
+export const EMPLOYEE_INVOICE_FILTER_KEYS = ["status", "from", "to"] as const;
+
+/** The profile's Invoices tab URL with these filters and page; other filters, empty values, and page 1 are left out. */
+export function employeeInvoiceListHref(employeeId: string, filters: InvoiceFilters, page = 1): string {
+  const params = new URLSearchParams({ tab: "invoices" });
+  for (const key of EMPLOYEE_INVOICE_FILTER_KEYS) {
+    const value = filters[key];
+    if (value) params.set(key, value);
+  }
+  if (page > 1) params.set("page", String(page));
+  return `/employees/${encodeURIComponent(employeeId)}?${params}`;
 }

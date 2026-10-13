@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { PERMISSION_KEYS, ROLE_DEFAULTS, type PermissionKey } from "@/lib/auth/permissions";
 import {
   canChangeStatus,
   canManageInvoices,
+  canViewEmployeeInvoices,
   createInvoiceSchema,
+  employeeInvoiceListHref,
   formatInvoiceNumber,
   invoiceListHref,
   invoiceWhere,
@@ -222,5 +225,37 @@ describe("invoiceListHref", () => {
     expect(invoiceListHref({ status: "PAID", q: "a b" })).toBe("/transactions?q=a+b&status=PAID");
     expect(invoiceListHref({}, 1)).toBe("/transactions");
     expect(invoiceListHref({ status: "PAID" }, 3)).toBe("/transactions?status=PAID&page=3");
+  });
+});
+
+describe("employee profile Invoices tab", () => {
+  const set = (keys: readonly PermissionKey[]) => new Set(keys);
+  const admin = { id: "a1", role: "ADMIN" } as const;
+  const supervisor = { id: "s1", role: "SUPERVISOR" } as const;
+  const staff = { id: "t1", role: "STAFF" } as const;
+
+  it("shows any employee's invoices with invoices.view, except to Staff", () => {
+    expect(canViewEmployeeInvoices(admin, set(PERMISSION_KEYS), "u2")).toBe(true);
+    expect(canViewEmployeeInvoices(supervisor, set(ROLE_DEFAULTS.SUPERVISOR), "u2")).toBe(true);
+    const keys = ROLE_DEFAULTS.SUPERVISOR.filter((key) => key !== "invoices.view");
+    expect(canViewEmployeeInvoices(supervisor, set(keys), "u2")).toBe(false);
+    expect(canViewEmployeeInvoices(supervisor, set(keys), "s1")).toBe(false);
+  });
+
+  it("limits Staff to their own profile, even when granted every key", () => {
+    expect(canViewEmployeeInvoices(staff, set(PERMISSION_KEYS), "u2")).toBe(false);
+    expect(canViewEmployeeInvoices(staff, set(PERMISSION_KEYS), "t1")).toBe(true);
+  });
+
+  it("builds the tab URL with only its own filters", () => {
+    expect(employeeInvoiceListHref("u2", {})).toBe("/employees/u2?tab=invoices");
+    expect(employeeInvoiceListHref("u2", { status: "PAID", from: "2026-10-01", to: "2026-10-07" })).toBe(
+      "/employees/u2?tab=invoices&status=PAID&from=2026-10-01&to=2026-10-07",
+    );
+    expect(employeeInvoiceListHref("u2", { q: "a", service: "s", employee: "x", min: "1", max: "2" })).toBe(
+      "/employees/u2?tab=invoices",
+    );
+    expect(employeeInvoiceListHref("u2", { status: "UNPAID" }, 2)).toBe("/employees/u2?tab=invoices&status=UNPAID&page=2");
+    expect(employeeInvoiceListHref("u2", {}, 1)).toBe("/employees/u2?tab=invoices");
   });
 });

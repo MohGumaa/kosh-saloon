@@ -248,6 +248,16 @@ export function employeeReportScope(
 
 export type EmployeeReportScope = NonNullable<ReturnType<typeof employeeReportScope>>;
 
+/** The profile's Performance tab: any employee in scope `all`, only the viewer's own profile in scope `own`. */
+export function canViewEmployeePerformance(
+  viewer: Pick<SessionUser, "id" | "role">,
+  permissions: ReadonlySet<PermissionKey>,
+  targetId: string,
+): boolean {
+  const scope = employeeReportScope(viewer, permissions);
+  return scope === "all" || (scope === "own" && targetId === viewer.id);
+}
+
 /** Deductions (and so payout) need `employee_expenses.view`, except for the viewer's own. Their queries run only when true. */
 export function employeeReportSections(scope: EmployeeReportScope, permissions: ReadonlySet<PermissionKey>) {
   return { expenses: scope === "own" || permissions.has("employee_expenses.view") };

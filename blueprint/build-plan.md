@@ -42,9 +42,9 @@ Your features
 
 - [x] 17. Expense reports - Provide salon and employee expense reports with categories, date ranges, totals, and financial summaries.
 
-- [ ] 18. Employee performance reports - Show employee services, invoices, revenue, earnings, expenses, payout, trends, and service performance.
+- [x] 18. Employee performance reports - Show employee services, invoices, revenue, earnings, expenses, payout, trends, and service performance.
   - [x] 18a. Employee performance report - The `/reports/employees` report: an all-employees table and a single-employee view with trends and service performance; Staff see only their own.
-  - [ ] 18b. Employee profile performance tabs - The Performance and Invoices tabs on `/employees/[id]`, reusing the 18a report.
+  - [x] 18b. Employee profile performance tabs - The Performance and Invoices tabs on `/employees/[id]`, reusing the 18a report.
 
 - [ ] 19. Settlement reports - Provide monthly settlement reports with employee earnings, expenses, share percentages, approvals, and paid status.
 

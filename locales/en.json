@@ -214,10 +214,18 @@
     "back": "Back to employees",
     "tabs": {
       "label": "Employee sections",
-      "permissions": "Permissions",
       "overview": "Overview",
+      "invoices": "Invoices",
+      "performance": "Performance",
+      "permissions": "Permissions",
       "expenses": "Expenses",
       "account": "Account"
+    },
+    "invoices": {
+      "title": "Invoices",
+      "description": "Every invoice for this employee, newest first.",
+      "viewAll": "View in invoices",
+      "empty": "No invoices have been recorded for this employee yet."
     },
     "new": "New employee",
     "fields": {

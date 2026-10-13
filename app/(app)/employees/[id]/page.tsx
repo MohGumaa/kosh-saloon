@@ -3,10 +3,12 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
   ArrowLeft,
+  BarChart3,
   Percent,
   AtSign,
   CalendarDays,
   Clock,
+  FileText,
   ImageIcon,
   KeyRound,
   Mail,
@@ -17,9 +19,10 @@ import {
   UserRound,
   Wallet,
 } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { EmployeeExpensesTab } from "@/components/employee-expenses/EmployeeExpensesTab";
 import { EmployeeDetailsForm } from "@/components/employees/EmployeeDetailsForm";
+import { EmployeeInvoicesTab } from "@/components/employees/EmployeeInvoicesTab";
 import { EmployeeEarningsPanel } from "@/components/employees/EmployeeEarningsPanel";
 import { EmployeeImageForm } from "@/components/employees/EmployeeImageForm";
 import { EmployeePasswordForm } from "@/components/employees/EmployeePasswordForm";
@@ -29,11 +32,18 @@ import { PermissionsForm } from "@/components/employees/PermissionsForm";
 import { LocalDateTime } from "@/components/layout/LocalDateTime";
 import { Detail, Panel, panelClass } from "@/components/layout/Panel";
 import { UserAvatar } from "@/components/layout/UserAvatar";
+import { EmployeePerformanceDetail } from "@/components/reports/EmployeePerformanceDetail";
+import { ReportPeriodControls } from "@/components/reports/ReportPeriodControls";
 import { getPermissions } from "@/lib/auth/authorize";
 import { requireSession } from "@/lib/auth/current-user";
+import type { SessionUser } from "@/lib/auth/session";
 import { PERMISSION_KEYS, ROLE_DEFAULTS, changeableKeys, type PermissionKey } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { canChangeEmployeeRole, canManageEmployee, canManageEmployeeAccess } from "@/lib/employees";
+import { dateValue, salonToday } from "@/lib/expenses";
+import { canViewEmployeeInvoices } from "@/lib/invoices";
+import { canViewEmployeePerformance, employeeReportScope, employeeReportSections, parseRevenueReport } from "@/lib/reports";
+import { loadEmployeePerformance } from "@/lib/reports-data";
 import { getSalonSettings } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 
@@ -42,8 +52,14 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("title") };
 }
 
-// Invoices and Performance join these with feature 18.
-const TAB_ICONS = { overview: UserRound, expenses: Wallet, account: UserCog, permissions: KeyRound } as const;
+const TAB_ICONS = {
+  overview: UserRound,
+  invoices: FileText,
+  performance: BarChart3,
+  expenses: Wallet,
+  account: UserCog,
+  permissions: KeyRound,
+} as const;
 
 type Tab = keyof typeof TAB_ICONS;
 
@@ -91,6 +107,8 @@ export default async function EmployeePage({ params, searchParams }: PageProps<"
 
   const tabs: Tab[] = [];
   if (canView) tabs.push("overview");
+  if (canViewEmployeeInvoices(viewer, permissions, target.id)) tabs.push("invoices");
+  if (canViewEmployeePerformance(viewer, permissions, target.id)) tabs.push("performance");
   if (canViewExpenses) tabs.push("expenses");
   if (canEdit || canSetPassword || canSetStatus || canSetShare) tabs.push("account");
   if (canManagePermissions) tabs.push("permissions");
@@ -193,6 +211,12 @@ export default async function EmployeePage({ params, searchParams }: PageProps<"
         <EmployeeEarningsPanel employeeId={target.id} sharePercentage={target.sharePercentage} month={query.month} />
       )}
 
+      {activeTab === "invoices" && <EmployeeInvoicesTab employeeId={target.id} searchParams={query} viewer={viewer} />}
+
+      {activeTab === "performance" && (
+        <PerformanceTab viewer={viewer} permissions={permissions} employeeId={target.id} query={query} />
+      )}
+
       {activeTab === "expenses" && (
         <EmployeeExpensesTab
           employeeId={target.id}
@@ -269,5 +293,57 @@ export default async function EmployeePage({ params, searchParams }: PageProps<"
         </section>
       )}
     </div>
+  );
+}
+
+/** The single-employee performance report for one profile, for a viewer the page has checked with `canViewEmployeePerformance`. */
+async function PerformanceTab({
+  viewer,
+  permissions,
+  employeeId,
+  query,
+}: {
+  viewer: Pick<SessionUser, "id" | "role">;
+  permissions: ReadonlySet<PermissionKey>;
+  employeeId: string;
+  query: Record<string, string | string[] | undefined>;
+}) {
+  const scope = employeeReportScope(viewer, permissions);
+  if (!scope) notFound();
+  const today = salonToday();
+  const range = parseRevenueReport(query, today);
+  const sections = employeeReportSections(scope, permissions);
+  const [tPeriod, locale, data] = await Promise.all([
+    getTranslations("reportPeriod"),
+    getLocale(),
+    loadEmployeePerformance(employeeId, range, sections),
+  ]);
+  if (!data) notFound();
+
+  // Calendar days are stored as UTC midnight, so formatting in UTC names the same day for every viewer.
+  const days = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" });
+  const rangeLabel = days.formatRange(dateValue(range.from), dateValue(range.to));
+
+  return (
+    <>
+      <ReportPeriodControls
+        path={`/employees/${employeeId}`}
+        range={range}
+        today={today}
+        params={{ tab: "performance" }}
+      />
+      <h2 className="text-lg font-semibold">
+        {tPeriod(`periods.${range.period}`)}
+        <span className="ms-2 text-sm font-normal text-muted-foreground">{rangeLabel}</span>
+      </h2>
+      <EmployeePerformanceDetail
+        data={data}
+        range={range}
+        locale={locale}
+        rangeLabel={rangeLabel}
+        showExpenses={sections.expenses}
+        showEmployee={false}
+      />
+    </>
   );
 }

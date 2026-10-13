@@ -53,6 +53,7 @@ export async function EmployeePerformanceDetail({
   rangeLabel,
   showExpenses,
   backHref,
+  showEmployee = true,
 }: {
   data: EmployeePerformanceData;
   range: Pick<RevenueReportRange, "from" | "to" | "group">;
@@ -62,6 +63,8 @@ export async function EmployeePerformanceDetail({
   showExpenses: boolean;
   /** Back to every employee, only when the viewer may see them. */
   backHref?: string;
+  /** The employee header; off where the page already shows the employee, such as the profile. */
+  showEmployee?: boolean;
 }) {
   const [t, tRoles] = await Promise.all([getTranslations("employeeReport"), getTranslations("auth.roles")]);
   const { employee, figures } = data;
@@ -172,29 +175,31 @@ export async function EmployeePerformanceDetail({
 
   return (
     <>
-      <section aria-labelledby="employee-performance-name" className={panelClass}>
-        {backHref && (
-          <Link
-            href={backHref}
-            className="mb-4 inline-flex items-center gap-2 rounded-md text-sm font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring"
-          >
-            <ArrowLeft aria-hidden className="size-4 rtl:-scale-x-100" />
-            {t("back")}
-          </Link>
-        )}
-        <div className="flex flex-wrap items-center gap-4">
-          <UserAvatar name={employee.name} image={employee.image} className="size-12" />
-          <h2 id="employee-performance-name" dir="auto" className="min-w-0 flex-1 text-xl font-semibold break-words">
-            {employee.name}
-          </h2>
-          <span className="rounded-full bg-primary-soft px-3 py-1 text-sm font-medium">{tRoles(employee.role)}</span>
-          {!employee.isActive && (
-            <span className="rounded-full bg-muted px-3 py-1 text-sm font-medium text-muted-foreground">
-              {t("inactive")}
-            </span>
+      {showEmployee && (
+        <section aria-labelledby="employee-performance-name" className={panelClass}>
+          {backHref && (
+            <Link
+              href={backHref}
+              className="mb-4 inline-flex items-center gap-2 rounded-md text-sm font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring"
+            >
+              <ArrowLeft aria-hidden className="size-4 rtl:-scale-x-100" />
+              {t("back")}
+            </Link>
           )}
-        </div>
-      </section>
+          <div className="flex flex-wrap items-center gap-4">
+            <UserAvatar name={employee.name} image={employee.image} className="size-12" />
+            <h2 id="employee-performance-name" dir="auto" className="min-w-0 flex-1 text-xl font-semibold break-words">
+              {employee.name}
+            </h2>
+            <span className="rounded-full bg-primary-soft px-3 py-1 text-sm font-medium">{tRoles(employee.role)}</span>
+            {!employee.isActive && (
+              <span className="rounded-full bg-muted px-3 py-1 text-sm font-medium text-muted-foreground">
+                {t("inactive")}
+              </span>
+            )}
+          </div>
+        </section>
+      )}
 
       <section aria-labelledby="employee-performance-figures" className="flex flex-col gap-4">
         <h2 id="employee-performance-figures" className="sr-only">
