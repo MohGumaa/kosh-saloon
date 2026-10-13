@@ -872,6 +872,61 @@
     "total": "Total",
     "inactive": "Inactive"
   },
+  "employeeReport": {
+    "title": "Employee performance",
+    "description": "Each employee's invoices, revenue, estimated earnings, deductions, and payout for the period.",
+    "ownDescription": "Your invoices, revenue, estimated earnings, deductions, and payout for the period.",
+    "loading": "Loading the employee performance report",
+    "back": "All employees",
+    "estimatedNote": "Earnings and payout are estimates: paid revenue at the current share percentage, less deductions. Corrections and final amounts are on settlements.",
+    "summary": {
+      "title": "Figures",
+      "paid": "Paid revenue",
+      "unpaid": "Unpaid revenue",
+      "share": "Share percentage",
+      "earnings": "Estimated earnings",
+      "expenses": "Deductions",
+      "payout": "Estimated payout"
+    },
+    "hints": {
+      "paid": "{count, plural, =0 {No paid invoices} one {# paid invoice} other {# paid invoices}}",
+      "unpaid": "{count, plural, =0 {No unpaid invoices} one {# unpaid invoice} other {# unpaid invoices}}",
+      "shareEmployee": "Set for this employee",
+      "shareSalon": "Salon default",
+      "earnings": "Paid revenue at the current share",
+      "expenses": "{count, plural, =0 {No entries} one {# entry} other {# entries}}",
+      "payout": "Earnings less deductions"
+    },
+    "list": {
+      "title": "Employees",
+      "caption": "Employee performance, {range}",
+      "empty": "No employee has invoices or deductions in this period."
+    },
+    "overTime": {
+      "title": "Revenue trend",
+      "caption": "Paid and unpaid revenue, {range}",
+      "empty": "No invoices in this period."
+    },
+    "byService": {
+      "title": "Service performance",
+      "empty": "No service was invoiced in this period."
+    },
+    "columns": {
+      "period": "Period",
+      "service": "Service",
+      "employee": "Employee",
+      "invoices": "Invoices",
+      "paid": "Paid",
+      "unpaid": "Unpaid",
+      "gross": "Gross",
+      "share": "Share",
+      "earnings": "Est. earnings",
+      "expenses": "Deductions",
+      "payout": "Est. payout"
+    },
+    "total": "Total",
+    "inactive": "Inactive"
+  },
   "permissions": {
     "title": "Permissions",
     "description": "Choose what this user can see and do.",

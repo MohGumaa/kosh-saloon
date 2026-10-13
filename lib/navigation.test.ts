@@ -80,6 +80,12 @@ describe("NAVIGATION", () => {
     expect(expenses?.href).toBe("/reports/expenses");
   });
 
+  it("links the employee performance item to its report", () => {
+    const performance = NAVIGATION.flatMap((group) => group.items).find((item) => item.key === "employeePerformance");
+
+    expect(performance?.href).toBe("/reports/employees");
+  });
+
   it("links the services item to the catalog", () => {
     const services = NAVIGATION.flatMap((group) => group.items).find((item) => item.key === "services");
 

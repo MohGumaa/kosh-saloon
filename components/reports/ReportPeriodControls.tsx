@@ -16,11 +16,14 @@ export async function ReportPeriodControls({
   path,
   range,
   today,
+  params = {},
 }: {
   /** The report page the links and the custom form point at. */
   path: string;
   range: RevenueReportRange;
   today: string;
+  /** Other params of the page the links and the form keep, such as the employee. */
+  params?: Record<string, string>;
 }) {
   const t = await getTranslations("reportPeriod");
   const customValues = range.period === "custom" || range.invalidCustom ? range.submitted : undefined;
@@ -34,7 +37,7 @@ export async function ReportPeriodControls({
             return (
               <li key={period}>
                 <Link
-                  href={reportHref(path, range, { period }, today)}
+                  href={reportHref(path, range, { period }, today, params)}
                   aria-current={active ? "page" : undefined}
                   className={cn(chipClass, active && activeClass)}
                 >
@@ -49,6 +52,7 @@ export async function ReportPeriodControls({
       <form method="get" action={path} aria-label={t("periods.custom")} className="flex flex-wrap items-end gap-3">
         <input type="hidden" name="period" value="custom" />
         <input type="hidden" name="group" value={range.group} />
+        {Object.entries(params).map(([name, value]) => value && <input key={name} type="hidden" name={name} value={value} />)}
         {(["from", "to"] as const).map((key) => (
           <div key={key} className="flex flex-col gap-2">
             <label htmlFor={`report-${key}`} className="text-sm font-medium">
@@ -93,7 +97,7 @@ export async function ReportPeriodControls({
             return (
               <li key={group}>
                 <Link
-                  href={reportHref(path, range, { group }, today)}
+                  href={reportHref(path, range, { group }, today, params)}
                   aria-current={active ? "page" : undefined}
                   className={cn(chipClass, active && activeClass)}
                 >

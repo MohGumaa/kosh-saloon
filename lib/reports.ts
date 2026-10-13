@@ -6,7 +6,9 @@ import { Prisma } from "@/generated/prisma/client";
 import type { PermissionKey } from "@/lib/auth/permissions";
 import type { SessionUser } from "@/lib/auth/session";
 import { DAILY_MAX_DAYS, daysInRange, first, isValidCustomRange, presetRange } from "@/lib/dashboard";
+import { effectiveSharePercentage, type ShareSource } from "@/lib/earnings";
 import { isOwnScope } from "@/lib/invoices";
+import { calculateSettlement } from "@/lib/settlements";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -81,12 +83,14 @@ export function parseRevenueReport(params: SearchParams, today: string): Revenue
 /**
  * A link to the report at `path` with the period or grouping changed and everything else kept.
  * Default values are left out; a grouping the target range does not offer is dropped.
+ * `keep` adds other params of the page, such as the employee; empty values are left out.
  */
 export function reportHref(
   path: string,
   range: Pick<RevenueReportRange, "period" | "from" | "to" | "group">,
   change: { period?: RevenuePreset; group?: RevenueGroup },
   today: string,
+  keep: Record<string, string> = {},
 ): string {
   const period = change.period ?? range.period;
   const target = change.period ? revenuePresetRange(change.period, today) : range;
@@ -101,6 +105,7 @@ export function reportHref(
   if (group !== defaultGroup(target.from, target.to) && allowedGroups(target.from, target.to).includes(group)) {
     params.set("group", group);
   }
+  for (const [key, value] of Object.entries(keep)) if (value) params.set(key, value);
   const query = params.toString();
   return query ? `${path}?${query}` : path;
 }
@@ -224,4 +229,121 @@ export function expenseBreakdown<T>(
       return [{ id: row.id, detail, count: row.count, total: row.amount ?? new Prisma.Decimal(0) }];
     })
     .sort((a, b) => b.total.comparedTo(a.total) || nameOf(a.detail).localeCompare(nameOf(b.detail), locale));
+}
+
+/**
+ * Who the employee performance report covers: every employee for a non-Staff viewer with
+ * `reports.view` and `reports.view_all_employees`, otherwise only the viewer with
+ * `reports.view_own_performance`, otherwise nobody. Staff never see other employees.
+ */
+export function employeeReportScope(
+  user: Pick<SessionUser, "role">,
+  permissions: ReadonlySet<PermissionKey>,
+): "all" | "own" | null {
+  if (!isOwnScope(user) && permissions.has("reports.view") && permissions.has("reports.view_all_employees")) {
+    return "all";
+  }
+  return permissions.has("reports.view_own_performance") ? "own" : null;
+}
+
+export type EmployeeReportScope = NonNullable<ReturnType<typeof employeeReportScope>>;
+
+/** Deductions (and so payout) need `employee_expenses.view`, except for the viewer's own. Their queries run only when true. */
+export function employeeReportSections(scope: EmployeeReportScope, permissions: ReadonlySet<PermissionKey>) {
+  return { expenses: scope === "own" || permissions.has("employee_expenses.view") };
+}
+
+export type EmployeeReportSections = ReturnType<typeof employeeReportSections>;
+
+export interface PerformanceFigures {
+  paidCount: number;
+  unpaidCount: number;
+  paid: Prisma.Decimal;
+  unpaid: Prisma.Decimal;
+  sharePercentage: Prisma.Decimal;
+  shareSource: ShareSource;
+  /** Estimated: paid revenue times the current effective share, rounded as a settlement is. */
+  earnings: Prisma.Decimal;
+  expenses: Prisma.Decimal;
+  expenseCount: number;
+  /** Estimated: earnings minus deductions; pending adjustments are left out. It can be negative. */
+  payout: Prisma.Decimal;
+}
+
+/**
+ * One employee's estimated figures, the same rule as the Staff dashboard: the current
+ * effective share percentage, and no adjustments. Only PAID and UNPAID groups count.
+ */
+export function performanceFigures(
+  invoices: readonly GroupedRevenue[],
+  expenses: { amount: Prisma.Decimal | null; count: number },
+  ownShare: Prisma.Decimal | null,
+  salonShare: Prisma.Decimal | string | number,
+): PerformanceFigures {
+  const zero = new Prisma.Decimal(0);
+  const paid = invoices.filter((row) => row.status === "PAID");
+  const unpaid = invoices.filter((row) => row.status === "UNPAID");
+  const sum = (rows: readonly GroupedRevenue[]) => rows.reduce((total, row) => total.plus(row.amount ?? 0), zero);
+  const count = (rows: readonly GroupedRevenue[]) => rows.reduce((total, row) => total + row.count, 0);
+  const share = effectiveSharePercentage(ownShare, salonShare);
+  const settlement = calculateSettlement({
+    paidRevenue: sum(paid),
+    sharePercentage: share.value,
+    expenses: expenses.amount ?? zero,
+    adjustments: 0,
+  });
+  return {
+    paidCount: count(paid),
+    unpaidCount: count(unpaid),
+    paid: settlement.totalRevenue,
+    unpaid: sum(unpaid),
+    sharePercentage: settlement.sharePercentage,
+    shareSource: share.source,
+    earnings: settlement.employeeShare,
+    expenses: settlement.totalExpenses,
+    expenseCount: expenses.count,
+    payout: settlement.finalAmount,
+  };
+}
+
+export interface PerformanceEmployee {
+  id: string;
+  name: string;
+  image: string | null;
+  isActive: boolean;
+  sharePercentage: Prisma.Decimal | null;
+}
+
+export interface PerformanceRow<T extends PerformanceEmployee> extends PerformanceFigures {
+  id: string;
+  detail: T;
+}
+
+/**
+ * One row per employee with PAID or UNPAID invoices or deductions, highest paid revenue
+ * first, then by name. An id without details (deleted since) is left out.
+ */
+export function employeePerformanceRows<T extends PerformanceEmployee>(
+  invoices: readonly GroupedRevenue[],
+  expenses: readonly GroupedExpense[],
+  details: ReadonlyMap<string, T>,
+  salonShare: Prisma.Decimal | string | number,
+  locale?: string,
+): PerformanceRow<T>[] {
+  const counted = invoices.filter((row) => row.status === "PAID" || row.status === "UNPAID");
+  const ids = new Set([...counted.map((row) => row.id), ...expenses.map((row) => row.id)]);
+  return [...ids]
+    .flatMap((id) => {
+      const detail = details.get(id);
+      if (detail === undefined) return [];
+      const expense = expenses.find((row) => row.id === id);
+      const figures = performanceFigures(
+        counted.filter((row) => row.id === id),
+        { amount: expense?.amount ?? null, count: expense?.count ?? 0 },
+        detail.sharePercentage,
+        salonShare,
+      );
+      return [{ id, detail, ...figures }];
+    })
+    .sort((a, b) => b.paid.comparedTo(a.paid) || a.detail.name.localeCompare(b.detail.name, locale));
 }

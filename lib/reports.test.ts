@@ -4,6 +4,9 @@ import { PERMISSION_KEYS, ROLE_DEFAULTS, type PermissionKey } from "@/lib/auth/p
 import {
   breakdownRows,
   canViewExpenseReport,
+  employeePerformanceRows,
+  employeeReportScope,
+  employeeReportSections,
   canViewRevenueReport,
   expenseBreakdown,
   expenseSections,
@@ -133,6 +136,18 @@ describe("reportHref", () => {
     expect(reportHref("/reports/expenses", month, { period: "month" }, today)).toBe("/reports/expenses");
     expect(reportHref("/reports/expenses", month, { period: "week" }, today)).toBe("/reports/expenses?period=week");
   });
+
+  it("keeps other params of the page, leaving out empty ones", () => {
+    const keep = { employee: "emp1" };
+    expect(reportHref(PATH, month, { period: "month" }, today, keep)).toBe("/reports/revenue?employee=emp1");
+    expect(reportHref(PATH, month, { period: "week" }, today, keep)).toBe("/reports/revenue?period=week&employee=emp1");
+    expect(reportHref(PATH, month, { group: "week" }, today, keep)).toBe("/reports/revenue?group=week&employee=emp1");
+    const custom = parseRevenueReport({ period: "custom", from: "2026-09-01", to: "2026-09-30" }, today);
+    expect(reportHref(PATH, custom, { group: "day" }, today, keep)).toBe(
+      "/reports/revenue?period=custom&from=2026-09-01&to=2026-09-30&employee=emp1",
+    );
+    expect(reportHref(PATH, month, { period: "week" }, today, { employee: "" })).toBe("/reports/revenue?period=week");
+  });
 });
 
 describe("revenue report access", () => {
@@ -255,5 +270,111 @@ describe("expenseBreakdown", () => {
       ["WATER", 1, "50"],
       ["x", 0, "0"],
     ]);
+  });
+});
+
+describe("employee performance report access", () => {
+  const set = (keys: readonly PermissionKey[]) => new Set(keys);
+  const without = (keys: readonly PermissionKey[], ...drop: PermissionKey[]) => keys.filter((key) => !drop.includes(key));
+
+  it("covers every employee for an Admin and a default Supervisor", () => {
+    expect(employeeReportScope({ role: "ADMIN" }, set(PERMISSION_KEYS))).toBe("all");
+    expect(employeeReportScope({ role: "SUPERVISOR" }, set(ROLE_DEFAULTS.SUPERVISOR))).toBe("all");
+  });
+
+  it("falls back to the viewer's own figures without reports.view_all_employees", () => {
+    const keys = [...without(ROLE_DEFAULTS.SUPERVISOR, "reports.view_all_employees"), "reports.view_own_performance"] as const;
+    expect(employeeReportScope({ role: "SUPERVISOR" }, set(keys))).toBe("own");
+  });
+
+  it("denies a Supervisor with neither all-employees nor own performance", () => {
+    expect(employeeReportScope({ role: "SUPERVISOR" }, set(without(ROLE_DEFAULTS.SUPERVISOR, "reports.view_all_employees")))).toBe(
+      null,
+    );
+  });
+
+  it("limits Staff to their own figures, even when granted every key", () => {
+    expect(employeeReportScope({ role: "STAFF" }, set(ROLE_DEFAULTS.STAFF))).toBe("own");
+    expect(employeeReportScope({ role: "STAFF" }, set(PERMISSION_KEYS))).toBe("own");
+    expect(employeeReportScope({ role: "STAFF" }, set(without(ROLE_DEFAULTS.STAFF, "reports.view_own_performance")))).toBe(
+      null,
+    );
+  });
+
+  it("shows deductions with employee_expenses.view, and always for the viewer's own", () => {
+    expect(employeeReportSections("all", set(ROLE_DEFAULTS.SUPERVISOR))).toEqual({ expenses: true });
+    expect(employeeReportSections("all", set(["reports.view", "reports.view_all_employees"]))).toEqual({ expenses: false });
+    expect(employeeReportSections("own", set(ROLE_DEFAULTS.STAFF))).toEqual({ expenses: true });
+  });
+});
+
+describe("employeePerformanceRows", () => {
+  const d = (value: string) => new Prisma.Decimal(value);
+  const invoice = (id: string, status: string, amount: string, count: number): GroupedRevenue => ({
+    id,
+    status,
+    amount: d(amount),
+    count,
+  });
+  const employee = (id: string, name: string, share: string | null = null) => ({
+    id,
+    name,
+    image: null,
+    isActive: true,
+    sharePercentage: share === null ? null : d(share),
+  });
+  const details = new Map([
+    ["a", employee("a", "Omar")],
+    ["b", employee("b", "Ali", "0")],
+    ["c", employee("c", "Sami")],
+  ]);
+
+  it("follows the worked example: paid 5,000 at 50% less 300 pays 2,200", () => {
+    const [row] = employeePerformanceRows(
+      [invoice("a", "PAID", "5000", 10), invoice("a", "UNPAID", "400", 2), invoice("a", "CANCELLED", "900", 3)],
+      [{ id: "a", amount: d("300"), count: 2 }],
+      details,
+      "50",
+    );
+    expect(row.paid.toString()).toBe("5000");
+    expect(row.unpaid.toString()).toBe("400");
+    expect([row.paidCount, row.unpaidCount, row.expenseCount]).toEqual([10, 2, 2]);
+    expect(row.sharePercentage.toString()).toBe("50");
+    expect(row.shareSource).toBe("salon");
+    expect(row.earnings.toString()).toBe("2500");
+    expect(row.expenses.toString()).toBe("300");
+    expect(row.payout.toString()).toBe("2200");
+  });
+
+  it("uses an employee's own 0% share, so deductions make the payout negative", () => {
+    const [row] = employeePerformanceRows([invoice("b", "PAID", "1000", 1)], [{ id: "b", amount: d("50"), count: 1 }], details, "50");
+    expect(row.shareSource).toBe("employee");
+    expect(row.earnings.toString()).toBe("0");
+    expect(row.payout.toString()).toBe("-50");
+  });
+
+  it("rounds earnings as a settlement does", () => {
+    const [row] = employeePerformanceRows([invoice("a", "PAID", "10.05", 1)], [], details, "50");
+    expect(row.earnings.toString()).toBe("5.03");
+  });
+
+  it("lists an employee with deductions only, and leaves out cancelled-only and unknown ids", () => {
+    const rows = employeePerformanceRows(
+      [invoice("c", "CANCELLED", "100", 1), invoice("x", "PAID", "100", 1)],
+      [{ id: "c", amount: d("20"), count: 1 }],
+      details,
+      "50",
+    );
+    expect(rows.map((row) => [row.id, row.paid.toString(), row.payout.toString()])).toEqual([["c", "0", "-20"]]);
+  });
+
+  it("sorts by paid revenue, then by name", () => {
+    const rows = employeePerformanceRows(
+      [invoice("a", "PAID", "100", 1), invoice("b", "PAID", "300", 1), invoice("c", "PAID", "100", 1)],
+      [],
+      details,
+      "50",
+    );
+    expect(rows.map((row) => row.id)).toEqual(["b", "a", "c"]);
   });
 });

@@ -50,7 +50,11 @@ export const NAVIGATION: NavGroup[] = [
     items: [
       { key: "revenue", href: "/reports/revenue", permissions: ["reports.view"] },
       { key: "expenses", href: "/reports/expenses", permissions: ["reports.view"] },
-      { key: "employeePerformance", permissions: ["reports.view", "reports.view_own_performance"] },
+      {
+        key: "employeePerformance",
+        href: "/reports/employees",
+        permissions: ["reports.view_all_employees", "reports.view_own_performance"],
+      },
       { key: "employeeEarnings", permissions: ["reports.view"] },
       { key: "settlements", href: "/settlements", permissions: ["settlements.view"] },
     ],
