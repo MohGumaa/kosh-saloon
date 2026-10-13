@@ -6,9 +6,14 @@ import { Prisma } from "@/generated/prisma/client";
 import type { PermissionKey } from "@/lib/auth/permissions";
 import type { SessionUser } from "@/lib/auth/session";
 import { DAILY_MAX_DAYS, daysInRange, first, isValidCustomRange, presetRange } from "@/lib/dashboard";
-import { effectiveSharePercentage, type ShareSource } from "@/lib/earnings";
+import { effectiveSharePercentage, shiftMonth, type ShareSource } from "@/lib/earnings";
 import { isOwnScope } from "@/lib/invoices";
-import { calculateSettlement } from "@/lib/settlements";
+import {
+  SETTLEMENT_STATUSES,
+  calculateSettlement,
+  isSettleableMonth,
+  type SettlementStatusValue,
+} from "@/lib/settlements";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -357,3 +362,172 @@ export function employeePerformanceRows<T extends PerformanceEmployee>(
     })
     .sort((a, b) => b.paid.comparedTo(a.paid) || a.detail.name.localeCompare(b.detail.name, locale));
 }
+
+/**
+ * Who the settlement report covers, as on `/settlements`: every employee for a non-Staff
+ * viewer with `settlements.view` and `reports.view`, only their own for Staff with
+ * `settlements.view`, otherwise nobody.
+ */
+export function settlementReportScope(
+  user: Pick<SessionUser, "role">,
+  permissions: ReadonlySet<PermissionKey>,
+): "all" | "own" | null {
+  if (!permissions.has("settlements.view")) return null;
+  if (isOwnScope(user)) return "own";
+  return permissions.has("reports.view") ? "all" : null;
+}
+
+export type SettlementReportScope = NonNullable<ReturnType<typeof settlementReportScope>>;
+
+export const SETTLEMENT_REPORT_PATH = "/reports/settlements";
+
+export const SETTLEMENT_REPORT_PERIODS = ["year", "last12", "custom"] as const;
+
+export type SettlementReportPeriod = (typeof SETTLEMENT_REPORT_PERIODS)[number];
+
+export type SettlementReportPreset = Exclude<SettlementReportPeriod, "custom">;
+
+export const DEFAULT_SETTLEMENT_REPORT_PERIOD = "year" satisfies SettlementReportPeriod;
+
+export interface SettlementReportRange {
+  period: SettlementReportPeriod;
+  /** Inclusive settled months, `YYYY-MM`. */
+  from: string;
+  to: string;
+  /** A custom range was asked for but could not be used, so the default period is shown. */
+  invalidCustom: boolean;
+  /** The custom months as submitted, so the form can show them again. */
+  submitted?: { from?: string; to?: string };
+}
+
+/**
+ * The months a preset covers, ending at `latest` (the latest settleable month). `year` starts
+ * in January of `latest`'s year, so in January it is the whole previous year.
+ */
+export function settlementPresetRange(period: SettlementReportPreset, latest: string): { from: string; to: string } {
+  return period === "year" ? { from: `${latest.slice(0, 4)}-01`, to: latest } : { from: shiftMonth(latest, -11), to: latest };
+}
+
+/** The report in the URL. Unknown values fall back to `year`; a bad custom range is flagged. */
+export function parseSettlementReport(params: SearchParams, latest: string): SettlementReportRange {
+  const requested = first(params.period);
+  const period = SETTLEMENT_REPORT_PERIODS.find((key) => key === requested) ?? DEFAULT_SETTLEMENT_REPORT_PERIOD;
+  if (period !== "custom") return { period, ...settlementPresetRange(period, latest), invalidCustom: false };
+
+  const from = first(params.from)?.trim() || undefined;
+  const to = first(params.to)?.trim() || undefined;
+  // A month is settleable when it is before the current one, the month after `latest`.
+  const current = shiftMonth(latest, 1);
+  // `YYYY-MM` strings compare in calendar order.
+  if (from && to && isSettleableMonth(from, current) && isSettleableMonth(to, current) && from <= to) {
+    return { period, from, to, invalidCustom: false, submitted: { from, to } };
+  }
+  return {
+    period: DEFAULT_SETTLEMENT_REPORT_PERIOD,
+    ...settlementPresetRange(DEFAULT_SETTLEMENT_REPORT_PERIOD, latest),
+    invalidCustom: true,
+    submitted: { from, to },
+  };
+}
+
+/** A preset link; the default period has no query. */
+export function settlementReportHref(period: SettlementReportPreset): string {
+  return period === DEFAULT_SETTLEMENT_REPORT_PERIOD ? SETTLEMENT_REPORT_PATH : `${SETTLEMENT_REPORT_PATH}?period=${period}`;
+}
+
+/**
+ * The months the custom form offers, newest first: from the earlier of `firstMonth` (the first
+ * settled month in scope, if any) and January of `latest`'s year, up to `latest`.
+ */
+export function settlementMonthOptions(firstMonth: string | null, latest: string): string[] {
+  const january = `${latest.slice(0, 4)}-01`;
+  const start = firstMonth && firstMonth < january ? firstMonth : january;
+  const months: string[] = [];
+  for (let month = latest; month >= start; month = shiftMonth(month, -1)) months.push(month);
+  return months;
+}
+
+/** One stored settlement, as the report reads it. */
+export interface SettlementReportInput<E extends { id: string; name: string }> {
+  periodStart: Date;
+  status: SettlementStatusValue;
+  totalRevenue: Prisma.Decimal;
+  sharePercentage: Prisma.Decimal;
+  employeeShare: Prisma.Decimal;
+  totalExpenses: Prisma.Decimal;
+  totalAdjustments: Prisma.Decimal;
+  finalAmount: Prisma.Decimal;
+  employee: E;
+}
+
+export interface SettlementSums {
+  count: number;
+  revenue: Prisma.Decimal;
+  earnings: Prisma.Decimal;
+  expenses: Prisma.Decimal;
+  adjustments: Prisma.Decimal;
+  final: Prisma.Decimal;
+  /** The final amount of the PAID settlements among them. */
+  paid: Prisma.Decimal;
+}
+
+function emptySums(): SettlementSums {
+  const zero = new Prisma.Decimal(0);
+  return { count: 0, revenue: zero, earnings: zero, expenses: zero, adjustments: zero, final: zero, paid: zero };
+}
+
+function addSettlement(sums: SettlementSums, row: SettlementReportInput<{ id: string; name: string }>): void {
+  sums.count += 1;
+  sums.revenue = sums.revenue.plus(row.totalRevenue);
+  sums.earnings = sums.earnings.plus(row.employeeShare);
+  sums.expenses = sums.expenses.plus(row.totalExpenses);
+  sums.adjustments = sums.adjustments.plus(row.totalAdjustments);
+  sums.final = sums.final.plus(row.finalAmount);
+  if (row.status === "PAID") sums.paid = sums.paid.plus(row.finalAmount);
+}
+
+/**
+ * The report's totals from the stored, frozen values; nothing is recalculated. Every status
+ * counts. Months without settlements are left out (oldest first); employees are by name.
+ */
+export function settlementReportTotals<E extends { id: string; name: string }>(
+  rows: readonly SettlementReportInput<E>[],
+  locale?: string,
+) {
+  const total = emptySums();
+  const awaitingApproval = emptySums();
+  const byStatus = new Map<SettlementStatusValue, SettlementSums>(SETTLEMENT_STATUSES.map((status) => [status, emptySums()]));
+  const byMonth = new Map<string, SettlementSums>();
+  const byEmployee = new Map<string, SettlementSums & { employee: E; minShare: Prisma.Decimal; maxShare: Prisma.Decimal }>();
+
+  for (const row of rows) {
+    addSettlement(total, row);
+    addSettlement(byStatus.get(row.status)!, row);
+    if (row.status === "DRAFT" || row.status === "CALCULATED") addSettlement(awaitingApproval, row);
+
+    const month = row.periodStart.toISOString().slice(0, 7);
+    let monthSums = byMonth.get(month);
+    if (!monthSums) byMonth.set(month, (monthSums = emptySums()));
+    addSettlement(monthSums, row);
+
+    let employee = byEmployee.get(row.employee.id);
+    if (!employee) {
+      employee = { ...emptySums(), employee: row.employee, minShare: row.sharePercentage, maxShare: row.sharePercentage };
+      byEmployee.set(row.employee.id, employee);
+    }
+    addSettlement(employee, row);
+    if (row.sharePercentage.lessThan(employee.minShare)) employee.minShare = row.sharePercentage;
+    if (row.sharePercentage.greaterThan(employee.maxShare)) employee.maxShare = row.sharePercentage;
+  }
+
+  return {
+    total,
+    awaitingApproval,
+    byStatus: SETTLEMENT_STATUSES.map((status) => ({ status, ...byStatus.get(status)! })),
+    // `YYYY-MM` strings sort in calendar order.
+    byMonth: [...byMonth].sort(([a], [b]) => (a < b ? -1 : 1)).map(([month, sums]) => ({ month, ...sums })),
+    byEmployee: [...byEmployee.values()].sort((a, b) => a.employee.name.localeCompare(b.employee.name, locale)),
+  };
+}
+
+export type SettlementReportTotals<E extends { id: string; name: string }> = ReturnType<typeof settlementReportTotals<E>>;

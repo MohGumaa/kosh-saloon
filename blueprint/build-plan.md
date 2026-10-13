@@ -46,7 +46,7 @@ Your features
   - [x] 18a. Employee performance report - The `/reports/employees` report: an all-employees table and a single-employee view with trends and service performance; Staff see only their own.
   - [x] 18b. Employee profile performance tabs - The Performance and Invoices tabs on `/employees/[id]`, reusing the 18a report.
 
-- [ ] 19. Settlement reports - Provide monthly settlement reports with employee earnings, expenses, share percentages, approvals, and paid status.
+- [x] 19. Settlement reports - Provide monthly settlement reports with employee earnings, expenses, share percentages, approvals, and paid status.
 
 - [ ] 20. Security settings - Add the Security settings tab with the password change form from feature 2, the login notification email preference, and session/security controls.
 

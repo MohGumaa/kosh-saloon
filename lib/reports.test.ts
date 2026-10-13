@@ -14,6 +14,11 @@ import {
   parseRevenueReport,
   reportHref,
   revenueSections,
+  parseSettlementReport,
+  settlementMonthOptions,
+  settlementReportHref,
+  settlementReportScope,
+  settlementReportTotals,
   type GroupedExpense,
   type GroupedRevenue,
 } from "@/lib/reports";
@@ -391,5 +396,170 @@ describe("employeePerformanceRows", () => {
       "50",
     );
     expect(rows.map((row) => row.id)).toEqual(["b", "a", "c"]);
+  });
+});
+
+describe("settlementReportScope", () => {
+  const set = (keys: readonly PermissionKey[]) => new Set(keys);
+  const without = (keys: readonly PermissionKey[], ...drop: PermissionKey[]) => keys.filter((key) => !drop.includes(key));
+
+  it("covers every employee for an Admin and a default Supervisor", () => {
+    expect(settlementReportScope({ role: "ADMIN" }, set(PERMISSION_KEYS))).toBe("all");
+    expect(settlementReportScope({ role: "SUPERVISOR" }, set(ROLE_DEFAULTS.SUPERVISOR))).toBe("all");
+  });
+
+  it("denies a Supervisor without reports.view or settlements.view", () => {
+    expect(settlementReportScope({ role: "SUPERVISOR" }, set(without(ROLE_DEFAULTS.SUPERVISOR, "reports.view")))).toBeNull();
+    expect(settlementReportScope({ role: "SUPERVISOR" }, set(without(ROLE_DEFAULTS.SUPERVISOR, "settlements.view")))).toBeNull();
+  });
+
+  it("keeps Staff to their own settlements, whatever they hold", () => {
+    expect(settlementReportScope({ role: "STAFF" }, set(ROLE_DEFAULTS.STAFF))).toBe("own");
+    expect(settlementReportScope({ role: "STAFF" }, set(PERMISSION_KEYS))).toBe("own");
+    expect(settlementReportScope({ role: "STAFF" }, set(without(ROLE_DEFAULTS.STAFF, "settlements.view")))).toBeNull();
+  });
+});
+
+describe("parseSettlementReport", () => {
+  const latest = "2026-09";
+  const parseMonths = (params: Record<string, string>, last = latest) => {
+    const { period, from, to, invalidCustom } = parseSettlementReport(params, last);
+    return { period, from, to, invalidCustom };
+  };
+
+  it("defaults to the latest month's year for a missing or unknown period", () => {
+    const year = { period: "year", from: "2026-01", to: latest, invalidCustom: false };
+    expect(parseMonths({})).toEqual(year);
+    expect(parseMonths({ period: "forever" })).toEqual(year);
+  });
+
+  it("covers the last twelve months", () => {
+    expect(parseMonths({ period: "last12" })).toEqual({ period: "last12", from: "2025-10", to: latest, invalidCustom: false });
+  });
+
+  it("covers the previous year in January, when the latest settleable month is December", () => {
+    expect(parseMonths({}, "2025-12")).toMatchObject({ from: "2025-01", to: "2025-12" });
+    expect(parseMonths({ period: "last12" }, "2025-12")).toMatchObject({ from: "2025-01", to: "2025-12" });
+  });
+
+  it("accepts a custom range up to the latest month", () => {
+    expect(parseSettlementReport({ period: "custom", from: "2024-11", to: latest }, latest)).toEqual({
+      period: "custom",
+      from: "2024-11",
+      to: latest,
+      invalidCustom: false,
+      submitted: { from: "2024-11", to: latest },
+    });
+    expect(parseMonths({ period: "custom", from: "2026-03", to: "2026-03" })).toMatchObject({ from: "2026-03", to: "2026-03" });
+  });
+
+  it.each<[Record<string, string>]>([
+    [{ period: "custom" }],
+    [{ period: "custom", from: "2026-3", to: "2026-05" }],
+    [{ period: "custom", from: "2026-13", to: "2026-05" }],
+    [{ period: "custom", from: "2026-06", to: "2026-05" }],
+    [{ period: "custom", from: "2026-01", to: "2026-10" }],
+  ])("falls back to the year for an invalid custom range %o", (params) => {
+    const range = parseSettlementReport(params, latest);
+    expect(range).toMatchObject({ period: "year", from: "2026-01", to: latest, invalidCustom: true });
+    expect(range.submitted).toEqual({ from: params.from, to: params.to });
+  });
+});
+
+describe("settlementReportHref", () => {
+  it("leaves the default period out of the URL", () => {
+    expect(settlementReportHref("year")).toBe("/reports/settlements");
+    expect(settlementReportHref("last12")).toBe("/reports/settlements?period=last12");
+  });
+});
+
+describe("settlementMonthOptions", () => {
+  it("offers the latest month's year when nothing is settled, newest first", () => {
+    expect(settlementMonthOptions(null, "2026-03")).toEqual(["2026-03", "2026-02", "2026-01"]);
+  });
+
+  it("reaches back to the first settled month", () => {
+    expect(settlementMonthOptions("2025-11", "2026-02")).toEqual(["2026-02", "2026-01", "2025-12", "2025-11"]);
+    expect(settlementMonthOptions("2026-02", "2026-03")).toEqual(["2026-03", "2026-02", "2026-01"]);
+  });
+});
+
+describe("settlementReportTotals", () => {
+  const d = (value: string) => new Prisma.Decimal(value);
+  const sara = { id: "e1", name: "Sara" };
+  const adam = { id: "e2", name: "Adam" };
+  const settlement = (
+    month: string,
+    status: "DRAFT" | "CALCULATED" | "APPROVED" | "PAID",
+    employee: { id: string; name: string },
+    share: string,
+    revenue: string,
+    earnings: string,
+    expenses: string,
+    adjustments: string,
+    final: string,
+  ) => ({
+    periodStart: new Date(`${month}-01T00:00:00.000Z`),
+    status,
+    employee,
+    sharePercentage: d(share),
+    totalRevenue: d(revenue),
+    employeeShare: d(earnings),
+    totalExpenses: d(expenses),
+    totalAdjustments: d(adjustments),
+    finalAmount: d(final),
+  });
+
+  const rows = [
+    settlement("2026-08", "PAID", sara, "50", "5000.00", "2500.00", "300.00", "0", "2200.00"),
+    settlement("2026-06", "PAID", sara, "60", "1000.10", "600.06", "0", "-100.00", "500.06"),
+    settlement("2026-08", "APPROVED", adam, "50", "100.00", "50.00", "200.00", "0", "-150.00"),
+    settlement("2026-08", "DRAFT", { id: "e3", name: "Zaid" }, "50", "0.20", "0.10", "0", "0", "0.10"),
+    settlement("2026-06", "CALCULATED", adam, "50", "200.00", "100.00", "0", "0", "100.00"),
+  ];
+
+  it("totals every status, drafts included", () => {
+    const { total, awaitingApproval, byStatus } = settlementReportTotals(rows);
+    expect(total.count).toBe(5);
+    expect(total.revenue.toString()).toBe("6300.3");
+    expect(total.final.toString()).toBe("2650.16");
+    expect(total.paid.toString()).toBe("2700.06");
+    expect(awaitingApproval.count).toBe(2);
+    expect(awaitingApproval.final.toString()).toBe("100.1");
+    expect(byStatus.map((row) => [row.status, row.count, row.final.toString()])).toEqual([
+      ["DRAFT", 1, "0.1"],
+      ["CALCULATED", 1, "100"],
+      ["APPROVED", 1, "-150"],
+      ["PAID", 2, "2700.06"],
+    ]);
+  });
+
+  it("lists only months with settlements, oldest first", () => {
+    const { byMonth } = settlementReportTotals(rows);
+    expect(byMonth.map((row) => [row.month, row.count, row.final.toString(), row.paid.toString()])).toEqual([
+      ["2026-06", 2, "600.06", "500.06"],
+      ["2026-08", 3, "2050.1", "2200"],
+    ]);
+  });
+
+  it("sums each employee by name, with the share range when it changed", () => {
+    const { byEmployee } = settlementReportTotals(rows, "en");
+    expect(byEmployee.map((row) => row.employee.name)).toEqual(["Adam", "Sara", "Zaid"]);
+    const [adamRow, saraRow] = byEmployee;
+    expect(adamRow.count).toBe(2);
+    expect(adamRow.final.toString()).toBe("-50");
+    expect(adamRow.final.isNegative()).toBe(true);
+    expect([adamRow.minShare.toString(), adamRow.maxShare.toString()]).toEqual(["50", "50"]);
+    expect([saraRow.minShare.toString(), saraRow.maxShare.toString()]).toEqual(["50", "60"]);
+    expect(saraRow.adjustments.toString()).toBe("-100");
+  });
+
+  it("is all zeros without settlements", () => {
+    const { total, byStatus, byMonth, byEmployee } = settlementReportTotals([]);
+    expect(total.count).toBe(0);
+    expect(total.final.isZero()).toBe(true);
+    expect(byStatus).toHaveLength(4);
+    expect(byMonth).toEqual([]);
+    expect(byEmployee).toEqual([]);
   });
 });

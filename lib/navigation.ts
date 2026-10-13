@@ -56,7 +56,7 @@ export const NAVIGATION: NavGroup[] = [
         permissions: ["reports.view_all_employees", "reports.view_own_performance"],
       },
       { key: "employeeEarnings", permissions: ["reports.view"] },
-      { key: "settlements", href: "/settlements", permissions: ["settlements.view"] },
+      { key: "settlements", href: "/reports/settlements", permissions: ["settlements.view"] },
     ],
   },
   {

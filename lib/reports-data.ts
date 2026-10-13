@@ -10,14 +10,18 @@ import { SALON_TIME_ZONE, salonDayRange } from "@/lib/invoices";
 import {
   employeePerformanceRows,
   performanceFigures,
+  settlementReportTotals,
   type EmployeeReportSections,
   type ExpenseSections,
   type GroupedExpense,
   type GroupedRevenue,
   type RevenueReportRange,
   type RevenueSections,
+  type SettlementReportRange,
+  type SettlementReportScope,
 } from "@/lib/reports";
 import { getSalonSettings } from "@/lib/settings";
+import { monthOf, monthPeriod } from "@/lib/settlements";
 
 const STATUSES: ("PAID" | "UNPAID")[] = ["PAID", "UNPAID"];
 
@@ -291,3 +295,40 @@ export async function loadEmployeePerformance(
 }
 
 export type EmployeePerformanceData = NonNullable<Awaited<ReturnType<typeof loadEmployeePerformance>>>;
+
+/** The settled months in range. In scope `own` both queries are limited to the viewer. */
+export async function loadSettlementReport(
+  range: Pick<SettlementReportRange, "from" | "to">,
+  scope: SettlementReportScope,
+  viewerId: string,
+  locale?: string,
+) {
+  const owner = scope === "own" ? { employeeId: viewerId } : {};
+  const [settings, rows, first] = await Promise.all([
+    getSalonSettings(),
+    db.employeeSettlement.findMany({
+      where: {
+        ...owner,
+        periodStart: { gte: monthPeriod(range.from).periodStart, lte: monthPeriod(range.to).periodStart },
+      },
+      select: {
+        periodStart: true,
+        status: true,
+        totalRevenue: true,
+        sharePercentage: true,
+        employeeShare: true,
+        totalExpenses: true,
+        totalAdjustments: true,
+        finalAmount: true,
+        employee: { select: { id: true, name: true, image: true, isActive: true } },
+      },
+    }),
+    db.employeeSettlement.aggregate({ where: owner, _min: { periodStart: true } }),
+  ]);
+
+  return {
+    currency: settings.currency,
+    firstMonth: first._min.periodStart ? monthOf(first._min.periodStart) : null,
+    ...settlementReportTotals(rows, locale),
+  };
+}

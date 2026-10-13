@@ -880,6 +880,52 @@
     "total": "Total",
     "inactive": "Inactive"
   },
+  "settlementReport": {
+    "title": "Settlement report",
+    "description": "Monthly settlements over a range of months: payouts by status, by month, and by employee.",
+    "loading": "Loading the settlement report",
+    "openSettlements": "Open settlements",
+    "periods": {
+      "label": "Period",
+      "last12": "Last 12 months",
+      "custom": "Custom range"
+    },
+    "custom": {
+      "from": "From",
+      "to": "To",
+      "apply": "Apply range",
+      "invalid": "Choose both months, with the start on or before the end. Showing {year} instead."
+    },
+    "summary": {
+      "final": "Final payout",
+      "paid": "Paid",
+      "awaitingPayment": "Awaiting payment",
+      "awaitingApproval": "Awaiting approval"
+    },
+    "hints": {
+      "settlements": "{count, plural, =0 {No settlements} one {# settlement} other {# settlements}}"
+    },
+    "byStatus": {
+      "title": "By status",
+      "empty": "No settlements in this period."
+    },
+    "byMonth": {
+      "title": "By month",
+      "empty": "No month in this period has settlements yet."
+    },
+    "byEmployee": {
+      "title": "By employee",
+      "empty": "No employee has a settlement in this period."
+    },
+    "columns": {
+      "month": "Month",
+      "settlements": "Settlements",
+      "months": "Months settled",
+      "paid": "Paid out"
+    },
+    "total": "Total",
+    "inactive": "Inactive"
+  },
   "employeeReport": {
     "title": "Employee performance",
     "description": "Each employee's invoices, revenue, estimated earnings, deductions, and payout for the period.",
