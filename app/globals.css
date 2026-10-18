@@ -62,7 +62,7 @@
   --color-st-draft-soft: var(--st-draft-soft);
   --color-st-calculated: var(--st-calculated);
   --color-st-calculated-soft: var(--st-calculated-soft);
-  --color-st-approved: var(--primary);
+  --color-st-approved: var(--st-approved);
   --color-st-approved-soft: var(--primary-soft);
   --color-st-paid: var(--success);
   --color-st-paid-soft: var(--success-soft);
@@ -104,20 +104,23 @@
   --faint: #8d98ad;
   --accent: #f0f3f9;
   --accent-foreground: #0f1a2e;
-  --destructive: #dc3b3b;
+  /* Status text colours are darker than the prototype so small text on its soft fill
+     meets 4.5:1; the soft fills keep the prototype hues. */
+  --destructive: #c53030;
   --destructive-soft: rgba(220, 59, 59, 0.1);
   --border: #dde3ee;
   --input: #dde3ee;
   --ring: rgba(37, 99, 235, 0.35);
 
-  --success: #16a34a;
+  --success: #147a3a;
   --success-soft: rgba(22, 163, 74, 0.1);
-  --warning: #c27c0e;
+  --warning: #9a5b07;
   --warning-soft: rgba(217, 140, 16, 0.12);
-  --st-draft: #64748b;
+  --st-draft: #5a687e;
   --st-draft-soft: rgba(100, 116, 139, 0.12);
   --st-calculated: #7c3aed;
   --st-calculated-soft: rgba(124, 58, 237, 0.1);
+  --st-approved: var(--primary);
 
   --chart-1: #2563eb;
   --chart-2: #0ea5e9;
@@ -175,6 +178,8 @@
   --st-draft-soft: rgba(148, 163, 196, 0.14);
   --st-calculated: #a78bfa;
   --st-calculated-soft: rgba(167, 139, 250, 0.16);
+  /* Kosh blue is too dark for small text on its dark soft fill; buttons keep --primary. */
+  --st-approved: #6b97ff;
 
   --chart-1: #2f6bff;
   --chart-2: #38bdf8;

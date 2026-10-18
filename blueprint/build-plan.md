@@ -56,7 +56,7 @@ Your features
 
 - [ ] 23. RTL review - Verify and fix LTR English and RTL Arabic layouts across navigation, forms, tables, charts, dialogs, and responsive layouts.
 
-- [ ] 24. Theme polish - Apply the full Kosh visual style to Light, Dark, and System themes and persist each user's preference.
+- [x] 24. Theme polish - Apply the full Kosh visual style to Light, Dark, and System themes and persist each user's preference.
 
 - [ ] 25. Responsive CRM experience - Ensure dashboards, tables, forms, reports, navigation, and financial workflows work across desktop, tablet, and mobile.
 

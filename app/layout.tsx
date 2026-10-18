@@ -7,6 +7,8 @@ import { ThemeProvider } from "next-themes";
 import { DirectionProvider } from "@base-ui/react/direction-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { getDirection, isLocale, DEFAULT_LOCALE } from "@/i18n/locales";
+import { getCurrentSession } from "@/lib/auth/current-user";
+import { fromStoredTheme } from "@/lib/theme";
 import "./globals.css";
 
 const inter = Inter({
@@ -50,6 +52,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const locale = isLocale(requestLocale) ? requestLocale : DEFAULT_LOCALE;
   const dir = getDirection(locale);
   const t = await getTranslations("toast");
+  // A browser with no stored choice starts in the account's theme, so it paints without a flash.
+  const session = await getCurrentSession();
+  const defaultTheme = session ? fromStoredTheme(session.user.theme) : "dark";
 
   return (
     <html
@@ -63,7 +68,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <NextIntlClientProvider>
           <ThemeProvider
             attribute="class"
-            defaultTheme="dark"
+            defaultTheme={defaultTheme}
             enableSystem
             disableTransitionOnChange
           >

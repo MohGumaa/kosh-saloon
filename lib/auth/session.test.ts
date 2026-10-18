@@ -18,7 +18,7 @@ const {
   validateSessionToken,
 } = await import("@/lib/auth/session");
 
-const user = { id: "u1", name: "Sara", email: "sara@kosh.ae", role: "STAFF", language: "EN", image: null };
+const user = { id: "u1", name: "Sara", email: "sara@kosh.ae", role: "STAFF", language: "EN", theme: "LIGHT", image: null };
 
 function sessionRow(overrides: { expiresAt?: Date; isActive?: boolean } = {}) {
   return {

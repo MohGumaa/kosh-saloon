@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { SESSION_COOKIE } from "@/lib/auth/constants";
+import type { StoredTheme } from "@/lib/theme";
 
 export const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -20,6 +21,7 @@ export interface SessionUser {
   email: string;
   role: "ADMIN" | "SUPERVISOR" | "STAFF";
   language: "EN" | "AR";
+  theme: StoredTheme;
   image: string | null;
 }
 
@@ -39,7 +41,7 @@ export async function validateSessionToken(token: string): Promise<ValidSession 
       id: true,
       expiresAt: true,
       user: {
-        select: { id: true, name: true, email: true, role: true, language: true, image: true, isActive: true },
+        select: { id: true, name: true, email: true, role: true, language: true, theme: true, image: true, isActive: true },
       },
     },
   });
@@ -50,8 +52,8 @@ export async function validateSessionToken(token: string): Promise<ValidSession 
     return null;
   }
 
-  const { id, name, email, role, language, image } = session.user;
-  return { sessionId: session.id, user: { id, name, email, role, language, image } };
+  const { id, name, email, role, language, theme, image } = session.user;
+  return { sessionId: session.id, user: { id, name, email, role, language, theme, image } };
 }
 
 /** Creates a session row and sets the cookie. Call only from a Server Action or Route Handler. */

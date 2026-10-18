@@ -44,7 +44,8 @@
   "theme": {
     "light": "Light theme",
     "dark": "Dark theme",
-    "system": "System theme"
+    "system": "System theme",
+    "saveFailed": "Your theme could not be saved to your account. It still applies in this browser."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -190,7 +191,7 @@
     },
     "preferences": {
       "title": "Language and theme",
-      "description": "Saved in this browser only.",
+      "description": "Your theme is saved to your account. Your language is saved in this browser.",
       "language": "Language",
       "theme": "Theme"
     }

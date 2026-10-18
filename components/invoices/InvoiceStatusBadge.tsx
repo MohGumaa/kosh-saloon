@@ -2,9 +2,9 @@ import type { InvoiceStatusValue } from "@/lib/invoices";
 import { cn } from "@/lib/utils";
 
 const STYLES: Record<InvoiceStatusValue, string> = {
-  PAID: "bg-primary-soft",
-  UNPAID: "bg-amber-500/15 text-amber-800 dark:text-amber-300",
-  CANCELLED: "bg-muted text-muted-foreground",
+  PAID: "bg-success-soft text-success",
+  UNPAID: "bg-warning-soft text-warning",
+  CANCELLED: "bg-destructive-soft text-destructive",
 };
 
 /** The status pill used by the invoice list and detail. The label is already translated. */
