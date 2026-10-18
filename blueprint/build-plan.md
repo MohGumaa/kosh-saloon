@@ -48,7 +48,7 @@ Your features
 
 - [x] 19. Settlement reports - Provide monthly settlement reports with employee earnings, expenses, share percentages, approvals, and paid status.
 
-- [ ] 20. Security settings - Add the Security settings tab with the password change form from feature 2, the login notification email preference, and session/security controls.
+- [x] 20. Security settings - Add the Security settings tab with the password change form from feature 2, the login notification email preference, and session/security controls.
 
 - [ ] 21. Notification settings - Add the Notifications settings tab for login notification preferences. Scheduled report and settlement emails are future work.
 

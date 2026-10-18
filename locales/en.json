@@ -1078,7 +1078,8 @@
         "login": "Signed in",
         "logout": "Signed out",
         "password_changed": "Changed password",
-        "password_reset": "Reset password by email"
+        "password_reset": "Reset password by email",
+        "other_sessions_signed_out": "Signed out other devices"
       },
       "user": {
         "profile_updated": "Updated profile",
@@ -1182,11 +1183,24 @@
   },
   "settings": {
     "title": "Settings",
-    "description": "Salon details and global financial settings.",
+    "description": "Salon details, global financial settings, and account security.",
     "tabs": {
       "label": "Settings sections",
       "information": "Information",
-      "financial": "Financial"
+      "financial": "Financial",
+      "security": "Security"
+    },
+    "security": {
+      "sessions": {
+        "title": "Sign out other devices",
+        "description": "End your sessions on every other browser and device. This one stays signed in.",
+        "count": "You are signed in on {count, plural, one {# other device} other {# other devices}}.",
+        "none": "You are not signed in on any other device.",
+        "submit": "Sign out other devices",
+        "submitting": "Signing out…",
+        "success": "Signed out of your other devices.",
+        "error": "An unexpected error occurred. Please try again."
+      }
     },
     "readOnly": "You can view these settings but not change them.",
     "submit": "Save changes",

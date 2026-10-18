@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
     session: { deleteMany: vi.fn() },
     passwordResetToken: { findUnique: vi.fn(), deleteMany: vi.fn(), create: vi.fn() },
     auditLog: { create: vi.fn() },
-    $transaction: vi.fn(async (ops: unknown[]) => Promise.all(ops)),
+    $transaction: vi.fn(async (ops: unknown): Promise<unknown> => Promise.all(ops as unknown[])),
   },
   consumeAttempt: vi.fn<(key: string, rule: { limit: number }) => Promise<boolean>>(async () => true),
   refundAttempt: vi.fn(),
@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   requireSession: vi.fn(),
   getCurrentSession: vi.fn(),
   sendEmail: vi.fn(),
+  revalidatePath: vi.fn(),
   afterCallbacks: [] as (() => Promise<void>)[],
 }));
 
@@ -33,6 +34,7 @@ vi.mock("next/navigation", () => ({
     throw new Error(`REDIRECT:${url}`);
   },
 }));
+vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 vi.mock("next/server", () => ({ after: (cb: () => Promise<void>) => mocks.afterCallbacks.push(cb) }));
 vi.mock("@/lib/db", () => ({ db: mocks.db }));
 vi.mock("@/lib/email", () => ({ sendEmail: mocks.sendEmail, appUrl: (p: string) => `http://app.test${p}` }));
@@ -54,7 +56,8 @@ vi.mock("@/lib/auth/current-user", () => ({
   getCurrentSession: mocks.getCurrentSession,
 }));
 
-const { changePassword, login, logout, requestPasswordReset, resetPassword } = await import("@/actions/auth");
+const { changePassword, login, logout, requestPasswordReset, resetPassword, signOutOtherSessions } =
+  await import("@/actions/auth");
 
 const PASSWORD = "correct-password";
 const passwordHash = await hashPassword(PASSWORD);
@@ -406,5 +409,54 @@ describe("changePassword", () => {
     expect(
       await changePassword(null, form({ currentPassword: PASSWORD, newPassword: "short", confirmPassword: "short" })),
     ).toMatchObject({ fieldErrors: { newPassword: "password_length" } });
+  });
+});
+
+describe("signOutOtherSessions", () => {
+  beforeEach(() => {
+    mocks.requireSession.mockResolvedValue({ sessionId: "s-current", user: { id: "u1" } });
+    // An interactive transaction: the callback runs against the same mocked client.
+    mocks.db.$transaction.mockImplementationOnce(async (fn: unknown) =>
+      (fn as (tx: typeof mocks.db) => Promise<unknown>)(mocks.db),
+    );
+  });
+
+  it("ends only the caller's other sessions and audits the count in the same transaction", async () => {
+    mocks.db.session.deleteMany.mockResolvedValue({ count: 3 });
+
+    expect(await signOutOtherSessions()).toEqual({ success: true, count: 3 });
+    expect(mocks.db.session.deleteMany).toHaveBeenCalledWith({ where: { userId: "u1", id: { not: "s-current" } } });
+    expect(mocks.db.$transaction).toHaveBeenCalledTimes(1);
+    expect(mocks.db.auditLog.create).toHaveBeenCalledWith({
+      data: {
+        userId: "u1",
+        action: "auth.other_sessions_signed_out",
+        entity: "User",
+        entityId: "u1",
+        newValue: { sessionsEnded: 3 },
+      },
+    });
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/settings");
+  });
+
+  it("succeeds when there are no other sessions", async () => {
+    mocks.db.session.deleteMany.mockResolvedValue({ count: 0 });
+    expect(await signOutOtherSessions()).toEqual({ success: true, count: 0 });
+    expect(mocks.db.auditLog.create).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports an unexpected error when the database fails", async () => {
+    mocks.db.session.deleteMany.mockRejectedValue(new Error("connection lost"));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    expect(await signOutOtherSessions()).toEqual({ success: false, error: "unexpected" });
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it("requires a session", async () => {
+    mocks.requireSession.mockRejectedValue(new Error("REDIRECT:/login"));
+    await expect(signOutOtherSessions()).rejects.toThrow("REDIRECT:/login");
+    expect(mocks.db.session.deleteMany).not.toHaveBeenCalled();
   });
 });

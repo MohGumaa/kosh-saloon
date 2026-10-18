@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Coins, ImageIcon, Store, type LucideIcon } from "lucide-react";
+import { Coins, ImageIcon, KeyRound, LogOut, ShieldCheck, Store, type LucideIcon } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
 import { FinancialForm } from "@/components/settings/FinancialForm";
 import { InformationForm } from "@/components/settings/InformationForm";
 import { LogoForm } from "@/components/settings/LogoForm";
+import { SignOutOtherSessionsForm } from "@/components/settings/SignOutOtherSessionsForm";
 import { requirePermission } from "@/lib/auth/authorize";
-import { getSalonSettings } from "@/lib/settings";
+import { db } from "@/lib/db";
+import { getSalonSettings, resolveSettingsTab } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -17,10 +20,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const panelClass = "min-w-0 rounded-2xl border bg-card text-card-foreground shadow-card";
 
-// Security and Notifications join these in features 20 and 21.
+// Notifications joins these in feature 21.
 const TABS = [
   { key: "information", href: "/settings", icon: Store },
   { key: "financial", href: "/settings?tab=financial", icon: Coins },
+  { key: "security", href: "/settings?tab=security", icon: ShieldCheck },
 ] as const;
 
 interface PanelProps {
@@ -48,10 +52,21 @@ function Panel({ icon: Icon, title, description, children }: PanelProps) {
 }
 
 export default async function SettingsPage({ searchParams }: PageProps<"/settings">) {
-  const { permissions } = await requirePermission("settings.view");
-  const [{ tab }, t, settings] = await Promise.all([searchParams, getTranslations("settings"), getSalonSettings()]);
-  const activeTab = tab === "financial" ? "financial" : "information";
-  const readOnly = !permissions.has("settings.edit");
+  const { permissions, sessionId, user } = await requirePermission("settings.view");
+  const [{ tab }, t, tAuth, settings] = await Promise.all([
+    searchParams,
+    getTranslations("settings"),
+    getTranslations("auth"),
+    getSalonSettings(),
+  ]);
+  const activeTab = resolveSettingsTab(tab, permissions);
+  const tabs = TABS.filter(({ key }) => key !== "security" || permissions.has("settings.security"));
+  // The Security tab only changes the viewer's own account, so settings.edit does not apply there.
+  const readOnly = !permissions.has("settings.edit") && activeTab !== "security";
+  const otherSessions =
+    activeTab === "security"
+      ? await db.session.count({ where: { userId: user.id, id: { not: sessionId }, expiresAt: { gt: new Date() } } })
+      : 0;
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
@@ -62,7 +77,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
           {readOnly && <p className="mt-3 text-sm font-medium">{t("readOnly")}</p>}
         </div>
         <nav aria-label={t("tabs.label")} className="flex gap-2 border-t px-3 lg:px-5">
-          {TABS.map(({ key, href, icon: Icon }) => (
+          {tabs.map(({ key, href, icon: Icon }) => (
             <Link
               key={key}
               href={href}
@@ -98,6 +113,15 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
           </Panel>
           <Panel icon={ImageIcon} title={t("logo.title")} description={t("logo.description")}>
             <LogoForm logo={settings.logo} readOnly={readOnly} />
+          </Panel>
+        </>
+      ) : activeTab === "security" ? (
+        <>
+          <Panel icon={KeyRound} title={tAuth("changePassword.title")} description={tAuth("changePassword.description")}>
+            <ChangePasswordForm />
+          </Panel>
+          <Panel icon={LogOut} title={t("security.sessions.title")} description={t("security.sessions.description")}>
+            <SignOutOtherSessionsForm otherSessions={otherSessions} />
           </Panel>
         </>
       ) : (

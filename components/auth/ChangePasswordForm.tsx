@@ -10,7 +10,7 @@ import { FormMessage } from "@/components/auth/FormMessage";
 import { useFocusOnError } from "@/components/auth/useFocusOnError";
 import { useSuccessToast } from "@/components/auth/useSuccessToast";
 
-/** Shown on the profile Settings tab; reused by Settings > Security in feature 20. */
+/** Shown on the profile Settings tab and on Settings > Security. */
 export function ChangePasswordForm() {
   const t = useTranslations("auth");
   const [state, action, pending] = useActionState<AuthFormState, FormData>(changePassword, null);

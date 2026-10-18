@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
@@ -313,4 +314,35 @@ export async function changePassword(_prev: AuthFormState, formData: FormData): 
     console.error("[auth] password change failed:", error);
     return { success: false, error: "unexpected" };
   }
+}
+
+export type SignOutOthersState = { success: true; count: number } | { success: false; error: "unexpected" } | null;
+
+/** Ends every other session of the signed-in user and keeps the current one. */
+export async function signOutOtherSessions(): Promise<SignOutOthersState> {
+  const { sessionId, user } = await requireSession();
+
+  let count: number;
+  try {
+    count = await db.$transaction(async (tx) => {
+      const deleted = await tx.session.deleteMany({ where: { userId: user.id, id: { not: sessionId } } });
+      await recordAudit(
+        {
+          userId: user.id,
+          action: "auth.other_sessions_signed_out",
+          entity: "User",
+          entityId: user.id,
+          newValue: { sessionsEnded: deleted.count },
+        },
+        tx,
+      );
+      return deleted.count;
+    });
+  } catch (error) {
+    console.error("[auth] signing out other sessions failed:", error);
+    return { success: false, error: "unexpected" };
+  }
+
+  revalidatePath("/settings");
+  return { success: true, count };
 }

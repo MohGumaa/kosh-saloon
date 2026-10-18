@@ -93,6 +93,8 @@ passes.
 16. **Revenue reports** - daily/weekly/monthly/yearly/custom; paid/unpaid; by employee and service.
 17. **Expense reports** - salon and employee expenses by category, date range, totals.
 18. **Employee performance reports** - services, invoices, revenue, earnings, expenses, payout, trends.
+    - 18a. **Employee performance report** - `/reports/employees`: all-employees table plus single-employee view with trends and service performance; Staff see only their own.
+    - 18b. **Employee profile performance tabs** - Performance and Invoices tabs on `/employees/[id]`, reusing 18a.
 19. **Settlement reports** - monthly settlements with earnings, expenses, share %, approvals, paid status.
 20. **Security settings** - settings tab with password change (from 2), login notification preference, session controls.
 21. **Notification settings** - settings tab for login notification preferences.

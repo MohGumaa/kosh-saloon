@@ -4,9 +4,29 @@ const mocks = vi.hoisted(() => ({ findUnique: vi.fn(), upsert: vi.fn() }));
 
 vi.mock("@/lib/db", () => ({ db: { salonSettings: { findUnique: mocks.findUnique, upsert: mocks.upsert } } }));
 
-const { SETTINGS_ID, getSalonSettings } = await import("@/lib/settings");
+const { SETTINGS_ID, getSalonSettings, resolveSettingsTab } = await import("@/lib/settings");
 
 beforeEach(() => vi.clearAllMocks());
+
+describe("resolveSettingsTab", () => {
+  const withSecurity = new Set(["settings.view", "settings.security"] as const);
+  const viewOnly = new Set(["settings.view"] as const);
+
+  it("opens Security only with settings.security", () => {
+    expect(resolveSettingsTab("security", withSecurity)).toBe("security");
+    expect(resolveSettingsTab("security", viewOnly)).toBe("information");
+  });
+
+  it("opens Financial for anyone who can view settings", () => {
+    expect(resolveSettingsTab("financial", viewOnly)).toBe("financial");
+  });
+
+  it("falls back to Information for a missing, unknown, or repeated value", () => {
+    expect(resolveSettingsTab(undefined, withSecurity)).toBe("information");
+    expect(resolveSettingsTab("backup", withSecurity)).toBe("information");
+    expect(resolveSettingsTab(["security", "financial"], withSecurity)).toBe("information");
+  });
+});
 
 describe("getSalonSettings", () => {
   it("returns the stored row without writing", async () => {
