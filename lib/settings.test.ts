@@ -21,6 +21,11 @@ describe("resolveSettingsTab", () => {
     expect(resolveSettingsTab("financial", viewOnly)).toBe("financial");
   });
 
+  it("opens Notifications for anyone who can view settings, with or without settings.security", () => {
+    expect(resolveSettingsTab("notifications", viewOnly)).toBe("notifications");
+    expect(resolveSettingsTab("notifications", withSecurity)).toBe("notifications");
+  });
+
   it("falls back to Information for a missing, unknown, or repeated value", () => {
     expect(resolveSettingsTab(undefined, withSecurity)).toBe("information");
     expect(resolveSettingsTab("backup", withSecurity)).toBe("information");

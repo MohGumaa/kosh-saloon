@@ -96,8 +96,8 @@ passes.
     - 18a. **Employee performance report** - `/reports/employees`: all-employees table plus single-employee view with trends and service performance; Staff see only their own.
     - 18b. **Employee profile performance tabs** - Performance and Invoices tabs on `/employees/[id]`, reusing 18a.
 19. **Settlement reports** - monthly settlements with earnings, expenses, share %, approvals, paid status.
-20. **Security settings** - settings tab with password change (from 2), login notification preference, session controls.
-21. **Notification settings** - settings tab for login notification preferences.
+20. **Security settings** - settings tab with password change (from 2), sign out other devices.
+21. **Notification settings** - settings tab with the salon-wide login notification email switch.
 22. **English & Arabic translation completion** - review and fill all translations.
 23. **RTL review** - verify and fix LTR/RTL layouts everywhere.
 24. **Theme polish** - full Kosh style for all themes, per-user preference.
@@ -199,7 +199,8 @@ PostgreSQL via Prisma. Money fields use `Decimal`. All models have `id`
 - `name`, `licenseNumber`, `address`, `phone`, `email`, `taxId` (strings),
   `logo` (string?, storage URL/key)
 - `currency` (string, e.g. AED), `taxRate` (Decimal, stored only in V1),
-  `employeeSharePercentage` (Decimal, default 50)
+  `employeeSharePercentage` (Decimal, default 50),
+  `loginNotificationsEnabled` (Boolean, default true; salon-wide)
 
 ### AuditLog (append-only, no updatedAt)
 

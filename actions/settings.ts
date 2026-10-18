@@ -9,6 +9,7 @@ import { requireSession } from "@/lib/auth/current-user";
 import { db } from "@/lib/db";
 import { SETTINGS_ID, getSalonSettings } from "@/lib/settings";
 import {
+  CHECKBOX_ON,
   LOGO_MAX_BYTES,
   detectImageType,
   financialSettingsSchema,
@@ -42,7 +43,9 @@ export type SettingsFormState<Field extends string = never> =
 export type InformationField = keyof SalonInformation;
 export type FinancialField = keyof FinancialSettings;
 
-type SettingsChanges = Partial<SalonInformation & FinancialSettings & { logo: string | null }>;
+type SettingsChanges = Partial<
+  SalonInformation & FinancialSettings & { logo: string | null; loginNotificationsEnabled: boolean }
+>;
 type SettingsField = keyof SettingsChanges;
 
 const INFORMATION_FIELDS = ["name", "licenseNumber", "address", "phone", "email", "taxId"] as const;
@@ -140,6 +143,28 @@ export async function updateFinancialSettings(
 }
 
 const fail = (error: SettingsErrorCode): SettingsFormState => ({ success: false, error });
+
+export async function updateNotificationSettings(
+  _prev: SettingsFormState,
+  formData: FormData,
+): Promise<SettingsFormState> {
+  const { user } = await requireSession();
+
+  try {
+    if (!(await hasPermission(user, "settings.edit"))) return fail("forbidden");
+
+    const value = formData.get("loginNotificationsEnabled");
+    if (value !== null && value !== CHECKBOX_ON) return fail("invalid_input");
+
+    await saveSettings(user.id, { loginNotificationsEnabled: value === CHECKBOX_ON });
+  } catch (error) {
+    console.error("[settings] notification settings update failed:", error);
+    return fail("unexpected");
+  }
+
+  revalidatePath("/settings");
+  return { success: true };
+}
 
 /** Best effort: a blob that cannot be deleted is left behind and logged, and the action still succeeds. */
 async function deleteBlob(url: string) {

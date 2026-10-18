@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { PHONE_CHARACTERS, SINGLE_LINE_TEXT, normalizeDigitsAndSpaces } from "@/lib/auth/validation";
 
-const optionalText = (max: number) => z.string().trim().max(max).regex(SINGLE_LINE_TEXT);
+/** The value a settings checkbox submits when checked; an unchecked box submits nothing. */
+export const CHECKBOX_ON = "true";
+
+const optionalText =(max: number) => z.string().trim().max(max).regex(SINGLE_LINE_TEXT);
 
 /** Optional fields are stored as an empty string, never null. */
 export const salonInformationSchema = z.object({

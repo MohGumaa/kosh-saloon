@@ -8,6 +8,7 @@ import type { z } from "zod";
 import { db } from "@/lib/db";
 import { appUrl, sendEmail } from "@/lib/email";
 import { recordAudit } from "@/lib/audit";
+import { getSalonSettings } from "@/lib/settings";
 import { getCurrentSession, requireSession } from "@/lib/auth/current-user";
 import { loginNotificationEmail, passwordResetEmail } from "@/lib/auth/emails";
 import { hashPassword, verifyDummyPassword, verifyPassword } from "@/lib/auth/password";
@@ -154,8 +155,10 @@ export async function login(_prev: AuthFormState, formData: FormData): Promise<A
     ]);
     await createSession(user.id);
 
-    afterResponse("login notification email", () =>
-      sendEmail({
+    afterResponse("login notification email", async () => {
+      // The salon-wide switch is read here, after the response, so checking it never slows or fails sign-in.
+      if (!(await getSalonSettings()).loginNotificationsEnabled) return;
+      await sendEmail({
         to: user.email,
         ...loginNotificationEmail({
           name: user.name,
@@ -165,8 +168,8 @@ export async function login(_prev: AuthFormState, formData: FormData): Promise<A
           userAgent,
           forgotPasswordUrl: appUrl("/forgot-password"),
         }),
-      }),
-    );
+      });
+    });
     afterResponse("expired row cleanup", async () => {
       await deleteExpiredRateLimits();
       await deleteExpiredSessions();

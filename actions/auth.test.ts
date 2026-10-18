@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
     session: { deleteMany: vi.fn() },
     passwordResetToken: { findUnique: vi.fn(), deleteMany: vi.fn(), create: vi.fn() },
     auditLog: { create: vi.fn() },
+    salonSettings: { findUnique: vi.fn(), upsert: vi.fn() },
     $transaction: vi.fn(async (ops: unknown): Promise<unknown> => Promise.all(ops as unknown[])),
   },
   consumeAttempt: vi.fn<(key: string, rule: { limit: number }) => Promise<boolean>>(async () => true),
@@ -92,6 +93,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.afterCallbacks.length = 0;
   mocks.consumeAttempt.mockImplementation(async () => true);
+  mocks.db.salonSettings.findUnique.mockResolvedValue({ id: "salon", loginNotificationsEnabled: true });
 });
 
 describe("login", () => {
@@ -192,6 +194,34 @@ describe("login", () => {
     );
     await expect(runAfter()).resolves.toBeUndefined();
     expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it("signs in without a notification email when the salon turned them off", async () => {
+    mocks.db.user.findUnique.mockResolvedValue(activeUser);
+    mocks.db.salonSettings.findUnique.mockResolvedValue({ id: "salon", loginNotificationsEnabled: false });
+
+    await expect(login(null, form({ identifier: "sara", password: PASSWORD }))).rejects.toThrow("REDIRECT:/dashboard");
+    expect(mocks.createSession).toHaveBeenCalledWith("u1");
+    expectAuditEntry("auth.login");
+
+    await runAfter();
+    expect(mocks.sendEmail).not.toHaveBeenCalled();
+    expect(mocks.deleteExpiredSessions).toHaveBeenCalled();
+  });
+
+  it("sends no email and still signs in when the setting cannot be read", async () => {
+    mocks.db.user.findUnique.mockResolvedValue(activeUser);
+    mocks.db.salonSettings.findUnique.mockRejectedValueOnce(new Error("db down"));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(login(null, form({ identifier: "sara", password: PASSWORD }))).rejects.toThrow("REDIRECT:/dashboard");
+    expect(mocks.createSession).toHaveBeenCalledWith("u1");
+
+    await expect(runAfter()).resolves.toBeUndefined();
+    expect(mocks.sendEmail).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith("[auth] login notification email failed:", "db down");
+    expect(mocks.deleteExpiredSessions).toHaveBeenCalled();
     consoleError.mockRestore();
   });
 

@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Coins, ImageIcon, KeyRound, LogOut, ShieldCheck, Store, type LucideIcon } from "lucide-react";
+import { Bell, Coins, ImageIcon, KeyRound, LogOut, Mail, ShieldCheck, Store, type LucideIcon } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
 import { FinancialForm } from "@/components/settings/FinancialForm";
 import { InformationForm } from "@/components/settings/InformationForm";
 import { LogoForm } from "@/components/settings/LogoForm";
+import { NotificationsForm } from "@/components/settings/NotificationsForm";
 import { SignOutOtherSessionsForm } from "@/components/settings/SignOutOtherSessionsForm";
 import { requirePermission } from "@/lib/auth/authorize";
 import { db } from "@/lib/db";
@@ -20,11 +21,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const panelClass = "min-w-0 rounded-2xl border bg-card text-card-foreground shadow-card";
 
-// Notifications joins these in feature 21.
 const TABS = [
   { key: "information", href: "/settings", icon: Store },
   { key: "financial", href: "/settings?tab=financial", icon: Coins },
   { key: "security", href: "/settings?tab=security", icon: ShieldCheck },
+  { key: "notifications", href: "/settings?tab=notifications", icon: Bell },
 ] as const;
 
 interface PanelProps {
@@ -124,6 +125,10 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
             <SignOutOtherSessionsForm otherSessions={otherSessions} />
           </Panel>
         </>
+      ) : activeTab === "notifications" ? (
+        <Panel icon={Mail} title={t("notifications.title")} description={t("notifications.description")}>
+          <NotificationsForm loginNotificationsEnabled={settings.loginNotificationsEnabled} readOnly={readOnly} />
+        </Panel>
       ) : (
         <Panel icon={Coins} title={t("financial.title")} description={t("financial.description")}>
           <FinancialForm

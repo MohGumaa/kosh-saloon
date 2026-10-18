@@ -1167,7 +1167,8 @@
       "description": "Description",
       "category": "Category",
       "date": "Date",
-      "createdById": "Created by"
+      "createdById": "Created by",
+      "loginNotificationsEnabled": "Login notification emails"
     },
     "viewChanges": "View changes",
     "noChanges": "–",
@@ -1183,12 +1184,20 @@
   },
   "settings": {
     "title": "Settings",
-    "description": "Salon details, global financial settings, and account security.",
+    "description": "Salon details, global financial settings, account security, and notifications.",
     "tabs": {
       "label": "Settings sections",
       "information": "Information",
       "financial": "Financial",
-      "security": "Security"
+      "security": "Security",
+      "notifications": "Notifications"
+    },
+    "notifications": {
+      "title": "Login notifications",
+      "description": "Email alerts sent when someone signs in.",
+      "loginLabel": "Email users when they sign in",
+      "loginHint": "Each user gets an email at their account address with the time, IP address, and browser of every sign-in. Password reset emails are always sent.",
+      "success": "Notification settings saved."
     },
     "security": {
       "sessions": {

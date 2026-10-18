@@ -131,19 +131,21 @@ model AuditLog {
 
 /// Single row with id "salon", created with these defaults on first read.
 model SalonSettings {
-  id                      String   @id @default("salon")
-  name                    String   @default("Kosh Salon")
-  licenseNumber           String   @default("")
-  address                 String   @default("")
-  phone                   String   @default("")
-  email                   String   @default("")
-  taxId                   String   @default("")
-  logo                    String?
-  currency                String   @default("AED")
-  taxRate                 Decimal  @default(0) @db.Decimal(5, 2)
-  employeeSharePercentage Decimal  @default(50) @db.Decimal(5, 2)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  id                        String   @id @default("salon")
+  name                      String   @default("Kosh Salon")
+  licenseNumber             String   @default("")
+  address                   String   @default("")
+  phone                     String   @default("")
+  email                     String   @default("")
+  taxId                     String   @default("")
+  logo                      String?
+  currency                  String   @default("AED")
+  taxRate                   Decimal  @default(0) @db.Decimal(5, 2)
+  employeeSharePercentage   Decimal  @default(50) @db.Decimal(5, 2)
+  /// Salon-wide: when false, signing in sends no login notification email.
+  loginNotificationsEnabled Boolean  @default(true)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
 }
 
 /// A catalog entry. Never deleted: deactivate instead. `nameEn` is also unique

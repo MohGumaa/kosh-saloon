@@ -3,11 +3,12 @@ import { db } from "@/lib/db";
 
 export const SETTINGS_ID = "salon";
 
-export type SettingsTab = "information" | "financial" | "security";
+export type SettingsTab = "information" | "financial" | "security" | "notifications";
 
 /** The tab a `?tab` value opens; Security needs `settings.security`, anything else unknown opens Information. */
 export function resolveSettingsTab(tab: string | string[] | undefined, permissions: ReadonlySet<PermissionKey>): SettingsTab {
   if (tab === "financial") return "financial";
+  if (tab === "notifications") return "notifications";
   if (tab === "security" && permissions.has("settings.security")) return "security";
   return "information";
 }

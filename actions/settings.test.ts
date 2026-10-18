@@ -23,9 +23,13 @@ vi.mock("@/lib/db", () => ({ db: { ...mocks.tx, $transaction: mocks.transaction 
 vi.mock("@/lib/auth/current-user", () => ({ requireSession: mocks.requireSession }));
 vi.mock("@/lib/auth/authorize", () => ({ hasPermission: mocks.hasPermission }));
 
-const { removeSalonLogo, updateFinancialSettings, updateSalonInformation, updateSalonLogo } = await import(
-  "@/actions/settings"
-);
+const {
+  removeSalonLogo,
+  updateFinancialSettings,
+  updateNotificationSettings,
+  updateSalonInformation,
+  updateSalonLogo,
+} = await import("@/actions/settings");
 
 const user = { id: "u1", role: "SUPERVISOR" };
 
@@ -41,6 +45,7 @@ const stored = {
   currency: "AED",
   taxRate: new Prisma.Decimal("0"),
   employeeSharePercentage: new Prisma.Decimal("50"),
+  loginNotificationsEnabled: true,
 };
 
 const information = { name: "Kosh Salon", licenseNumber: "", address: "", phone: "", email: "", taxId: "" };
@@ -235,8 +240,81 @@ describe("updateFinancialSettings", () => {
   });
 });
 
+describe("updateNotificationSettings", () => {
+  const enabled = () => form({ loginNotificationsEnabled: "true" });
+  const disabled = () => form({});
+
+  it("returns forbidden and writes nothing without settings.edit", async () => {
+    mocks.hasPermission.mockResolvedValueOnce(false);
+
+    expect(await updateNotificationSettings(null, disabled())).toEqual({ success: false, error: "forbidden" });
+    expect(mocks.hasPermission).toHaveBeenCalledWith(user, "settings.edit");
+    expect(mocks.transaction).not.toHaveBeenCalled();
+    expectNothingWritten();
+  });
+
+  it("turns login notifications off when the box is unchecked and audits the change", async () => {
+    expect(await updateNotificationSettings(null, disabled())).toEqual({ success: true });
+    expect(mocks.transaction).toHaveBeenCalledTimes(1);
+    expect(mocks.tx.salonSettings.update).toHaveBeenCalledWith({
+      where: { id: "salon" },
+      data: { loginNotificationsEnabled: false },
+    });
+    expect(mocks.tx.auditLog.create.mock.calls[0][0].data).toEqual({
+      userId: "u1",
+      action: "settings.updated",
+      entity: "SalonSettings",
+      entityId: "salon",
+      oldValue: { loginNotificationsEnabled: "true" },
+      newValue: { loginNotificationsEnabled: false },
+    });
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/settings");
+  });
+
+  it("turns login notifications back on and audits the change", async () => {
+    mocks.tx.salonSettings.findUnique.mockResolvedValueOnce({ ...stored, loginNotificationsEnabled: false });
+
+    expect(await updateNotificationSettings(null, enabled())).toEqual({ success: true });
+    expect(mocks.tx.salonSettings.update.mock.calls[0][0].data).toEqual({ loginNotificationsEnabled: true });
+    expect(mocks.tx.auditLog.create.mock.calls[0][0].data).toMatchObject({
+      oldValue: { loginNotificationsEnabled: "false" },
+      newValue: { loginNotificationsEnabled: true },
+    });
+  });
+
+  it("writes no update and no audit entry when the value is unchanged", async () => {
+    expect(await updateNotificationSettings(null, enabled())).toEqual({ success: true });
+    expect(mocks.tx.salonSettings.update).not.toHaveBeenCalled();
+    expect(mocks.tx.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects any other submitted value without writing", async () => {
+    expect(await updateNotificationSettings(null, form({ loginNotificationsEnabled: "on" }))).toEqual({
+      success: false,
+      error: "invalid_input",
+    });
+    expect(mocks.transaction).not.toHaveBeenCalled();
+    expectNothingWritten();
+  });
+
+  it("reports an unexpected error when the database write fails", async () => {
+    mocks.tx.salonSettings.update.mockRejectedValueOnce(new Error("db down"));
+
+    expect(await updateNotificationSettings(null, disabled())).toEqual({ success: false, error: "unexpected" });
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("requires a session before anything else", async () => {
+    mocks.requireSession.mockRejectedValueOnce(new Error("REDIRECT:/login"));
+
+    await expect(updateNotificationSettings(null, disabled())).rejects.toThrow("REDIRECT:/login");
+    expect(mocks.hasPermission).not.toHaveBeenCalled();
+    expect(mocks.transaction).not.toHaveBeenCalled();
+  });
+});
+
 describe("updateSalonLogo", () => {
-  const upload = (file: File | string) => updateSalonLogo(null, form({ logo: file }));
+  const upload =(file: File | string) => updateSalonLogo(null, form({ logo: file }));
 
   it("returns forbidden without settings.edit and uploads nothing", async () => {
     mocks.hasPermission.mockResolvedValueOnce(false);

@@ -50,7 +50,7 @@ Your features
 
 - [x] 20. Security settings - Add the Security settings tab with the password change form from feature 2, the login notification email preference, and session/security controls.
 
-- [ ] 21. Notification settings - Add the Notifications settings tab for login notification preferences. Scheduled report and settlement emails are future work.
+- [x] 21. Notification settings - Add the Notifications settings tab for login notification preferences. Scheduled report and settlement emails are future work.
 
 - [ ] 22. English & Arabic translation completion - Review and complete English and Arabic translations across all navigation, forms, tables, messages, reports, and settings.
 

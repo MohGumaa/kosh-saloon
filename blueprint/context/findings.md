@@ -296,3 +296,11 @@
 **Why it matters:** The spec asks for "a localized min-max range when it changed within the range". `shareLabel` concatenates two separately formatted percents with a hard-coded ` – ` inside `dir="ltr"`, so every locale gets the English pattern. In Node's ICU, `ar` renders the hand-joined form as "50% – 60%" (with LRM marks), while `Intl.NumberFormat.prototype.formatRange` gives the locale's own range "50–60%". The current output is readable and the figures are correct; this is drift from the written spec, not a wrong number. Derived from the code and a Node `Intl` comparison; not observed in a browser.
 **Suggested fix:** Replace the template with `percent.formatRange(min.dividedBy(100).toNumber(), max.dividedBy(100).toNumber())`, keeping the `min.equals(max)` single-value branch. No current requirement is lost.
 **Resolution:**
+
+### F-58 [P3] open - Two unrelated lines lost the space before an arrow function's parameters
+
+**File:** lib/settings-validation.ts:7
+**Found:** 2026-10-19 by /audit independent (scope: current; lens: quality)
+**Why it matters:** The delta changes `const optionalText = (max: number) =>` to `const optionalText =(max: number) =>` (`lib/settings-validation.ts:7`) and `const upload = (file: File | string) =>` to `const upload =(file: File | string) =>` (`actions/settings.test.ts:317`). Neither line is part of the notification feature, and no other line in the project uses `=(`. Behavior is unchanged and `pnpm lint` passes because no formatter is configured, so nothing would catch it. It is noise in the archived diff and drift from the surrounding style.
+**Suggested fix:** Restore the space in both lines (`= (`). No current requirement is lost.
+**Resolution:**
