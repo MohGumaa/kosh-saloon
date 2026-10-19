@@ -4,15 +4,9 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Detail, Panel } from "@/components/layout/Panel";
 import type { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
-import {
-  calculateEarnings,
-  effectiveSharePercentage,
-  paidRevenueWhere,
-  parseMonth,
-  salonMonth,
-  shiftMonth,
-} from "@/lib/earnings";
+import { effectiveSharePercentage, paidRevenueWhere, parseMonth, salonMonth, shiftMonth } from "@/lib/earnings";
 import { getSalonSettings } from "@/lib/settings";
+import { calculateSettlement } from "@/lib/settlements";
 
 const linkClass =
   "flex items-center gap-1 rounded-md font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring";
@@ -42,7 +36,13 @@ export async function EmployeeEarningsPanel({
   ]);
 
   const share = effectiveSharePercentage(sharePercentage, settings.employeeSharePercentage);
-  const earnings = calculateEarnings({ paidRevenue: revenue._sum.amount ?? 0, sharePercentage: share.value });
+  // Rounded as a settlement stores it, so the panel and the month's settlement show the same share.
+  const settlement = calculateSettlement({
+    paidRevenue: revenue._sum.amount ?? 0,
+    sharePercentage: share.value,
+    expenses: 0,
+    adjustments: 0,
+  });
 
   const price = new Intl.NumberFormat(locale, { style: "currency", currency: settings.currency });
   const percent = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 2 });
@@ -76,22 +76,22 @@ export async function EmployeeEarningsPanel({
       <dl className="grid gap-x-8 border-t sm:grid-cols-3">
         <Detail icon={TrendingUp} label={t("paidRevenue")}>
           <span dir="ltr" className="tabular-nums">
-            {price.format(earnings.paidRevenue.toNumber())}
+            {price.format(settlement.totalRevenue.toNumber())}
           </span>
         </Detail>
         <Detail icon={Percent} label={t("sharePercentage")}>
           <span dir="ltr" className="tabular-nums">
-            {percent.format(earnings.sharePercentage.dividedBy(100).toNumber())}
+            {percent.format(settlement.sharePercentage.dividedBy(100).toNumber())}
           </span>
           <span className="block text-xs font-normal text-muted-foreground">{t(`source.${share.source}`)}</span>
         </Detail>
         <Detail icon={Coins} label={t("employeeShare")}>
           <span dir="ltr" className="tabular-nums">
-            {price.format(earnings.employeeShare.toNumber())}
+            {price.format(settlement.employeeShare.toNumber())}
           </span>
         </Detail>
       </dl>
-      {earnings.paidRevenue.isZero() && <p className="mt-2 text-sm text-muted-foreground">{t("empty")}</p>}
+      {settlement.totalRevenue.isZero() && <p className="mt-2 text-sm text-muted-foreground">{t("empty")}</p>}
     </Panel>
   );
 }

@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Prisma } from "@/generated/prisma/client";
+import { paidRevenueWhere } from "@/lib/earnings";
+import { calculateSettlement, expensesWhere } from "@/lib/settlements";
 
 const mocks = vi.hoisted(() => {
   // A separate transaction client, so a write made on `db` instead of `tx` fails the tests.
@@ -9,6 +11,8 @@ const mocks = vi.hoisted(() => {
     employeeSettlement: { findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     settlementAdjustment: { groupBy: vi.fn(), updateMany: vi.fn(), findMany: vi.fn(), create: vi.fn() },
     user: { findMany: vi.fn(), findUniqueOrThrow: vi.fn() },
+    // Never read: salon expenses do not reduce a payout.
+    salonExpense: { aggregate: vi.fn(), groupBy: vi.fn(), findMany: vi.fn() },
     salonSettings: { findUnique: vi.fn(), upsert: vi.fn() },
     auditLog: { create: vi.fn() },
   };
@@ -203,6 +207,35 @@ describe("generateSettlements", () => {
     expect(mocks.db.settlementAdjustment.updateMany).not.toHaveBeenCalled();
   });
 
+  it("sums only PAID invoices and the month's employee expenses, never salon expenses", async () => {
+    await generate();
+
+    expect(mocks.tx.invoice.groupBy.mock.calls[0][0].where).toEqual(paidRevenueWhere("2026-09"));
+    expect(mocks.tx.invoice.groupBy.mock.calls[0][0].where.status).toBe("PAID");
+    expect(mocks.tx.employeeExpense.groupBy.mock.calls[0][0].where).toEqual(expensesWhere("2026-09"));
+    for (const method of Object.values(mocks.tx.salonExpense)) expect(method).not.toHaveBeenCalled();
+  });
+
+  it("stores the employee's own percentage over the salon default, and the values it gives", async () => {
+    mocks.tx.user.findMany.mockResolvedValue([
+      { id: "emp1", sharePercentage: decimal("62.5") },
+      { id: "emp3", sharePercentage: null },
+    ]);
+    // A tax rate is stored only; it never changes a payout.
+    mocks.tx.salonSettings.findUnique.mockResolvedValue({ employeeSharePercentage: decimal("40"), taxRate: decimal("5") });
+
+    await generate();
+
+    const [first, second] = mocks.tx.employeeSettlement.create.mock.calls.map(([args]) => args.data);
+    expect(first.sharePercentage.toFixed(2)).toBe("62.50");
+    expect(second.sharePercentage.toFixed(2)).toBe("40.00");
+    const expected = calculateSettlement({ paidRevenue: "5000", sharePercentage: "62.5", expenses: "300", adjustments: 0 });
+    for (const [field, value] of Object.entries(expected)) expect(first[field].toFixed(2), field).toBe(value.toFixed(2));
+    expect(first.finalAmount.toFixed(2)).toBe("2825.00");
+    // emp3 has no revenue: its 40% share is 0, so its payout is minus its expenses.
+    expect(second.finalAmount.toFixed(2)).toBe("-150.00");
+  });
+
   it("gives an employee with only a pending adjustment a settlement", async () => {
     mocks.tx.invoice.groupBy.mockResolvedValue([]);
     mocks.tx.employeeExpense.groupBy.mockResolvedValue([]);
@@ -310,6 +343,52 @@ describe("status actions", () => {
     const audit = mocks.tx.auditLog.create.mock.calls[0][0].data;
     expect(audit.oldValue).toMatchObject({ totalAdjustments: "0.00" });
     expect(audit.newValue).toMatchObject({ totalAdjustments: "-110.00", appliedAdjustmentIds: ["adj1", "adj2"] });
+  });
+
+  it("recalculates from PAID invoices and the month's employee expenses with the current percentage", async () => {
+    // The salon default moved from 50% to 60% after this DRAFT was generated.
+    mocks.tx.salonSettings.findUnique.mockResolvedValue({ employeeSharePercentage: decimal("60"), taxRate: decimal("5") });
+
+    expect(await run(recalculateSettlement)).toEqual({ success: true });
+
+    expect(mocks.tx.invoice.aggregate.mock.calls[0][0].where).toEqual({ employeeId: "emp1", ...paidRevenueWhere("2026-09") });
+    expect(mocks.tx.employeeExpense.aggregate.mock.calls[0][0].where).toEqual({ employeeId: "emp1", ...expensesWhere("2026-09") });
+    for (const method of Object.values(mocks.tx.salonExpense)) expect(method).not.toHaveBeenCalled();
+    const { data } = mocks.tx.employeeSettlement.updateMany.mock.calls[0][0];
+    expect(data.sharePercentage.toFixed(2)).toBe("60.00");
+    expect(data.employeeShare.toFixed(2)).toBe("3000.00");
+    expect(data.finalAmount.toFixed(2)).toBe("2700.00");
+  });
+
+  it("recalculates with the employee's own 0%, storing a negative payout", async () => {
+    mocks.tx.user.findUniqueOrThrow.mockResolvedValue({ id: "emp1", sharePercentage: decimal("0") });
+
+    expect(await run(recalculateSettlement)).toEqual({ success: true });
+
+    const { data } = mocks.tx.employeeSettlement.updateMany.mock.calls[0][0];
+    expect(data.sharePercentage.toFixed(2)).toBe("0.00");
+    expect(data.employeeShare.toFixed(2)).toBe("0.00");
+    expect(data.finalAmount.toFixed(2)).toBe("-300.00");
+  });
+
+  it("never writes stored values or reads the current percentage when calculating, approving, or paying", async () => {
+    mocks.tx.salonSettings.findUnique.mockResolvedValue({ employeeSharePercentage: decimal("60") });
+    const cases: [typeof approveSettlement, string, string[]][] = [
+      [markSettlementCalculated, "DRAFT", ["status"]],
+      [approveSettlement, "CALCULATED", ["approvedAt", "approvedById", "status"]],
+      [markSettlementPaid, "APPROVED", ["paidAt", "status"]],
+    ];
+    for (const [action, status, fields] of cases) {
+      mocks.tx.employeeSettlement.updateMany.mockClear();
+      mocks.tx.employeeSettlement.findUnique.mockResolvedValue(stored(status));
+
+      expect(await run(action), action.name).toEqual({ success: true });
+      expect(Object.keys(mocks.tx.employeeSettlement.updateMany.mock.calls[0][0].data).sort(), action.name).toEqual(fields);
+    }
+    expect(mocks.tx.salonSettings.findUnique).not.toHaveBeenCalled();
+    expect(mocks.tx.invoice.aggregate).not.toHaveBeenCalled();
+    expect(mocks.tx.employeeExpense.aggregate).not.toHaveBeenCalled();
+    expect(mocks.tx.settlementAdjustment.updateMany).not.toHaveBeenCalled();
   });
 
   it("never claims adjustments when the status does not allow a recalculation", async () => {

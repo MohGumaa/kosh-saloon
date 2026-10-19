@@ -121,6 +121,23 @@ describe("createInvoice", () => {
     );
   });
 
+  it("lets a Staff user create only a Paid or Unpaid invoice", async () => {
+    signIn(staff);
+
+    expect(await createInvoice(null, form({ ...input, status: "UNPAID" }))).toEqual({ success: true, id: "inv1" });
+    expect(mocks.tx.invoice.create.mock.calls[0][0].data).toMatchObject({ status: "UNPAID", amount: "50.5" });
+
+    vi.clearAllMocks();
+    const values = { ...input, status: "CANCELLED" };
+    expect(await createInvoice(null, form(values))).toEqual({
+      success: false,
+      error: "invalid_input",
+      fieldErrors: { status: "invalid_input" },
+      values: { ...values, employeeId: "staff1" },
+    });
+    expectNothingWritten();
+  });
+
   it("refuses a user without invoices.create", async () => {
     mocks.hasPermission.mockResolvedValue(false);
 

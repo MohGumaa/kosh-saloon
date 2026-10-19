@@ -169,6 +169,8 @@ describe("employeeShareSchema", () => {
     ["50", "50"],
     ["62.5", "62.5"],
     ["62.50", "62.5"],
+    ["33.33", "33.33"],
+    ["0.00", "0"],
     ["100", "100"],
     [" 40 ", "40"],
     ["٤٠٫٥", "40.5"],
@@ -176,7 +178,7 @@ describe("employeeShareSchema", () => {
     expect(parse(value)).toEqual({ success: true, data: { sharePercentage: expected } });
   });
 
-  it.each(["101", "-1", "abc", "1.234", "100.01", "1e2"])("rejects %j", (value) => {
+  it.each(["101", "-1", "abc", "1.234", "50.555", "100.01", "1e2"])("rejects %j", (value) => {
     expect(parse(value).success).toBe(false);
   });
 });

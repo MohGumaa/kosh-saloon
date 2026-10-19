@@ -60,7 +60,7 @@ Your features
 
 - [ ] 25. Responsive CRM experience - Ensure dashboards, tables, forms, reports, navigation, and financial workflows work across desktop, tablet, and mobile.
 
-- [ ] 26. Financial validation & business rules - Validate revenue, share percentage, employee expenses, adjustments, final payout, invoice status, and settlement calculations with automated tests.
+- [x] 26. Financial validation & business rules - Validate revenue, share percentage, employee expenses, adjustments, final payout, invoice status, and settlement calculations with automated tests.
 
 - [ ] 27. Production deployment & database operations - Prepare PostgreSQL, Prisma migrations, environment variables, storage, backups, monitoring, and Vercel production deployment.
 
