@@ -52,17 +52,17 @@ Your features
 
 - [x] 21. Notification settings - Add the Notifications settings tab for login notification preferences. Scheduled report and settlement emails are future work.
 
-- [ ] 22. English & Arabic translation completion - Review and complete English and Arabic translations across all navigation, forms, tables, messages, reports, and settings.
+- [x] 22. English & Arabic translation completion - Review and complete English and Arabic translations across all navigation, forms, tables, messages, reports, and settings.
 
-- [ ] 23. RTL review - Verify and fix LTR English and RTL Arabic layouts across navigation, forms, tables, charts, dialogs, and responsive layouts.
+- [x] 23. RTL review - Verify and fix LTR English and RTL Arabic layouts across navigation, forms, tables, charts, dialogs, and responsive layouts.
 
 - [x] 24. Theme polish - Apply the full Kosh visual style to Light, Dark, and System themes and persist each user's preference.
 
-- [ ] 25. Responsive CRM experience - Ensure dashboards, tables, forms, reports, navigation, and financial workflows work across desktop, tablet, and mobile.
+- [x] 25. Responsive CRM experience - Ensure dashboards, tables, forms, reports, navigation, and financial workflows work across desktop, tablet, and mobile.
 
 - [x] 26. Financial validation & business rules - Validate revenue, share percentage, employee expenses, adjustments, final payout, invoice status, and settlement calculations with automated tests.
 
-- [ ] 27. Production deployment & database operations - Prepare PostgreSQL, Prisma migrations, environment variables, storage, backups, monitoring, and Vercel production deployment.
+- [x] 27. Production deployment & database operations - Prepare PostgreSQL, Prisma migrations, environment variables, storage, backups, monitoring, and Vercel production deployment.
 
 - [ ] 28. Production security & permission testing - Test role boundaries, permission escalation, inactive accounts, unauthorized financial actions, session security, and sensitive data access.
 

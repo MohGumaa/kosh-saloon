@@ -304,3 +304,19 @@
 **Why it matters:** The delta changes `const optionalText = (max: number) =>` to `const optionalText =(max: number) =>` (`lib/settings-validation.ts:7`) and `const upload = (file: File | string) =>` to `const upload =(file: File | string) =>` (`actions/settings.test.ts:317`). Neither line is part of the notification feature, and no other line in the project uses `=(`. Behavior is unchanged and `pnpm lint` passes because no formatter is configured, so nothing would catch it. It is noise in the archived diff and drift from the surrounding style.
 **Suggested fix:** Restore the space in both lines (`= (`). No current requirement is lost.
 **Resolution:**
+
+### F-59 [P2] open - The build plan checks off features 22, 23, and 25, which this feature's spec does not cover and history never archived
+
+**File:** blueprint/build-plan.md:55
+**Found:** 2026-10-19 by /audit independent (scope: current; lens: quality)
+**Why it matters:** The `bec7aa1..3d6bfd7` delta flips `- [ ]` to `- [x]` for 22 (English & Arabic translation completion, line 55), 23 (RTL review, line 57), and 25 (Responsive CRM experience, line 61). The active spec is feature 27 and lists only `lib/ops.ts`, `instrumentation.ts`, the health route, `vercel.json`, the runbook, `proxy.ts`, `README.md`, and `.env.example` under Files / areas; it never mentions the build plan or these items. `blueprint/history/features/` has no `22-`, `23-`, or `25-` archive, and `/complete` is the step that checks a feature off after archiving it. With these boxes checked, `/feature` (next unchecked item), `/status`, and `/continuous` treat three unbuilt V1 slices as shipped, and the refreshed README status ("the V1 features below are built") repeats that claim. This may be an intentional user decision to drop or fold these items, but nothing in the spec or history records it.
+**Suggested fix:** Either revert the three check-offs in this branch, or, if the user decided these items are done or dropped, record that decision explicitly (for example a note on each build-plan line) so plan state stays traceable. Requires the user's decision; no product behavior changes.
+**Resolution:**
+
+### F-60 [P3] unverified - The `[request-error]` line logs the raw error message, which for some Prisma errors can echo submitted values
+
+**File:** lib/ops.ts:25
+**Found:** 2026-10-19 by /audit independent (scope: current; lens: security)
+**Why it matters:** `requestErrorLog` correctly drops the query string, hash, headers, cookies, and body, and the spec explicitly chooses to keep `message`. However, an uncaught `PrismaClientValidationError` message renders the failing call with its arguments, which can include submitted field values (names, emails, phone numbers, amounts) or a password hash in the `data` object. Most Server Actions in this project catch and replace errors, so reachability depends on an uncaught Prisma validation error escaping a render or route handler. Vercel Runtime Logs are operator-only, so this is a log-hygiene risk, not an exposure to users. Not reproduced; derived from Prisma's documented error format.
+**Suggested fix:** If confirmed, log `error.name` plus `digest` for Prisma client errors (or truncate `message` to its first line) in `requestErrorLog`, and add a test case. No current requirement is lost, since the digest still correlates with Vercel logs.
+**Resolution:**
