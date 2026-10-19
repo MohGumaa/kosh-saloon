@@ -64,7 +64,7 @@ Your features
 
 - [x] 27. Production deployment & database operations - Prepare PostgreSQL, Prisma migrations, environment variables, storage, backups, monitoring, and Vercel production deployment.
 
-- [ ] 28. Production security & permission testing - Test role boundaries, permission escalation, inactive accounts, unauthorized financial actions, session security, and sensitive data access.
+- [x] 28. Production security & permission testing - Test role boundaries, permission escalation, inactive accounts, unauthorized financial actions, session security, and sensitive data access.
 
 - [ ] 29. Production readiness & QA - Complete end-to-end testing, error handling, loading/empty states, accessibility checks, performance checks, and final production verification.
 

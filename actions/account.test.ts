@@ -46,6 +46,15 @@ describe("updateProfile", () => {
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/", "layout");
   });
 
+  it("ignores status, share, and permission fields added to the form", async () => {
+    const data = form({ name: "Sara", phone: "", isActive: "false", sharePercentage: "0" });
+    data.append("permissions", "permissions.manage");
+
+    expect(await updateProfile(null, data)).toEqual({ success: true });
+    expect(mocks.update).toHaveBeenCalledTimes(1);
+    expect(mocks.update.mock.calls[0][0]).toEqual({ where: { id: "u1" }, data: { name: "Sara", phone: null } });
+  });
+
   it("stores an empty phone as null", async () => {
     await updateProfile(null, form({ name: "Sara", phone: "   " }));
     expect(mocks.update.mock.calls[0][0].data).toEqual({ name: "Sara", phone: null });

@@ -320,3 +320,27 @@
 **Why it matters:** `requestErrorLog` correctly drops the query string, hash, headers, cookies, and body, and the spec explicitly chooses to keep `message`. However, an uncaught `PrismaClientValidationError` message renders the failing call with its arguments, which can include submitted field values (names, emails, phone numbers, amounts) or a password hash in the `data` object. Most Server Actions in this project catch and replace errors, so reachability depends on an uncaught Prisma validation error escaping a render or route handler. Vercel Runtime Logs are operator-only, so this is a log-hygiene risk, not an exposure to users. Not reproduced; derived from Prisma's documented error format.
 **Suggested fix:** If confirmed, log `error.name` plus `digest` for Prisma client errors (or truncate `message` to its first line) in `requestErrorLog`, and add a test case. No current requirement is lost, since the digest still correlates with Vercel logs.
 **Resolution:**
+
+### F-61 [P3] open - The role matrix pins the Staff defaults exactly but the Supervisor defaults only by exclusion
+
+**File:** lib/security-matrix.test.ts:61
+**Found:** 2026-10-19 by /audit independent (scope: current; lens: tests)
+**Why it matters:** The spec says the matrix's expectations come from the overview's role table, and that table lists the exact Supervisor defaults (`blueprint/context/project-overview.md:25`). The Staff case (line 77) compares `ROLE_DEFAULTS.STAFF` to the overview list with `toEqual`, but the Supervisor case (lines 61 to 75) only asserts that ten keys are absent. A later edit that adds a key the overview does not list, for example `invoices.delete`, `expenses.delete`, `employee_expenses.edit`, or `services.create`, would give every new Supervisor that power and still pass the matrix, because the other matrix rows are built from `ROLE_DEFAULTS.SUPERVISOR` itself (lines 41 and 196). The code at `893225c` matches the overview exactly (`lib/auth/permissions.ts:31` to `:46`), so nothing is wrong today; this is a gap in what the new test can catch. The spec's step 1 wording ("Supervisor default never holds ...") names only the exclusions, so the builder followed the written step.
+**Suggested fix:** Add one `toEqual` against the overview's Supervisor list (sorted), as the Staff case does, and keep the exclusion case as the readable statement of intent. No current requirement is lost.
+**Resolution:**
+
+### F-62 [P3] open - Two assertions in the signed-out sweep can pass on call history left by earlier cases
+
+**File:** actions/security.test.ts:101
+**Found:** 2026-10-19 by /audit independent (scope: current; lens: tests)
+**Why it matters:** The sweep's `beforeEach` (line 83) empties `touched` but never clears the mocks, and `vitest.config.mts` sets no `clearMocks`. So `expect(mocks.requireSession).toHaveBeenCalled()` (line 101) is true for every case after the first, whatever the action did, and in the session-optional cases `expect(mocks.redirect).toHaveBeenCalledWith("/login")` (line 115) is already true for `saveThemePreference` and `setLocale` because `logout` ran first: if either of those started throwing a redirect elsewhere, the catch branch would still pass. The core proofs do hold: `rejects.toBe(mocks.NO_SESSION)` can only be met by the mocked `requireSession` (directly or through `requirePermission`), and an action that read `db` before the guard would either record a key in `touched` or throw a `TypeError` from the Proxy's `undefined`, failing the case (derived from the test and action code). So the sweep proves what `docs/security.md` claims; the two weaker lines only look like extra proof.
+**Suggested fix:** Call `vi.clearAllMocks()` in the sweep's `beforeEach` (before re-spying `console.error`), and in the session-optional case assert the redirect only for `logout` (for example `expect(name).toBe("logout")` inside the catch). No current requirement is lost.
+**Resolution:**
+
+### F-63 [P3] open - The security record leaves out the target rule for setting an employee's status or password
+
+**File:** docs/security.md:62
+**Found:** 2026-10-19 by /audit independent (scope: current; lens: quality)
+**Why it matters:** The action inventory lists `setEmployeeActive` as "`employees.activate`; never their own account" and `setEmployeePassword` as "`employees.edit`; never their own account" (lines 62 and 63). Both actions also apply `canManageEmployeeAccess`, so a non-admin reaches only other Staff users (pinned in `lib/security-matrix.test.ts` and `actions/employees.test.ts:481`). The row just above for `updateEmployee` states that rule, and the spec's inventory names `+ canManageEmployeeAccess` for both. As written, a reader of the record could conclude a Supervisor holding `employees.activate` may deactivate another Supervisor or an Admin, which the code refuses. The code is correct; the record is incomplete on a security boundary it exists to document.
+**Suggested fix:** Change both Guard cells to "... ; non-admins reach only other Staff; never their own account". No current requirement is lost.
+**Resolution:**

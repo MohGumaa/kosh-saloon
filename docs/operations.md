@@ -3,6 +3,7 @@
 How to deploy, configure, monitor, back up, and roll back Kosh CRM in production.
 Kosh CRM runs on **Vercel** with **Prisma Postgres** (Vercel integration) for
 the database, **Vercel Blob** for images, and **Resend** for email.
+Access rules and their verification are in [security.md](security.md).
 
 ## Vercel project setup
 
