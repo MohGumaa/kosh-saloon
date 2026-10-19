@@ -67,6 +67,12 @@ Your features
 - [x] 28. Production security & permission testing - Test role boundaries, permission escalation, inactive accounts, unauthorized financial actions, session security, and sensitive data access.
 
 - [ ] 29. Production readiness & QA - Complete end-to-end testing, error handling, loading/empty states, accessibility checks, performance checks, and final production verification.
+  - [x] 29a. Error & loading states - Add a global error screen and one for the login pages, loading screens for every app page that loads data, and safe messages for unexpected server-action failures (no internal details shown).
+  - [ ] 29b. Empty states - Use one consistent empty-state pattern for every list, table, report and tab, with different wording for "nothing here yet" and "no results for these filters", in EN/AR.
+  - [ ] 29c. Accessibility pass - Check and fix form labels and error announcements, keyboard focus in dialogs and drawers, landmarks and a skip link, icon-only buttons, and contrast in both themes.
+  - [ ] 29d. Performance pass - Review database queries (repeated per-row queries, missing indexes, unbounded lists), client bundle size, and build output, and fix what the evidence shows.
+  - [ ] 29e. End-to-end smoke tests - Browser tests for the main flows per role: login, create an invoice, settlements, reports, and access denied. Requires `/tests browser` first.
+  - [ ] 29f. Final production verification - Production checklist in docs/operations.md, run the full checks, and a smoke checklist to run after deploy.
 
 Future features
 These should remain outside V1 until the core CRM is stable:

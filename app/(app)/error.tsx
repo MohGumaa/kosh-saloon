@@ -1,16 +1,15 @@
 "use client";
 
+import { useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
+import { ErrorState } from "@/components/layout/ErrorState";
 
-export default function AppError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function AppError({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
   const t = useTranslations("errors");
 
-  return (
-    <div role="alert" className="mx-auto flex max-w-md flex-col items-center gap-3 py-16 text-center">
-      <h1 className="text-lg font-semibold">{t("genericTitle")}</h1>
-      <p className="text-sm text-muted-foreground">{t("generic")}</p>
-      <Button onClick={reset}>{t("retry")}</Button>
-    </div>
-  );
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
+
+  return <ErrorState digest={error.digest} retry={retry} link={{ href: "/dashboard", label: t("backToDashboard") }} />;
 }

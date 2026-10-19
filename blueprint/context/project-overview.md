@@ -1,6 +1,6 @@
 # Kosh CRM - Project Overview
 
-<!-- blueprint:source-hash 5241f8cf11daee2f0eb12fbd509e1694191831850231abd8fed2adc0990d43f3 -->
+<!-- blueprint:source-hash befb5d725aefafe831705ac0b586f36f3884d25cce79e560c1592b13c6a621eb -->
 
 > Salon management and financial CRM for Kosh Salon: employees, services,
 > invoices, expenses, employee earnings, monthly settlements, reports,
@@ -106,6 +106,12 @@ passes.
 27. **Production deployment & database operations** - PostgreSQL, migrations, env vars, storage, backups, monitoring, Vercel.
 28. **Production security & permission testing** - role boundaries, escalation, inactive accounts, unauthorized financial actions.
 29. **Production readiness & QA** - E2E, error/loading/empty states, accessibility, performance, final verification.
+    - 29a. **Error & loading states** - global and sign-in error screens, loading screens for every data page, safe messages for unexpected action failures.
+    - 29b. **Empty states** - one consistent empty-state pattern; "nothing yet" vs "no results for these filters", EN/AR.
+    - 29c. **Accessibility pass** - labels and error announcements, dialog/drawer focus, landmarks and skip link, icon-only buttons, contrast in both themes.
+    - 29d. **Performance pass** - per-row queries, missing indexes, unbounded lists, client bundle, build output.
+    - 29e. **End-to-end smoke tests** - browser tests for main flows per role; needs `/tests browser` first.
+    - 29f. **Final production verification** - checklist in `docs/operations.md`, full checks, post-deploy smoke checklist.
 
 Out of V1 (future): customers, appointments/calendar, inventory, POS/product
 sales, tips, receipt/PDF printing, invoice tax calculation, scheduled report and

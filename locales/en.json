@@ -194,7 +194,8 @@
       "description": "Your theme is saved to your account. Your language is saved in this browser.",
       "language": "Language",
       "theme": "Theme"
-    }
+    },
+    "loading": "Loading your account"
   },
   "employees": {
     "title": "Employees",
@@ -324,7 +325,8 @@
       "file_too_large": "The file is larger than 1 MB.",
       "file_type": "The file must be a PNG, JPEG, or WebP image.",
       "storage_unavailable": "Image storage is not configured. Contact the system administrator."
-    }
+    },
+    "loading": "Loading employees"
   },
   "services": {
     "title": "Services",
@@ -378,7 +380,8 @@
       "not_found": "This service no longer exists.",
       "invalid_input": "The submitted details were not valid. Reload the page and try again.",
       "unexpected": "An unexpected error occurred. Please try again."
-    }
+    },
+    "loading": "Loading services"
   },
   "invoices": {
     "title": "Invoices",
@@ -484,7 +487,8 @@
       "invalid_input": "The submitted details were not valid. Reload the page and try again.",
       "cancelled": "This invoice is cancelled and cannot be changed.",
       "unexpected": "An unexpected error occurred. Please try again."
-    }
+    },
+    "loading": "Loading invoices"
   },
   "expenses": {
     "title": "Salon Expenses",
@@ -585,7 +589,8 @@
       "not_found": "This expense no longer exists.",
       "invalid_input": "The submitted details were not valid. Reload the page and try again.",
       "unexpected": "An unexpected error occurred. Please try again."
-    }
+    },
+    "loading": "Loading salon expenses"
   },
   "employeeExpenses": {
     "title": "Expenses",
@@ -776,7 +781,8 @@
         "DRAFT": "{count, plural, one {# correction from an earlier month is not included yet. Recalculate to include it.} other {# corrections from earlier months are not included yet. Recalculate to include them.}}",
         "CALCULATED": "{count, plural, one {# correction from an earlier month is not included yet. Recalculate to include it, or it moves to the next settlement.} other {# corrections from earlier months are not included yet. Recalculate to include them, or they move to the next settlement.}}"
       }
-    }
+    },
+    "loading": "Loading settlements"
   },
   "reportPeriod": {
     "periods": {
@@ -1181,7 +1187,8 @@
       "previous": "Previous",
       "next": "Next",
       "page": "Page {page} of {total}"
-    }
+    },
+    "loading": "Loading the audit log"
   },
   "settings": {
     "title": "Settings",
@@ -1259,7 +1266,8 @@
       "file_too_large": "The file is larger than 1 MB.",
       "file_type": "The file must be a PNG, JPEG, or WebP image.",
       "storage_unavailable": "Logo storage is not configured. Contact the system administrator."
-    }
+    },
+    "loading": "Loading settings"
   },
   "forbidden": {
     "title": "Access denied",
@@ -1278,7 +1286,9 @@
   "errors": {
     "genericTitle": "Something went wrong",
     "generic": "An unexpected error occurred. Please try again.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "reference": "Reference:",
+    "backToDashboard": "Back to dashboard"
   },
   "auth": {
     "confirmPassword": "Confirm password",
