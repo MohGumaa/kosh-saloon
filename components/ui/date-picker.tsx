@@ -11,7 +11,10 @@ import { cn } from "@/lib/utils";
 interface DatePickerProps {
   /** Lands on the trigger button, so a `<label htmlFor>` names it. */
   id: string;
-  name: string;
+  /** Submits the day under this name; omit it when the caller submits the value itself. */
+  name?: string;
+  /** Called with each new `YYYY-MM-DD` value, or `""` when cleared. */
+  onValueChange?: (value: string) => void;
   /** A `YYYY-MM-DD` calendar day, or `""` for none. */
   defaultValue?: string;
   /** The latest `YYYY-MM-DD` day that can be picked. */
@@ -42,6 +45,7 @@ function toValue(date: Date): string {
 export function DatePicker({
   id,
   name,
+  onValueChange,
   defaultValue = "",
   max,
   clearable,
@@ -50,7 +54,11 @@ export function DatePicker({
 }: DatePickerProps) {
   const locale = useLocale();
   const t = useTranslations("datePicker");
-  const [value, setValue] = useState(defaultValue);
+  const [value, setStoredValue] = useState(defaultValue);
+  const setValue = (next: string) => {
+    setStoredValue(next);
+    onValueChange?.(next);
+  };
   const [open, setOpen] = useState(false);
   const selected = toDate(value);
   const latest = max ? toDate(max) : undefined;
@@ -60,7 +68,7 @@ export function DatePicker({
 
   return (
     <div className="relative">
-      <input type="hidden" name={name} value={value} />
+      {name && <input type="hidden" name={name} value={value} />}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           id={id}

@@ -11,14 +11,16 @@ import { Button } from "@/components/ui/button";
 
 interface InvoiceEditFormProps {
   id: string;
-  /** The stored values, the amount as a decimal string and the date as a salon-time `datetime-local` value. */
+  /** The stored values, the amount as a decimal string and the date as a salon-time `YYYY-MM-DDTHH:mm` value. */
   values: Record<"employeeId" | "serviceId" | "amount" | "date", string>;
   employees: InvoiceChoice[];
   services: ServiceChoice[];
   currency: string;
+  /** The salon's current day; the latest date the picker offers. */
+  today: string;
 }
 
-export function InvoiceEditForm({ id, values, employees, services, currency }: InvoiceEditFormProps) {
+export function InvoiceEditForm({ id, values, employees, services, currency, today }: InvoiceEditFormProps) {
   const t = useTranslations("invoices");
   const [state, action, pending] = useActionState<InvoiceFormState, FormData>(updateInvoice, null);
   const { formRef, messageRef } = useFocusOnError(state);
@@ -42,6 +44,7 @@ export function InvoiceEditForm({ id, values, employees, services, currency }: I
         employees={employees}
         services={services}
         currency={currency}
+        today={today}
       />
       <Button type="submit" size="lg" disabled={pending} className="h-11 self-start rounded-xl px-5">
         {pending ? t("edit.submitting") : t("edit.submit")}

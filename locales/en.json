@@ -437,6 +437,7 @@
       "amountHint": "In {currency}, up to two decimal places. Filled from the service's default price.",
       "status": "Status",
       "date": "Date and time",
+      "time": "Time",
       "dateHint": "Salon time (Dubai). Cannot be in the future.",
       "chooseEmployee": "Choose an employee",
       "chooseService": "Choose a service",
