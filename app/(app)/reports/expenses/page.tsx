@@ -5,6 +5,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { UserAvatar } from "@/components/layout/UserAvatar";
 import { ReportPeriodControls } from "@/components/reports/ReportPeriodControls";
+import { EmptyState } from "@/components/ui/empty-state";
 import { getPermissions } from "@/lib/auth/authorize";
 import { requireSession } from "@/lib/auth/current-user";
 import { addDays } from "@/lib/dashboard";
@@ -31,17 +32,6 @@ const panelClass = "min-w-0 rounded-2xl border bg-card p-5 text-card-foreground 
 const numberCell = "px-3 py-3 tabular-nums whitespace-nowrap";
 
 const headCell = "px-3 py-2.5 font-medium";
-
-function EmptyState({ icon: Icon, children }: { icon: LucideIcon; children: string }) {
-  return (
-    <div className="flex flex-col items-center gap-3 py-10 text-center">
-      <span className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
-        <Icon aria-hidden className="size-5" />
-      </span>
-      <p className="max-w-xs text-sm text-muted-foreground">{children}</p>
-    </div>
-  );
-}
 
 export default async function ExpenseReportPage({ searchParams }: PageProps<"/reports/expenses">) {
   const { user } = await requireSession();
@@ -122,7 +112,7 @@ export default async function ExpenseReportPage({ searchParams }: PageProps<"/re
         {t(`${id}.title`)}
       </h2>
       {rows.length === 0 ? (
-        <EmptyState icon={icon}>{t(`${id}.empty`)}</EmptyState>
+        <EmptyState icon={icon} description={t(`${id}.empty`)} />
       ) : (
         <div className="mt-4 overflow-x-auto">
           <table aria-labelledby={`expenses-${id}`} className="w-full min-w-sm text-sm">
@@ -212,7 +202,7 @@ export default async function ExpenseReportPage({ searchParams }: PageProps<"/re
           {t("overTime.title")}
         </h2>
         {empty ? (
-          <EmptyState icon={BarChart3}>{t("overTime.empty")}</EmptyState>
+          <EmptyState icon={BarChart3} description={t("overTime.empty")} />
         ) : (
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-sm text-sm">

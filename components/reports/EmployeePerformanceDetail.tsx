@@ -15,7 +15,7 @@ import { getTranslations } from "next-intl/server";
 import { RevenueChart } from "@/components/dashboard/RevenueChart";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { UserAvatar } from "@/components/layout/UserAvatar";
-import { ReportEmptyState } from "@/components/reports/ReportEmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
 import { addDays } from "@/lib/dashboard";
 import { dateValue } from "@/lib/expenses";
 import { breakdownRows, type RevenueReportRange } from "@/lib/reports";
@@ -218,7 +218,7 @@ export async function EmployeePerformanceDetail({
           {t("overTime.title")}
         </h2>
         {totals.count === 0 ? (
-          <ReportEmptyState icon={BarChart3}>{t("overTime.empty")}</ReportEmptyState>
+          <EmptyState icon={BarChart3} description={t("overTime.empty")} />
         ) : (
           <>
             <div className="mt-6">
@@ -264,7 +264,7 @@ export async function EmployeePerformanceDetail({
           {t("byService.title")}
         </h2>
         {services.length === 0 ? (
-          <ReportEmptyState icon={Scissors}>{t("byService.empty")}</ReportEmptyState>
+          <EmptyState icon={Scissors} description={t("byService.empty")} />
         ) : (
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-md text-sm">

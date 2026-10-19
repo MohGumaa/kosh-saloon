@@ -26,6 +26,7 @@ import { AdjustmentList, type AdjustmentRow } from "@/components/settlements/Adj
 import { SettlementActionsForm } from "@/components/settlements/SettlementActionsForm";
 import { SettlementAdjustmentForm } from "@/components/settlements/SettlementAdjustmentForm";
 import { SettlementStatusBadge } from "@/components/settlements/SettlementStatusBadge";
+import { EmptyState } from "@/components/ui/empty-state";
 import { requirePermission } from "@/lib/auth/authorize";
 import { db } from "@/lib/db";
 import { isOwnScope } from "@/lib/invoices";
@@ -254,7 +255,7 @@ export default async function SettlementPage({ params }: PageProps<"/settlements
         <Panel icon={PenLine} title={t("adjustments.title")} description={t("adjustments.description")}>
           <div className="flex flex-col gap-6">
             {corrections.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("adjustments.empty")}</p>
+              <EmptyState icon={PenLine} description={t("adjustments.empty")} />
             ) : (
               <AdjustmentList
                 {...listProps}

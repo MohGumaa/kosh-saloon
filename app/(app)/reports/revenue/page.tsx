@@ -6,6 +6,7 @@ import { RevenueChart } from "@/components/dashboard/RevenueChart";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { UserAvatar } from "@/components/layout/UserAvatar";
 import { ReportPeriodControls } from "@/components/reports/ReportPeriodControls";
+import { EmptyState } from "@/components/ui/empty-state";
 import { getPermissions } from "@/lib/auth/authorize";
 import { requireSession } from "@/lib/auth/current-user";
 import { addDays } from "@/lib/dashboard";
@@ -35,17 +36,6 @@ type AmountColumn = (typeof TIME_COLUMNS)[number];
 
 // The invoice count is centered; money lines up at the end of its column.
 const align = (column: AmountColumn) => (column === "invoices" ? "text-center" : "text-end");
-
-function EmptyState({ icon: Icon, children }: { icon: LucideIcon; children: string }) {
-  return (
-    <div className="flex flex-col items-center gap-3 py-10 text-center">
-      <span className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
-        <Icon aria-hidden className="size-5" />
-      </span>
-      <p className="max-w-xs text-sm text-muted-foreground">{children}</p>
-    </div>
-  );
-}
 
 interface Amounts {
   count: number;
@@ -164,7 +154,7 @@ export default async function RevenueReportPage({ searchParams }: PageProps<"/re
         {t(first === "service" ? "byService.title" : "byEmployee.title")}
       </h2>
       {rows.length === 0 ? (
-        <EmptyState icon={icon}>{t(first === "service" ? "byService.empty" : "byEmployee.empty")}</EmptyState>
+        <EmptyState icon={icon} description={t(first === "service" ? "byService.empty" : "byEmployee.empty")} />
       ) : (
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-md text-sm">
@@ -228,7 +218,7 @@ export default async function RevenueReportPage({ searchParams }: PageProps<"/re
           {t("overTime.title")}
         </h2>
         {empty ? (
-          <EmptyState icon={BarChart3}>{t("overTime.empty")}</EmptyState>
+          <EmptyState icon={BarChart3} description={t("overTime.empty")} />
         ) : (
           <>
             <div className="mt-6">

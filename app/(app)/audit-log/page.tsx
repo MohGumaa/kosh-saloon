@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { History } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { LocalDateTime } from "@/components/layout/LocalDateTime";
 import { PersonName } from "@/components/layout/PersonName";
+import { EmptyState } from "@/components/ui/empty-state";
 import { AUDIT_PAGE_SIZE, auditChanges, resolvePage } from "@/lib/audit";
 import { requireSession } from "@/lib/auth/current-user";
 import { db } from "@/lib/db";
@@ -76,7 +78,7 @@ export default async function AuditLogPage({ searchParams }: PageProps<"/audit-l
       {/* min-w-0 lets the card shrink below the table, so the table scrolls instead of widening the page. */}
       <section className="min-w-0 rounded-2xl border bg-card p-5 text-card-foreground shadow-card lg:p-6">
         {entries.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">{t("empty")}</p>
+          <EmptyState icon={History} title={t("empty.title")} description={t("empty.description")} />
         ) : (
           <>
             <div className="overflow-x-auto">

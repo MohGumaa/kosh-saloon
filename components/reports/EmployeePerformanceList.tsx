@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Users } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { UserAvatar } from "@/components/layout/UserAvatar";
-import { ReportEmptyState } from "@/components/reports/ReportEmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
 import { employeeLabels } from "@/lib/names";
 import type { EmployeePerformanceListData } from "@/lib/reports-data";
 import { cn } from "@/lib/utils";
@@ -55,7 +55,7 @@ export async function EmployeePerformanceList({
         {t("list.title")}
       </h2>
       {data.rows.length === 0 ? (
-        <ReportEmptyState icon={Users}>{t("list.empty")}</ReportEmptyState>
+        <EmptyState icon={Users} description={t("list.empty")} />
       ) : (
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-3xl text-sm">

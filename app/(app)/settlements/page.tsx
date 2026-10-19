@@ -5,6 +5,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { PersonName } from "@/components/layout/PersonName";
 import { GenerateSettlementsForm } from "@/components/settlements/GenerateSettlementsForm";
 import { SettlementStatusBadge } from "@/components/settlements/SettlementStatusBadge";
+import { EmptyState } from "@/components/ui/empty-state";
 import { requirePermission } from "@/lib/auth/authorize";
 import { db } from "@/lib/db";
 import { salonMonth, shiftMonth } from "@/lib/earnings";
@@ -109,13 +110,13 @@ export default async function SettlementsPage({ searchParams }: PageProps<"/sett
         </nav>
 
         {settlements.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 border-t pt-8 pb-4 text-center">
-            <span className="flex size-11 items-center justify-center rounded-xl bg-primary-soft text-primary">
-              <HandCoins aria-hidden className="size-5" />
-            </span>
-            <h3 className="text-lg font-semibold">{t("empty.title")}</h3>
-            <p className="text-sm text-muted-foreground">{t(canGenerate ? "empty.create" : "empty.view")}</p>
-          </div>
+          <EmptyState
+            icon={HandCoins}
+            title={t("empty.title")}
+            description={t(canGenerate ? "empty.create" : "empty.view")}
+            headingLevel="h3"
+            className="border-t pt-8 pb-4"
+          />
         ) : (
           <div className="overflow-x-auto border-t">
             <table className="w-full min-w-4xl text-sm">

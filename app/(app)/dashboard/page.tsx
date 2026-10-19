@@ -25,6 +25,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { SettlementStatusBadge } from "@/components/settlements/SettlementStatusBadge";
 import { buttonVariants } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { LocalDateTime } from "@/components/layout/LocalDateTime";
 import { PersonName } from "@/components/layout/PersonName";
 import { UserAvatar } from "@/components/layout/UserAvatar";
@@ -58,17 +59,6 @@ const linkClass =
   "rounded-md font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring";
 
 const INVOICE_COLUMNS = ["invoice", "employee", "date", "amount", "status"] as const;
-
-function EmptyState({ icon: Icon, children }: { icon: LucideIcon; children: string }) {
-  return (
-    <div className="flex flex-col items-center gap-3 text-center">
-      <span className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
-        <Icon aria-hidden className="size-5" />
-      </span>
-      <p className="max-w-xs text-sm text-muted-foreground">{children}</p>
-    </div>
-  );
-}
 
 export default async function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
   const { user } = await requireSession();
@@ -215,9 +205,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             <section className={panelClass}>
               <h2 className="text-lg font-semibold">{t("personal.settlement.title")}</h2>
               {latestSettlement === null ? (
-                <div className="py-10">
-                  <EmptyState icon={HandCoins}>{t("personal.settlement.empty")}</EmptyState>
-                </div>
+                <EmptyState icon={HandCoins} description={t("personal.settlement.empty")} />
               ) : (
                 <>
                   <p className="mt-1 text-sm text-muted-foreground">{monthName.format(latestSettlement.periodStart)}</p>
@@ -346,9 +334,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         <section className={panelClass}>
           <h2 className="text-lg font-semibold">{t("topServices.title")}</h2>
           {data.topServices.length === 0 || !topAmount ? (
-            <div className="py-10">
-              <EmptyState icon={PieChart}>{t("topServices.empty")}</EmptyState>
-            </div>
+            <EmptyState icon={PieChart} description={t("topServices.empty")} />
           ) : (
             <ol className="mt-5 flex flex-col gap-4">
               {data.topServices.map((service) => (
@@ -394,9 +380,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             </Link>
           </div>
           {data.latestInvoices.length === 0 ? (
-            <div className="py-12">
-              <EmptyState icon={Receipt}>{t("latestInvoices.empty")}</EmptyState>
-            </div>
+            <EmptyState icon={Receipt} description={t("latestInvoices.empty")} className="py-12" />
           ) : (
             <div className="mt-4 overflow-x-auto">
               <table className="w-full min-w-md text-sm">

@@ -1076,7 +1076,10 @@
   "audit": {
     "title": "Audit Log",
     "description": "Who changed what, and when. Newest first.",
-    "empty": "No activity recorded yet.",
+    "empty": {
+      "title": "No activity yet",
+      "description": "No activity recorded yet."
+    },
     "columns": {
       "time": "Time",
       "user": "User",

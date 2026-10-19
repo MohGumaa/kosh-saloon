@@ -7,7 +7,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import type { Prisma } from "@/generated/prisma/client";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { UserAvatar } from "@/components/layout/UserAvatar";
-import { ReportEmptyState } from "@/components/reports/ReportEmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
 import { SettlementReportControls } from "@/components/reports/SettlementReportControls";
 import { SettlementStatusBadge } from "@/components/settlements/SettlementStatusBadge";
 import { getPermissions } from "@/lib/auth/authorize";
@@ -117,7 +117,7 @@ export default async function SettlementReportPage({ searchParams }: PageProps<"
       <h2 id={`settlements-${id}`} className="text-lg font-semibold">
         {t(`${id}.title`)}
       </h2>
-      {empty ? <ReportEmptyState icon={icon}>{t(`${id}.empty`)}</ReportEmptyState> : <div className="mt-4 overflow-x-auto">{table}</div>}
+      {empty ? <EmptyState icon={icon} description={t(`${id}.empty`)} /> : <div className="mt-4 overflow-x-auto">{table}</div>}
     </section>
   );
 

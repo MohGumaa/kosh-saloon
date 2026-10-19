@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Plus, Scissors } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
+import { EmptyState } from "@/components/ui/empty-state";
 import { requirePermission } from "@/lib/auth/authorize";
 import { db } from "@/lib/db";
 import { getSalonSettings } from "@/lib/settings";
@@ -53,13 +54,18 @@ export default async function ServicesPage() {
       {/* min-w-0 lets the card shrink below the table, so the table scrolls instead of widening the page. */}
       <section className="min-w-0 rounded-2xl border bg-card p-5 text-card-foreground shadow-card lg:p-6">
         {services.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-10 text-center">
-            <span className="flex size-11 items-center justify-center rounded-xl bg-primary-soft text-primary">
-              <Scissors aria-hidden className="size-5" />
-            </span>
-            <h2 className="text-lg font-semibold">{t("empty.title")}</h2>
-            <p className="text-sm text-muted-foreground">{t(canCreate ? "empty.create" : "empty.view")}</p>
-          </div>
+          <EmptyState
+            icon={Scissors}
+            title={t("empty.title")}
+            description={t(canCreate ? "empty.create" : "empty.view")}
+            action={
+              canCreate && (
+                <Link href="/services/new" className={cn(linkClass, "text-sm")}>
+                  {t("new")}
+                </Link>
+              )
+            }
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-2xl text-sm">

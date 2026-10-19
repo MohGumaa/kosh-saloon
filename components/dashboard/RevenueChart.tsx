@@ -2,6 +2,7 @@
 
 import { BarChart3 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export interface RevenueChartPoint {
   /** Already formatted on the server, so server and client agree. */
@@ -27,14 +28,7 @@ export function RevenueChart({ data, locale, currency, rtl, showExpenses, labels
   const empty = data.every((point) => point.paid === 0 && point.unpaid === 0 && !point.expenses);
 
   if (empty) {
-    return (
-      <div className="flex h-64 flex-col items-center justify-center gap-3 text-center">
-        <span className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
-          <BarChart3 aria-hidden className="size-5" />
-        </span>
-        <p className="max-w-xs text-sm text-muted-foreground">{labels.empty}</p>
-      </div>
-    );
+    return <EmptyState icon={BarChart3} description={labels.empty} className="h-64 justify-center py-0" />;
   }
 
   return (

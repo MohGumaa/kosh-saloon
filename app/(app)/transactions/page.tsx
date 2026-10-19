@@ -6,6 +6,7 @@ import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { LocalDateTime } from "@/components/layout/LocalDateTime";
 import { PersonName } from "@/components/layout/PersonName";
 import { DatePicker } from "@/components/ui/date-picker";
+import { EmptyState } from "@/components/ui/empty-state";
 import { FormSelect } from "@/components/ui/form-select";
 import { Input } from "@/components/ui/input";
 import { resolvePage } from "@/lib/audit";
@@ -208,25 +209,31 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/transac
       {/* min-w-0 lets the card shrink below the table, so the table scrolls instead of widening the page. */}
       <section className="min-w-0 rounded-2xl border bg-card p-5 text-card-foreground shadow-card lg:p-6">
         {invoices.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-10 text-center">
-            <span className="flex size-11 items-center justify-center rounded-xl bg-primary-soft text-primary">
-              <FileText aria-hidden className="size-5" />
-            </span>
-            {filtered ? (
-              <>
-                <h2 className="text-lg font-semibold">{t("empty.noMatchTitle")}</h2>
-                <p className="text-sm text-muted-foreground">{t("empty.noMatch")}</p>
+          filtered ? (
+            <EmptyState
+              icon={FileText}
+              title={t("empty.noMatchTitle")}
+              description={t("empty.noMatch")}
+              action={
                 <Link href="/transactions" className={cn(linkClass, "text-sm")}>
                   {t("filters.clear")}
                 </Link>
-              </>
-            ) : (
-              <>
-                <h2 className="text-lg font-semibold">{t("empty.title")}</h2>
-                <p className="text-sm text-muted-foreground">{t(canCreate ? "empty.create" : "empty.view")}</p>
-              </>
-            )}
-          </div>
+              }
+            />
+          ) : (
+            <EmptyState
+              icon={FileText}
+              title={t("empty.title")}
+              description={t(canCreate ? "empty.create" : "empty.view")}
+              action={
+                canCreate && (
+                  <Link href="/transactions/new" className={cn(linkClass, "text-sm")}>
+                    {t("new")}
+                  </Link>
+                )
+              }
+            />
+          )
         ) : (
           <>
             <div className="overflow-x-auto">
