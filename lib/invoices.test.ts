@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { PERMISSION_KEYS, ROLE_DEFAULTS, type PermissionKey } from "@/lib/auth/permissions";
 import {
   canChangeStatus,
@@ -7,11 +7,14 @@ import {
   createInvoiceSchema,
   employeeInvoiceListHref,
   formatInvoiceNumber,
+  invoiceDateSchema,
   invoiceListHref,
   invoiceWhere,
   isOwnScope,
   nextInvoiceNumber,
   parseInvoiceFilters,
+  parseSalonDateTime,
+  salonDateTimeInput,
   salonDayRange,
 } from "@/lib/invoices";
 
@@ -181,6 +184,44 @@ describe("salonDayRange", () => {
       gte: new Date("2026-10-24T23:00:00.000Z"),
       lt: new Date("2026-10-26T00:00:00.000Z"),
     });
+  });
+});
+
+describe("salon date and time", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("converts a Dubai wall-clock time to an instant and back", () => {
+    const instant = parseSalonDateTime("2026-10-04T14:30");
+    expect(instant).toEqual(new Date("2026-10-04T10:30:00.000Z"));
+    expect(salonDateTimeInput(instant!)).toBe("2026-10-04T14:30");
+  });
+
+  it("keeps 00:30 on the 1st in that salon month, though UTC is still the previous month", () => {
+    expect(parseSalonDateTime("2026-10-01T00:30")).toEqual(new Date("2026-09-30T20:30:00.000Z"));
+    expect(salonDateTimeInput(new Date("2026-09-30T20:30:45.500Z"))).toBe("2026-10-01T00:30");
+  });
+
+  it("follows a daylight saving zone", () => {
+    expect(parseSalonDateTime("2026-10-24T12:00", "Europe/London")).toEqual(new Date("2026-10-24T11:00:00.000Z"));
+    expect(parseSalonDateTime("2026-10-26T12:00", "Europe/London")).toEqual(new Date("2026-10-26T12:00:00.000Z"));
+  });
+
+  it.each(["", "2026-10-04", "2026-10-04T14:30:00", "2026-02-30T10:00", "2026-10-04T25:00", "2026-10-04T10:60", "4/10/2026 10:00"])(
+    "rejects %j",
+    (value) => {
+      expect(parseSalonDateTime(value)).toBeNull();
+    },
+  );
+
+  it("accepts a past or current time and rejects a future one", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-19T08:00:30.000Z"));
+
+    expect(invoiceDateSchema.safeParse("2026-10-19T12:00").success).toBe(true);
+    expect(invoiceDateSchema.safeParse("2026-10-19T12:01").success).toBe(false);
+    expect(invoiceDateSchema.safeParse("2026-02-30T10:00").success).toBe(false);
   });
 });
 

@@ -22,7 +22,7 @@ import { LocalDateTime } from "@/components/layout/LocalDateTime";
 import { Detail, Panel } from "@/components/layout/Panel";
 import { requirePermission } from "@/lib/auth/authorize";
 import { db } from "@/lib/db";
-import { canManageInvoices, isOwnScope } from "@/lib/invoices";
+import { canManageInvoices, isOwnScope, salonDateTimeInput } from "@/lib/invoices";
 import { getSalonSettings } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 
@@ -155,6 +155,7 @@ export default async function InvoicePage({ params }: PageProps<"/transactions/[
               employeeId: invoice.employeeId,
               serviceId: invoice.serviceId,
               amount: invoice.amount.toString(),
+              date: salonDateTimeInput(invoice.createdAt),
             }}
             employees={employees}
             services={services}

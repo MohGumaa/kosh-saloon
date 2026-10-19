@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => {
   // A separate transaction client, so a write made on `db` instead of `tx` fails the tests.
   const tx = {
     invoice: { findFirst: vi.fn(), findUnique: vi.fn(), create: vi.fn(), updateMany: vi.fn() },
+    employeeSettlement: { findFirst: vi.fn() },
     auditLog: { create: vi.fn() },
   };
   const db = {
@@ -39,6 +40,8 @@ const stored = {
   serviceId: "svc1",
   amount: new Prisma.Decimal("50"),
   status: "UNPAID",
+  // 14:00:45 on 15 September in Dubai.
+  createdAt: new Date("2026-09-15T10:00:45.000Z"),
 };
 
 const input = { employeeId: "emp1", serviceId: "svc1", amount: "٥٠٫٥", status: "PAID" };
@@ -69,6 +72,7 @@ beforeEach(() => {
   mocks.tx.invoice.findUnique.mockResolvedValue(stored);
   mocks.tx.invoice.create.mockResolvedValue({ id: "inv1" });
   mocks.tx.invoice.updateMany.mockResolvedValue({ count: 1 });
+  mocks.tx.employeeSettlement.findFirst.mockResolvedValue(null);
 });
 
 afterEach(() => {
@@ -196,7 +200,97 @@ describe("createInvoice", () => {
 
 describe("updateInvoice", () => {
   const edit = (values: Record<string, string> = {}) =>
-    updateInvoice(null, form({ id: "inv1", employeeId: "emp1", serviceId: "svc1", amount: "50", ...values }));
+    updateInvoice(
+      null,
+      form({ id: "inv1", employeeId: "emp1", serviceId: "svc1", amount: "50", date: "2026-09-15T14:00", ...values }),
+    );
+
+  const september = new Date("2026-09-01T00:00:00.000Z");
+  const october = new Date("2026-10-01T00:00:00.000Z");
+  const lockQuery = (...pairs: [string, Date][]) => ({
+    where: {
+      status: { in: ["APPROVED", "PAID"] },
+      OR: pairs.map(([employeeId, periodStart]) => ({ employeeId, periodStart })),
+    },
+    select: { id: true },
+  });
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-19T08:00:00.000Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("moves the date with an audit entry after checking both settlement months", async () => {
+    expect(await edit({ date: "2026-10-01T00:30" })).toEqual({ success: true });
+
+    expect(mocks.tx.employeeSettlement.findFirst).toHaveBeenCalledWith(
+      lockQuery(["emp1", september], ["emp1", october]),
+    );
+    expect(mocks.tx.invoice.updateMany).toHaveBeenCalledWith({
+      where: { id: "inv1", status: { not: "CANCELLED" } },
+      data: { createdAt: new Date("2026-09-30T20:30:00.000Z") },
+    });
+    expect(mocks.tx.auditLog.create).toHaveBeenCalledWith({
+      data: {
+        userId: "admin1",
+        action: "invoice.updated",
+        entity: "Invoice",
+        entityId: "inv1",
+        oldValue: { createdAt: "2026-09-15T10:00:45.000Z" },
+        newValue: { createdAt: "2026-09-30T20:30:00.000Z" },
+      },
+    });
+  });
+
+  it("keeps the stored seconds when the minute is unchanged", async () => {
+    expect(await edit()).toEqual({ success: true });
+
+    expect(mocks.tx.employeeSettlement.findFirst).not.toHaveBeenCalled();
+    expect(mocks.tx.invoice.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("does not check settlements for an amount or service change", async () => {
+    expect(await edit({ amount: "70" })).toEqual({ success: true });
+
+    expect(mocks.tx.employeeSettlement.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("refuses a date move when either month has an approved or paid settlement", async () => {
+    mocks.tx.employeeSettlement.findFirst.mockResolvedValue({ id: "set1" });
+
+    expect(await edit({ date: "2026-10-02T09:00", amount: "70" })).toMatchObject({
+      success: false,
+      error: "settlement_locked",
+    });
+    expectNothingWritten();
+  });
+
+  it("checks the old and new employee for the same month on an employee change", async () => {
+    mocks.tx.employeeSettlement.findFirst.mockResolvedValue({ id: "set1" });
+
+    expect(await edit({ employeeId: "emp2" })).toMatchObject({ success: false, error: "settlement_locked" });
+    expect(mocks.tx.employeeSettlement.findFirst).toHaveBeenCalledWith(
+      lockQuery(["emp1", september], ["emp2", september]),
+    );
+    expectNothingWritten();
+  });
+
+  it.each([
+    ["a future time", "2026-10-19T12:01", "invalid_input"],
+    ["an impossible time", "2026-09-31T10:00", "invalid_input"],
+    ["an empty value", "", "required"],
+  ])("returns a date field error for %s", async (_label, date, code) => {
+    expect(await edit({ date })).toMatchObject({
+      success: false,
+      error: "invalid_input",
+      fieldErrors: { date: code },
+    });
+    expectNothingWritten();
+  });
 
   it("stores and audits only the changed fields on the transaction client", async () => {
     expect(await edit({ amount: "60.00", serviceId: "svc2" })).toEqual({ success: true });

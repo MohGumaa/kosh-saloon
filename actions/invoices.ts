@@ -3,30 +3,40 @@
 import { revalidatePath } from "next/cache";
 import type { z } from "zod";
 import type { AuthErrorCode } from "@/actions/auth";
+import type { Prisma } from "@/generated/prisma/client";
 import { recordAudit, type AuditAction } from "@/lib/audit";
 import { hasPermission } from "@/lib/auth/authorize";
 import { requireSession } from "@/lib/auth/current-user";
 import type { SessionUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { salonMonth } from "@/lib/earnings";
 import {
   canChangeStatus,
   canManageInvoices,
   createInvoiceSchema,
+  editInvoiceSchema,
   invoiceIdSchema,
-  invoiceSchema,
   invoiceStatusSchema,
   isOwnScope,
   nextInvoiceNumber,
+  salonDateTimeInput,
   type InvoiceStatusValue,
 } from "@/lib/invoices";
+import { monthPeriod } from "@/lib/settlements";
 
 /** Translation keys under `invoices.errors`. */
-export type InvoiceErrorCode = "forbidden" | "not_found" | "invalid_input" | "cancelled" | "unexpected";
+export type InvoiceErrorCode =
+  | "forbidden"
+  | "not_found"
+  | "invalid_input"
+  | "cancelled"
+  | "settlement_locked"
+  | "unexpected";
 
 /** Translation keys under `auth.errors`, as the shared form field shows them. */
 export type InvoiceFieldErrorCode = Extract<AuthErrorCode, "required" | "invalid_input" | "not_available">;
 
-export type InvoiceField = "employeeId" | "serviceId" | "amount" | "status";
+export type InvoiceField = "employeeId" | "serviceId" | "amount" | "status" | "date";
 
 export type InvoiceFormState =
   | { success: true; /** The new invoice, after a create. */ id?: string }
@@ -41,6 +51,7 @@ export type InvoiceFormState =
 
 const CREATE_FIELDS = ["employeeId", "serviceId", "amount", "status"] as const;
 const EDIT_FIELDS = ["employeeId", "serviceId", "amount"] as const;
+const EDIT_FORM_FIELDS = [...EDIT_FIELDS, "date"] as const;
 
 /** A create can collide only on `invoiceNumber`, so each collision gets a fresh number. */
 const CREATE_ATTEMPTS = 3;
@@ -87,6 +98,21 @@ const isUniqueViolation = (error: unknown) =>
 /** Edits and status changes: the permission, and never a Staff user. */
 async function mayManage(actor: SessionUser, key: "invoices.edit" | "invoices.change_status") {
   return canManageInvoices(actor) && (await hasPermission(actor, key));
+}
+
+/**
+ * Whether an approved or paid settlement covers any of these employee-and-day pairs.
+ * Its figures are frozen, so moving revenue into or out of it would make them wrong.
+ */
+async function touchesLockedSettlement(tx: Prisma.TransactionClient, pairs: { employeeId: string; date: Date }[]) {
+  const locked = await tx.employeeSettlement.findFirst({
+    where: {
+      status: { in: ["APPROVED", "PAID"] },
+      OR: pairs.map(({ employeeId, date }) => ({ employeeId, periodStart: monthPeriod(salonMonth(date)).periodStart })),
+    },
+    select: { id: true },
+  });
+  return locked !== null;
 }
 
 function revalidateInvoice(id: string) {
@@ -155,7 +181,7 @@ export async function createInvoice(_prev: InvoiceFormState, formData: FormData)
 
 export async function updateInvoice(_prev: InvoiceFormState, formData: FormData): Promise<InvoiceFormState> {
   const { user: actor } = await requireSession();
-  const values = readForm(formData, EDIT_FIELDS);
+  const values = readForm(formData, EDIT_FORM_FIELDS);
   const reject = (error: InvoiceErrorCode): InvoiceFormState => ({ success: false, error, values });
   const invoiceId = invoiceIdSchema.safeParse(formData.get("id"));
 
@@ -163,7 +189,7 @@ export async function updateInvoice(_prev: InvoiceFormState, formData: FormData)
     if (!(await mayManage(actor, "invoices.edit"))) return reject("forbidden");
     if (!invoiceId.success) return reject("invalid_input");
 
-    const parsed = invoiceSchema.safeParse(values);
+    const parsed = editInvoiceSchema.safeParse(values);
     if (!parsed.success) {
       return { success: false, error: "invalid_input", fieldErrors: fieldErrorsOf(parsed.error, values), values };
     }
@@ -186,7 +212,7 @@ export async function updateInvoice(_prev: InvoiceFormState, formData: FormData)
     const outcome = await db.$transaction(async (tx): Promise<InvoiceErrorCode | null> => {
       const stored = await tx.invoice.findUnique({
         where: { id: invoiceId.data },
-        select: { employeeId: true, serviceId: true, amount: true, status: true },
+        select: { employeeId: true, serviceId: true, amount: true, status: true, createdAt: true },
       });
       if (!stored) return "not_found";
       if (stored.status === "CANCELLED") return "cancelled";
@@ -195,11 +221,33 @@ export async function updateInvoice(_prev: InvoiceFormState, formData: FormData)
       const changed = EDIT_FIELDS.filter((field) =>
         field === "amount" ? !stored.amount.equals(next.amount) : stored[field] !== next[field],
       );
-      if (changed.length === 0) return null;
+      // The form shows minutes, so an unchanged minute keeps the stored seconds.
+      const dateChanged = salonDateTimeInput(stored.createdAt) !== salonDateTimeInput(next.date);
+      if (changed.length === 0 && !dateChanged) return null;
+
+      if (dateChanged || changed.includes("employeeId")) {
+        const pairs = [
+          { employeeId: stored.employeeId, date: stored.createdAt },
+          { employeeId: next.employeeId, date: dateChanged ? next.date : stored.createdAt },
+        ];
+        if (await touchesLockedSettlement(tx, pairs)) return "settlement_locked";
+      }
+
+      const oldValue: Record<string, string> = Object.fromEntries(
+        changed.map((field) => [field, stored[field].toString()]),
+      );
+      const newValue: Record<string, string> = Object.fromEntries(changed.map((field) => [field, next[field]]));
+      if (dateChanged) {
+        oldValue.createdAt = stored.createdAt.toISOString();
+        newValue.createdAt = next.date.toISOString();
+      }
 
       const { count } = await tx.invoice.updateMany({
         where: { id: invoiceId.data, status: { not: "CANCELLED" } },
-        data: Object.fromEntries(changed.map((field) => [field, next[field]])),
+        data: {
+          ...Object.fromEntries(changed.map((field) => [field, next[field]])),
+          ...(dateChanged && { createdAt: next.date }),
+        },
       });
       if (count === 0) return "cancelled";
 
@@ -209,8 +257,8 @@ export async function updateInvoice(_prev: InvoiceFormState, formData: FormData)
           action: "invoice.updated",
           entity: "Invoice",
           entityId: invoiceId.data,
-          oldValue: Object.fromEntries(changed.map((field) => [field, stored[field].toString()])),
-          newValue: Object.fromEntries(changed.map((field) => [field, next[field]])),
+          oldValue,
+          newValue,
         },
         tx,
       );

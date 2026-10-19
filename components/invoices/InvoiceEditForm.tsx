@@ -11,8 +11,8 @@ import { Button } from "@/components/ui/button";
 
 interface InvoiceEditFormProps {
   id: string;
-  /** The stored values, the amount as a decimal string. */
-  values: Record<"employeeId" | "serviceId" | "amount", string>;
+  /** The stored values, the amount as a decimal string and the date as a salon-time `datetime-local` value. */
+  values: Record<"employeeId" | "serviceId" | "amount" | "date", string>;
   employees: InvoiceChoice[];
   services: ServiceChoice[];
   currency: string;

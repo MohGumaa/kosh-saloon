@@ -171,6 +171,13 @@ function zoneOffset(instant: number, timeZone: string): number {
   return wallClock - (instant - (instant % 1000));
 }
 
+/** The instant the zone's wall clock reads `wallClock` (a UTC timestamp of those clock fields). */
+function wallClockInstant(wallClock: number, timeZone: string): Date {
+  const guess = wallClock - zoneOffset(wallClock, timeZone);
+  // A second pass corrects a guess that landed across a daylight saving change.
+  return new Date(wallClock - zoneOffset(guess, timeZone));
+}
+
 /**
  * The instant a calendar day (`YYYY-MM-DD`) starts in the time zone. `addDays` moves
  * the day first; `Date.UTC` carries an overflowing day into the next month or year,
@@ -178,11 +185,42 @@ function zoneOffset(instant: number, timeZone: string): number {
  */
 function startOfDay(day: string, timeZone: string, addDays = 0): Date {
   const [year, month, date] = day.split("-").map(Number);
-  const midnightUtc = Date.UTC(year, month - 1, date + addDays);
-  const guess = midnightUtc - zoneOffset(midnightUtc, timeZone);
-  // A second pass corrects a guess that landed across a daylight saving change.
-  return new Date(midnightUtc - zoneOffset(guess, timeZone));
+  return wallClockInstant(Date.UTC(year, month - 1, date + addDays), timeZone);
 }
+
+/** An instant as a `datetime-local` value (`YYYY-MM-DDTHH:mm`) on the salon's wall clock. */
+export function salonDateTimeInput(date: Date, timeZone: string = SALON_TIME_ZONE): string {
+  const instant = date.getTime();
+  return new Date(instant + zoneOffset(instant, timeZone)).toISOString().slice(0, 16);
+}
+
+const DATE_TIME_INPUT = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})$/;
+
+/** A `YYYY-MM-DDTHH:mm` salon wall-clock time as an instant, or null when it is not a real time. */
+export function parseSalonDateTime(value: string, timeZone: string = SALON_TIME_ZONE): Date | null {
+  const match = DATE_TIME_INPUT.exec(value);
+  if (!match || !isCalendarDate(match[1])) return null;
+  const [hour, minute] = [Number(match[2]), Number(match[3])];
+  if (hour > 23 || minute > 59) return null;
+  const [year, month, day] = match[1].split("-").map(Number);
+  return wallClockInstant(Date.UTC(year, month - 1, day, hour, minute), timeZone);
+}
+
+/** An edit's invoice date: a real salon time, not later than now. */
+export const invoiceDateSchema = z
+  .string()
+  .transform((value, ctx) => {
+    const date = parseSalonDateTime(value);
+    if (!date) {
+      ctx.addIssue({ code: "custom", message: "invalid date" });
+      return z.NEVER;
+    }
+    return date;
+  })
+  .refine((date) => date.getTime() <= Date.now(), "date in the future");
+
+/** An edit also moves the invoice date, which is its `createdAt`. */
+export const editInvoiceSchema = invoiceSchema.extend({ date: invoiceDateSchema });
 
 /** `createdAt` bounds for an inclusive range of salon days: from the start of `from` to before the day after `to`. */
 export function salonDayRange(

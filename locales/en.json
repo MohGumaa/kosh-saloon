@@ -436,6 +436,8 @@
       "amount": "Amount",
       "amountHint": "In {currency}, up to two decimal places. Filled from the service's default price.",
       "status": "Status",
+      "date": "Date and time",
+      "dateHint": "Salon time (Dubai). Cannot be in the future.",
       "chooseEmployee": "Choose an employee",
       "chooseService": "Choose a service",
       "inactive": "{name} (inactive)"
@@ -462,7 +464,7 @@
     },
     "edit": {
       "title": "Edit invoice",
-      "description": "Employee, service, and amount.",
+      "description": "Employee, service, amount, and date.",
       "submit": "Save changes",
       "submitting": "Saving…",
       "success": "Invoice saved."
@@ -486,6 +488,7 @@
       "not_found": "This invoice no longer exists.",
       "invalid_input": "The submitted details were not valid. Reload the page and try again.",
       "cancelled": "This invoice is cancelled and cannot be changed.",
+      "settlement_locked": "This change would move revenue into or out of a month whose settlement is already approved or paid. Record a settlement adjustment instead.",
       "unexpected": "An unexpected error occurred. Please try again."
     },
     "loading": "Loading invoices"
@@ -1175,6 +1178,7 @@
       "category": "Category",
       "date": "Date",
       "createdById": "Created by",
+      "createdAt": "Date",
       "loginNotificationsEnabled": "Login notification emails"
     },
     "viewChanges": "View changes",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Banknote } from "lucide-react";
+import { Banknote, CalendarClock } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { InvoiceField, InvoiceFieldErrorCode } from "@/actions/invoices";
 import { FormField } from "@/components/auth/FormField";
@@ -22,7 +22,8 @@ export interface ServiceChoice extends InvoiceChoice {
 }
 
 interface InvoiceFieldsProps {
-  values: Record<"employeeId" | "serviceId" | "amount", string>;
+  /** `date` is a salon-time `datetime-local` value; given only on edit, where the date can move. */
+  values: Record<"employeeId" | "serviceId" | "amount", string> & { date?: string };
   errors?: Partial<Record<InvoiceField, InvoiceFieldErrorCode>>;
   /** The choosable employees, or the actor's own name for a Staff user, who invoices only themself. */
   employees: InvoiceChoice[] | { ownName: string };
@@ -130,6 +131,19 @@ export function InvoiceFields({ values, errors, employees, services, currency, p
         hint={t("amountHint", { currency })}
         error={errors?.amount}
       />
+      {values.date !== undefined && (
+        <FormField
+          name="date"
+          type="datetime-local"
+          label={t("date")}
+          icon={CalendarClock}
+          required
+          dir="ltr"
+          defaultValue={values.date}
+          hint={t("dateHint")}
+          error={errors?.date}
+        />
+      )}
     </div>
   );
 }

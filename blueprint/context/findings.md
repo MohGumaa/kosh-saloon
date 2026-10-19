@@ -344,3 +344,19 @@
 **Why it matters:** The action inventory lists `setEmployeeActive` as "`employees.activate`; never their own account" and `setEmployeePassword` as "`employees.edit`; never their own account" (lines 62 and 63). Both actions also apply `canManageEmployeeAccess`, so a non-admin reaches only other Staff users (pinned in `lib/security-matrix.test.ts` and `actions/employees.test.ts:481`). The row just above for `updateEmployee` states that rule, and the spec's inventory names `+ canManageEmployeeAccess` for both. As written, a reader of the record could conclude a Supervisor holding `employees.activate` may deactivate another Supervisor or an Admin, which the code refuses. The code is correct; the record is incomplete on a security boundary it exists to document.
 **Suggested fix:** Change both Guard cells to "... ; non-admins reach only other Staff; never their own account". No current requirement is lost.
 **Resolution:**
+
+### F-64 [P3] open - Invoice dates in the years 0100 to 0999 pass validation and then fail the save as "unexpected"
+
+**File:** lib/invoices.ts:200
+**Found:** 2026-10-19 by /audit independent (scope: current; lens: quality)
+**Why it matters:** `parseSalonDateTime` accepts any four-digit year that `isCalendarDate` accepts, and `invoiceDateSchema` adds only an upper bound (now). A value such as `0999-01-15T10:00` therefore parses to a real past instant. In `updateInvoice` the date counts as changed, so `touchesLockedSettlement` calls `monthPeriod(salonMonth(date))`. `salonToday` builds the day from `Intl` parts, and `Intl` formats year 999 as `999`, not `0999` (checked with Node), so `salonMonth` returns `999-01-` and `monthPeriod` builds `dateValue("999-01--01")`, an Invalid Date (also checked with Node). The settlement query then fails, the catch returns `unexpected`, and the user sees a generic error instead of a field error on `date`, against the spec's "Invalid ... values return a field error on `date`". Years 1000 to 1899 are accepted and saved, which silently moves revenue into a meaningless month. Reaching this needs an Admin or Supervisor typo or a forged request, so impact is low.
+**Suggested fix:** Give `invoiceDateSchema` (or `parseSalonDateTime`) a lower bound, for example reject years before 2000 or before a fixed salon start date, so these values return `invalid_input` on `date`, and add the case to the `lib/invoices.test.ts` rejection table. No current requirement is lost.
+**Resolution:**
+
+### F-65 [P3] unverified - Two edits of the same invoice at the same moment can combine into an employee and month pair neither lock check saw
+
+**File:** actions/invoices.ts:245
+**Found:** 2026-10-19 by /audit independent (scope: current; lens: security)
+**Why it matters:** The lock check uses the `stored` row read at the start of the transaction, and `updateMany` writes only the changed fields, conditioned only on `status: { not: "CANCELLED" }`. Under the default Read Committed isolation, edit A (employee emp1 to emp2, same September) and edit B (date September to October, read before A commits) each pass their own check: A checks (emp1, Sep) and (emp2, Sep), B checks (emp1, Sep) and (emp1, Oct). The final row is (emp2, Oct), which neither checked, so revenue can land in an APPROVED or PAID settlement for emp2 in October. This needs two managers saving the same invoice within milliseconds, and it was derived from the code, not reproduced. It is the same race class as F-36.
+**Suggested fix:** Add `employeeId: stored.employeeId, createdAt: stored.createdAt` to the `updateMany` where clause and treat `count === 0` on a non-cancelled row as a stale edit (for example the existing `unexpected`, or a new "changed, reload" code). No current requirement is lost.
+**Resolution:**
