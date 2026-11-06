@@ -448,6 +448,18 @@ Staff cannot select another employee.
 
 Admin and Supervisor can create invoices for employees when they have permission.
 
+When any user creates an invoice (Staff for themselves, Admin and Supervisor
+for any employee), they can also set:
+
+- Invoice date - a date only, default today, never in the future. Today's date
+  saves with the current time; a past date saves at 12:00 salon time.
+- Number of invoices - default 1, from 1 to 20. One save creates that many
+  separate invoices with the same employee, service, amount, status, and date,
+  each with its own sequential invoice number and audit log entry. Example: 3
+  haircuts of AED 30 for one employee are entered once with number 3.
+
+Staff still cannot select another employee or edit invoices after creation.
+
 # 14. Invoice List
 
 Invoice list should contain:

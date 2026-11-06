@@ -1,6 +1,6 @@
 # Kosh CRM - Project Overview
 
-<!-- blueprint:source-hash befb5d725aefafe831705ac0b586f36f3884d25cce79e560c1592b13c6a621eb -->
+<!-- blueprint:source-hash 2fc61a3499ecb8bd56f966777fb081b8fc87c76fa61962ab657f5c45d5b29e2f -->
 
 > Salon management and financial CRM for Kosh Salon: employees, services,
 > invoices, expenses, employee earnings, monthly settlements, reports,
@@ -63,6 +63,11 @@ individual permissions for Supervisor and Staff users.
   `PAID` (`settlements.mark_paid`, locked).
 - Invoice amount is pre-filled from the service default price and editable at
   creation. Invoice numbers are sequential and unique: `INV-000001`.
+- Invoice date is `createdAt`. On create, any creator (STAFF for themselves
+  only) may pick a date (date only, default today, no future; today = current
+  time, past day = 12:00 salon time, `Asia/Dubai`) and a count (1-20, default
+  1): one save creates that many identical invoices, each with its own number
+  and audit entry.
 - Financial calculations must have automated tests.
 - Worked example: paid AED 5,000, 50% -> earnings AED 2,500, expenses AED 300 ->
   final AED 2,200.
@@ -112,6 +117,7 @@ passes.
     - 29d. **Performance pass** - per-row queries, missing indexes, unbounded lists, client bundle, build output.
     - 29e. **End-to-end smoke tests** - browser tests for main flows per role; needs `/tests browser` first.
     - 29f. **Final production verification** - checklist in `docs/operations.md`, full checks, post-deploy smoke checklist.
+30. **Invoice date & multiple invoices on create** - all creators (Staff for themselves) pick the invoice date and a count (1-20) on `/transactions/new`; one save creates that many numbered invoices.
 
 Out of V1 (future): customers, appointments/calendar, inventory, POS/product
 sales, tips, receipt/PDF printing, invoice tax calculation, scheduled report and
@@ -272,9 +278,7 @@ Employee Performance, Employee Earnings, Settlements); Settings.
 
 ## Open questions
 
-> Minor gaps; none block Feature 1.
+> Minor gaps; none block the remaining features.
 
 - The "Employee Earnings" and "Services" report pages named in plan §29 have no
   dedicated build-plan feature; they are assumed covered by features 16, 18, and 19.
-- Session/security controls in feature 20 are not detailed (for example, sign
-  out other sessions). Define them in that feature's spec.

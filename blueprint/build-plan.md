@@ -74,6 +74,8 @@ Your features
   - [ ] 29e. End-to-end smoke tests - Browser tests for the main flows per role: login, create an invoice, settlements, reports, and access denied. Requires `/tests browser` first.
   - [ ] 29f. Final production verification - Production checklist in docs/operations.md, run the full checks, and a smoke checklist to run after deploy.
 
+- [x] 30. Invoice date & multiple invoices on create - On the create invoice form, every user who can create invoices (Admin, Supervisor, and Staff for their own invoices) can pick the invoice date (default today, no future dates) and a number of invoices (default 1, up to 20); one save creates that many identical invoices, each with its own sequential number.
+
 Future features
 These should remain outside V1 until the core CRM is stable:
 

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PERMISSION_KEYS, ROLE_DEFAULTS, type PermissionKey } from "@/lib/auth/permissions";
 import {
   canChangeStatus,
@@ -7,11 +7,15 @@ import {
   createInvoiceSchema,
   employeeInvoiceListHref,
   formatInvoiceNumber,
+  invoiceCountSchema,
+  invoiceCreatedAt,
   invoiceDateSchema,
+  invoiceDaySchema,
   invoiceListHref,
   invoiceWhere,
   isOwnScope,
   nextInvoiceNumber,
+  nextInvoiceNumbers,
   parseInvoiceFilters,
   parseSalonDateTime,
   salonDateTimeInput,
@@ -44,8 +48,80 @@ describe("invoice numbers", () => {
   });
 });
 
+describe("nextInvoiceNumbers", () => {
+  it("returns consecutive numbers after the highest", () => {
+    expect(nextInvoiceNumbers(null, 3)).toEqual(["INV-000001", "INV-000002", "INV-000003"]);
+    expect(nextInvoiceNumbers("INV-000041", 3)).toEqual(["INV-000042", "INV-000043", "INV-000044"]);
+    expect(nextInvoiceNumbers("INV-000041", 1)).toEqual(["INV-000042"]);
+  });
+
+  it("throws when the batch would pass INV-999999", () => {
+    expect(nextInvoiceNumbers("INV-999998", 1)).toEqual(["INV-999999"]);
+    expect(() => nextInvoiceNumbers("INV-999998", 2)).toThrow();
+  });
+});
+
+describe("invoice create day and count", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  // 10:30 on 15 September in Dubai.
+  const now = new Date("2026-09-15T06:30:00.000Z");
+
+  it.each([
+    ["1", 1],
+    ["20", 20],
+    ["٣", 3],
+    [" 05 ", 5],
+  ])("accepts the count %j as %j", (count, expected) => {
+    expect(invoiceCountSchema.parse(count)).toBe(expected);
+  });
+
+  it.each(["0", "21", "1.5", "-1", "", "abc", "100"])("rejects the count %j", (count) => {
+    expect(invoiceCountSchema.safeParse(count).success).toBe(false);
+  });
+
+  it("accepts today and a past day, and rejects a future or invalid day", () => {
+    vi.useFakeTimers({ now });
+    expect(invoiceDaySchema.safeParse("2026-09-15").success).toBe(true);
+    expect(invoiceDaySchema.safeParse("2026-08-01").success).toBe(true);
+    for (const day of ["2026-09-16", "2026-02-30", "15-09-2026", "2026-9-1", ""]) {
+      expect(invoiceDaySchema.safeParse(day).success).toBe(false);
+    }
+  });
+
+  it("uses the salon day, not the UTC day, for today", () => {
+    // 01:00 on 16 September in Dubai, still 15 September in UTC.
+    vi.useFakeTimers({ now: new Date("2026-09-15T21:00:00.000Z") });
+    expect(invoiceDaySchema.safeParse("2026-09-16").success).toBe(true);
+  });
+
+  it("dates today's invoice now and a past day's at 12:00 salon time", () => {
+    expect(invoiceCreatedAt("2026-09-15", now)).toBe(now);
+    expect(invoiceCreatedAt("2026-09-01", now)).toEqual(new Date("2026-09-01T08:00:00.000Z"));
+  });
+});
+
 describe("createInvoiceSchema", () => {
-  const valid = { employeeId: "u1", serviceId: "s1", amount: "50", status: "PAID" };
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const valid = { employeeId: "u1", serviceId: "s1", amount: "50", status: "PAID", date: "2026-09-15", count: "1" };
+
+  beforeEach(() => {
+    vi.useFakeTimers({ now: new Date("2026-09-15T06:30:00.000Z") });
+  });
+
+  it("returns the day and count", () => {
+    expect(createInvoiceSchema.parse({ ...valid, count: "3" })).toMatchObject({ date: "2026-09-15", count: 3 });
+  });
+
+  it("rejects a missing day or count", () => {
+    expect(createInvoiceSchema.safeParse({ ...valid, date: "" }).success).toBe(false);
+    expect(createInvoiceSchema.safeParse({ ...valid, count: "" }).success).toBe(false);
+  });
 
   it("accepts Paid and Unpaid", () => {
     expect(createInvoiceSchema.safeParse(valid).success).toBe(true);

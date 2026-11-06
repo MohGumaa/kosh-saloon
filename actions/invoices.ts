@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import type { z } from "zod";
 import type { AuthErrorCode } from "@/actions/auth";
 import type { Prisma } from "@/generated/prisma/client";
-import { recordAudit, type AuditAction } from "@/lib/audit";
+import { recordAudit, type AuditAction, type AuditEntry } from "@/lib/audit";
 import { hasPermission } from "@/lib/auth/authorize";
 import { requireSession } from "@/lib/auth/current-user";
 import type { SessionUser } from "@/lib/auth/session";
@@ -15,10 +15,11 @@ import {
   canManageInvoices,
   createInvoiceSchema,
   editInvoiceSchema,
+  invoiceCreatedAt,
   invoiceIdSchema,
   invoiceStatusSchema,
   isOwnScope,
-  nextInvoiceNumber,
+  nextInvoiceNumbers,
   salonDateTimeInput,
   type InvoiceStatusValue,
 } from "@/lib/invoices";
@@ -36,10 +37,16 @@ export type InvoiceErrorCode =
 /** Translation keys under `auth.errors`, as the shared form field shows them. */
 export type InvoiceFieldErrorCode = Extract<AuthErrorCode, "required" | "invalid_input" | "not_available">;
 
-export type InvoiceField = "employeeId" | "serviceId" | "amount" | "status" | "date";
+export type InvoiceField = "employeeId" | "serviceId" | "amount" | "status" | "date" | "count";
 
 export type InvoiceFormState =
-  | { success: true; /** The new invoice, after a create. */ id?: string }
+  | {
+      success: true;
+      /** The first new invoice, after a create. */
+      id?: string;
+      /** How many invoices a create added. */
+      count?: number;
+    }
   | {
       success: false;
       error: InvoiceErrorCode;
@@ -49,7 +56,7 @@ export type InvoiceFormState =
     }
   | null;
 
-const CREATE_FIELDS = ["employeeId", "serviceId", "amount", "status"] as const;
+const CREATE_FIELDS = ["employeeId", "serviceId", "amount", "status", "date", "count"] as const;
 const EDIT_FIELDS = ["employeeId", "serviceId", "amount"] as const;
 const EDIT_FORM_FIELDS = [...EDIT_FIELDS, "date"] as const;
 
@@ -126,6 +133,7 @@ export async function createInvoice(_prev: InvoiceFormState, formData: FormData)
   // Staff invoice only themselves, whatever the form sent.
   if (isOwnScope(actor)) values.employeeId = actor.id;
   let id = "";
+  let count = 0;
 
   try {
     if (!(await hasPermission(actor, "invoices.create"))) return { success: false, error: "forbidden", values };
@@ -134,35 +142,44 @@ export async function createInvoice(_prev: InvoiceFormState, formData: FormData)
     if (!parsed.success) {
       return { success: false, error: "invalid_input", fieldErrors: fieldErrorsOf(parsed.error, values), values };
     }
-    const data = parsed.data;
+    const { date: day, count: requested, ...data } = parsed.data;
+    count = requested;
+    const createdAt = invoiceCreatedAt(day);
 
     const unavailable = await unavailableChoices(data);
     if (unavailable) return { success: false, error: "invalid_input", fieldErrors: unavailable, values };
 
     for (let attempt = 1; ; attempt++) {
       try {
-        id = await db.$transaction(async (tx) => {
+        // All the invoices and their audit entries are written together, or none are.
+        const outcome = await db.$transaction(async (tx): Promise<{ id: string } | { error: InvoiceErrorCode }> => {
+          if (await touchesLockedSettlement(tx, [{ employeeId: data.employeeId, date: createdAt }])) {
+            return { error: "settlement_locked" };
+          }
           const highest = await tx.invoice.findFirst({
             orderBy: { invoiceNumber: "desc" },
             select: { invoiceNumber: true },
           });
-          const invoiceNumber = nextInvoiceNumber(highest?.invoiceNumber ?? null);
-          const invoice = await tx.invoice.create({
-            data: { ...data, invoiceNumber, createdById: actor.id },
-            select: { id: true },
+          const numbers = nextInvoiceNumbers(highest?.invoiceNumber ?? null, count);
+          // One insert for the invoices and one for their audit entries, so a batch of 20 stays
+          // as quick as a single invoice on a hosted database (the transaction times out at 5 s).
+          const invoices = await tx.invoice.createManyAndReturn({
+            data: numbers.map((invoiceNumber) => ({ ...data, invoiceNumber, createdAt, createdById: actor.id })),
+            select: { id: true, invoiceNumber: true },
           });
-          await recordAudit(
-            {
-              userId: actor.id,
-              action: "invoice.created",
-              entity: "Invoice",
-              entityId: invoice.id,
-              newValue: { invoiceNumber, ...data },
-            },
-            tx,
-          );
-          return invoice.id;
+          const audit: AuditEntry[] = invoices.map((invoice) => ({
+            userId: actor.id,
+            action: "invoice.created",
+            entity: "Invoice",
+            entityId: invoice.id,
+            newValue: { invoiceNumber: invoice.invoiceNumber, ...data, createdAt: createdAt.toISOString() },
+          }));
+          await tx.auditLog.createMany({ data: audit });
+          // The returned row order is not guaranteed; the first invoice is the lowest number.
+          return { id: invoices.find((invoice) => invoice.invoiceNumber === numbers[0])!.id };
         });
+        if ("error" in outcome) return { success: false, error: outcome.error, values };
+        id = outcome.id;
         break;
       } catch (error) {
         // Another create took the same number first; read the new highest and try again.
@@ -176,7 +193,7 @@ export async function createInvoice(_prev: InvoiceFormState, formData: FormData)
   }
 
   revalidatePath("/transactions");
-  return { success: true, id };
+  return { success: true, id, count };
 }
 
 export async function updateInvoice(_prev: InvoiceFormState, formData: FormData): Promise<InvoiceFormState> {

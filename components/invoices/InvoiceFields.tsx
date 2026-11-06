@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Banknote } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { InvoiceField, InvoiceFieldErrorCode } from "@/actions/invoices";
@@ -35,6 +35,8 @@ interface InvoiceFieldsProps {
   currency: string;
   /** On create, choosing a service fills the amount with its default price. */
   prefillAmount?: boolean;
+  /** Extra fields placed in the grid right after the amount, such as the create form's day. */
+  children?: ReactNode;
 }
 
 interface SelectFieldProps {
@@ -134,7 +136,16 @@ function DateTimeField({ defaultValue, today, error }: DateTimeFieldProps) {
 }
 
 /** The employee, service, and amount inputs shared by the create and edit forms. */
-export function InvoiceFields({ values, errors, employees, services, currency, today, prefillAmount }: InvoiceFieldsProps) {
+export function InvoiceFields({
+  values,
+  errors,
+  employees,
+  services,
+  currency,
+  today,
+  prefillAmount,
+  children,
+}: InvoiceFieldsProps) {
   const t = useTranslations("invoices.fields");
   const [amount, setAmount] = useState(values.amount);
 
@@ -187,6 +198,7 @@ export function InvoiceFields({ values, errors, employees, services, currency, t
         hint={t("amountHint", { currency })}
         error={errors?.amount}
       />
+      {children}
       {values.date !== undefined && (
         <DateTimeField defaultValue={values.date} today={today} error={errors?.date} />
       )}

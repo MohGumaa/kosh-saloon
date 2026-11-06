@@ -1,12 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Prisma } from "@/generated/prisma/client";
+import { monthPeriod } from "@/lib/settlements";
 
 const mocks = vi.hoisted(() => {
   // A separate transaction client, so a write made on `db` instead of `tx` fails the tests.
   const tx = {
-    invoice: { findFirst: vi.fn(), findUnique: vi.fn(), create: vi.fn(), updateMany: vi.fn() },
+    invoice: {
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      createManyAndReturn: vi.fn(),
+      updateMany: vi.fn(),
+    },
     employeeSettlement: { findFirst: vi.fn() },
-    auditLog: { create: vi.fn() },
+    auditLog: { create: vi.fn(), createMany: vi.fn() },
   };
   const db = {
     invoice: { findUnique: vi.fn(), create: vi.fn(), updateMany: vi.fn() },
@@ -44,7 +51,17 @@ const stored = {
   createdAt: new Date("2026-09-15T10:00:45.000Z"),
 };
 
-const input = { employeeId: "emp1", serviceId: "svc1", amount: "٥٠٫٥", status: "PAID" };
+const input = {
+  employeeId: "emp1",
+  serviceId: "svc1",
+  amount: "٥٠٫٥",
+  status: "PAID",
+  date: "2026-09-15",
+  count: "1",
+};
+
+// 10:30 on 15 September in Dubai, the "today" of every create test.
+const now = new Date("2026-09-15T06:30:00.000Z");
 
 function expectNothingWritten() {
   for (const client of [mocks.db, mocks.tx]) {
@@ -52,6 +69,8 @@ function expectNothingWritten() {
     expect(client.invoice.updateMany).not.toHaveBeenCalled();
     expect(client.auditLog.create).not.toHaveBeenCalled();
   }
+  expect(mocks.tx.invoice.createManyAndReturn).not.toHaveBeenCalled();
+  expect(mocks.tx.auditLog.createMany).not.toHaveBeenCalled();
   expect(mocks.revalidatePath).not.toHaveBeenCalled();
 }
 
@@ -71,6 +90,10 @@ beforeEach(() => {
   mocks.tx.invoice.findFirst.mockResolvedValue({ invoiceNumber: "INV-000041" });
   mocks.tx.invoice.findUnique.mockResolvedValue(stored);
   mocks.tx.invoice.create.mockResolvedValue({ id: "inv1" });
+  // Echoes the rows back as inv1, inv2, … in the order they were sent.
+  mocks.tx.invoice.createManyAndReturn.mockImplementation(async ({ data }: { data: { invoiceNumber: string }[] }) =>
+    data.map((row, index) => ({ id: `inv${index + 1}`, invoiceNumber: row.invoiceNumber })),
+  );
   mocks.tx.invoice.updateMany.mockResolvedValue({ count: 1 });
   mocks.tx.employeeSettlement.findFirst.mockResolvedValue(null);
 });
@@ -80,24 +103,48 @@ afterEach(() => {
 });
 
 describe("createInvoice", () => {
-  it("stores the next number with its audit entry in one transaction", async () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ now, toFake: ["Date"] });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const data = { employeeId: "emp1", serviceId: "svc1", amount: "50.5", status: "PAID" };
+
+  /** The rows sent in the one bulk invoice insert. */
+  const createdRows = () => mocks.tx.invoice.createManyAndReturn.mock.calls[0][0].data;
+  /** The entries sent in the one bulk audit insert. */
+  const auditRows = () => mocks.tx.auditLog.createMany.mock.calls[0][0].data;
+
+  it("stores the next number dated now with its audit entry in one transaction", async () => {
     const result = await createInvoice(null, form(input));
 
-    expect(result).toEqual({ success: true, id: "inv1" });
+    expect(result).toEqual({ success: true, id: "inv1", count: 1 });
     expect(mocks.hasPermission).toHaveBeenCalledWith(admin, "invoices.create");
-    const data = { employeeId: "emp1", serviceId: "svc1", amount: "50.5", status: "PAID" };
-    expect(mocks.tx.invoice.create).toHaveBeenCalledWith({
-      data: { ...data, invoiceNumber: "INV-000042", createdById: "admin1" },
-      select: { id: true },
+    expect(mocks.tx.invoice.createManyAndReturn).toHaveBeenCalledWith({
+      data: [{ ...data, invoiceNumber: "INV-000042", createdAt: now, createdById: "admin1" }],
+      select: { id: true, invoiceNumber: true },
     });
-    expect(mocks.tx.auditLog.create).toHaveBeenCalledWith({
-      data: {
-        userId: "admin1",
-        action: "invoice.created",
-        entity: "Invoice",
-        entityId: "inv1",
-        newValue: { invoiceNumber: "INV-000042", ...data },
+    expect(mocks.tx.auditLog.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          userId: "admin1",
+          action: "invoice.created",
+          entity: "Invoice",
+          entityId: "inv1",
+          newValue: { invoiceNumber: "INV-000042", ...data, createdAt: now.toISOString() },
+        },
+      ],
+    });
+    // September 2026 is the month the invoice lands in.
+    expect(mocks.tx.employeeSettlement.findFirst).toHaveBeenCalledWith({
+      where: {
+        status: { in: ["APPROVED", "PAID"] },
+        OR: [{ employeeId: "emp1", periodStart: monthPeriod("2026-09").periodStart }],
       },
+      select: { id: true },
     });
     expect(mocks.db.invoice.create).not.toHaveBeenCalled();
     expect(mocks.db.auditLog.create).not.toHaveBeenCalled();
@@ -109,9 +156,7 @@ describe("createInvoice", () => {
 
     await createInvoice(null, form(input));
 
-    expect(mocks.tx.invoice.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ invoiceNumber: "INV-000001" }) }),
-    );
+    expect(createdRows()).toEqual([expect.objectContaining({ invoiceNumber: "INV-000001" })]);
   });
 
   it("invoices a Staff user themself, ignoring the submitted employee", async () => {
@@ -120,16 +165,18 @@ describe("createInvoice", () => {
     await createInvoice(null, form({ ...input, employeeId: "someone-else" }));
 
     expect(mocks.db.user.findUnique).toHaveBeenCalledWith({ where: { id: "staff1" }, select: { isActive: true } });
-    expect(mocks.tx.invoice.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ employeeId: "staff1", createdById: "staff1" }) }),
-    );
+    expect(createdRows()).toEqual([expect.objectContaining({ employeeId: "staff1", createdById: "staff1" })]);
   });
 
   it("lets a Staff user create only a Paid or Unpaid invoice", async () => {
     signIn(staff);
 
-    expect(await createInvoice(null, form({ ...input, status: "UNPAID" }))).toEqual({ success: true, id: "inv1" });
-    expect(mocks.tx.invoice.create.mock.calls[0][0].data).toMatchObject({ status: "UNPAID", amount: "50.5" });
+    expect(await createInvoice(null, form({ ...input, status: "UNPAID" }))).toEqual({
+      success: true,
+      id: "inv1",
+      count: 1,
+    });
+    expect(createdRows()[0]).toMatchObject({ status: "UNPAID", amount: "50.5" });
 
     vi.clearAllMocks();
     const values = { ...input, status: "CANCELLED" };
@@ -150,7 +197,7 @@ describe("createInvoice", () => {
   });
 
   it("returns field errors and the submitted values for invalid input", async () => {
-    const values = { employeeId: "", serviceId: "svc1", amount: "0", status: "CANCELLED" };
+    const values = { employeeId: "", serviceId: "svc1", amount: "0", status: "CANCELLED", date: "2026-09-15", count: "1" };
 
     expect(await createInvoice(null, form(values))).toEqual({
       success: false,
@@ -178,8 +225,96 @@ describe("createInvoice", () => {
       .mockRejectedValueOnce(uniqueViolation)
       .mockImplementationOnce(async (callback: (tx: unknown) => unknown) => callback(mocks.tx));
 
-    expect(await createInvoice(null, form(input))).toEqual({ success: true, id: "inv1" });
+    expect(await createInvoice(null, form(input))).toEqual({ success: true, id: "inv1", count: 1 });
     expect(mocks.db.$transaction).toHaveBeenCalledTimes(2);
+  });
+
+  it("creates several identical invoices in one insert, with one audit insert holding an entry each", async () => {
+    expect(await createInvoice(null, form({ ...input, count: "٣" }))).toEqual({ success: true, id: "inv1", count: 3 });
+
+    expect(createdRows()).toEqual(
+      ["INV-000042", "INV-000043", "INV-000044"].map((invoiceNumber) => ({
+        ...data,
+        invoiceNumber,
+        createdAt: now,
+        createdById: "admin1",
+      })),
+    );
+    expect(auditRows().map((entry: { entityId: string; newValue: { invoiceNumber: string } }) => [
+      entry.entityId,
+      entry.newValue.invoiceNumber,
+    ])).toEqual([
+      ["inv1", "INV-000042"],
+      ["inv2", "INV-000043"],
+      ["inv3", "INV-000044"],
+    ]);
+    // A fixed number of queries whatever the count, so a batch stays inside the transaction timeout.
+    expect(mocks.tx.invoice.createManyAndReturn).toHaveBeenCalledTimes(1);
+    expect(mocks.tx.auditLog.createMany).toHaveBeenCalledTimes(1);
+    expect(mocks.tx.invoice.create).not.toHaveBeenCalled();
+    expect(mocks.tx.auditLog.create).not.toHaveBeenCalled();
+    expect(mocks.db.$transaction).toHaveBeenCalledTimes(1);
+    expect(mocks.tx.invoice.findFirst).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns the lowest-numbered invoice even when the rows come back in another order", async () => {
+    mocks.tx.invoice.createManyAndReturn.mockResolvedValue([
+      { id: "invB", invoiceNumber: "INV-000043" },
+      { id: "invA", invoiceNumber: "INV-000042" },
+    ]);
+
+    expect(await createInvoice(null, form({ ...input, count: "2" }))).toEqual({ success: true, id: "invA", count: 2 });
+    expect(auditRows().map((entry: { entityId: string }) => entry.entityId)).toEqual(["invB", "invA"]);
+  });
+
+  it("dates a past day's invoices at 12:00 salon time and checks that day's month", async () => {
+    await createInvoice(null, form({ ...input, date: "2026-08-31", count: "2" }));
+
+    const dates = createdRows().map((row: { createdAt: Date }) => row.createdAt);
+    expect(dates).toEqual([new Date("2026-08-31T08:00:00.000Z"), new Date("2026-08-31T08:00:00.000Z")]);
+    expect(mocks.tx.employeeSettlement.findFirst.mock.calls[0][0].where.OR).toEqual([
+      { employeeId: "emp1", periodStart: monthPeriod("2026-08").periodStart },
+    ]);
+  });
+
+  it.each([
+    ["a future day", { date: "2026-09-16" }, { date: "invalid_input" }],
+    ["a missing day", { date: "" }, { date: "required" }],
+    ["too many invoices", { count: "21" }, { count: "invalid_input" }],
+    ["zero invoices", { count: "0" }, { count: "invalid_input" }],
+    ["a missing count", { count: "" }, { count: "required" }],
+  ])("refuses %s", async (_name, change, fieldErrors) => {
+    const values = { ...input, ...change };
+
+    expect(await createInvoice(null, form(values))).toEqual({
+      success: false,
+      error: "invalid_input",
+      fieldErrors,
+      values,
+    });
+    expectNothingWritten();
+  });
+
+  it("refuses a month whose settlement is approved or paid, writing nothing", async () => {
+    mocks.tx.employeeSettlement.findFirst.mockResolvedValue({ id: "set1" });
+
+    expect(await createInvoice(null, form({ ...input, count: "3" }))).toEqual({
+      success: false,
+      error: "settlement_locked",
+      values: { ...input, count: "3" },
+    });
+    expectNothingWritten();
+  });
+
+  it("retries the whole batch after a number collision", async () => {
+    mocks.db.$transaction
+      .mockRejectedValueOnce(uniqueViolation)
+      .mockImplementationOnce(async (callback: (tx: unknown) => unknown) => callback(mocks.tx));
+
+    expect(await createInvoice(null, form({ ...input, count: "2" }))).toMatchObject({ success: true, count: 2 });
+    expect(mocks.db.$transaction).toHaveBeenCalledTimes(2);
+    expect(mocks.tx.invoice.createManyAndReturn).toHaveBeenCalledTimes(1);
+    expect(createdRows()).toHaveLength(2);
   });
 
   it("gives up after three collisions", async () => {

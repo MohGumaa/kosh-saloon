@@ -439,6 +439,10 @@
       "date": "Date and time",
       "time": "Time",
       "dateHint": "Salon time (Dubai). Cannot be in the future.",
+      "day": "Date",
+      "dayHint": "Salon time (Dubai). Cannot be in the future. Today uses the current time; an earlier day is saved at 12:00.",
+      "count": "Number of invoices",
+      "countHint": "1 to {max}. Each one is a separate invoice with the same details.",
       "chooseEmployee": "Choose an employee",
       "chooseService": "Choose a service",
       "inactive": "{name} (inactive)"
@@ -448,7 +452,7 @@
       "description": "Record a sold service.",
       "submit": "Create invoice",
       "submitting": "Creating…",
-      "success": "Invoice created.",
+      "success": "{count, plural, one {Invoice created.} other {# invoices created.}}",
       "noServices": "There are no active services yet, so an invoice cannot be created.",
       "addService": "Add a service"
     },

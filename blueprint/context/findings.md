@@ -360,3 +360,12 @@
 **Why it matters:** The lock check uses the `stored` row read at the start of the transaction, and `updateMany` writes only the changed fields, conditioned only on `status: { not: "CANCELLED" }`. Under the default Read Committed isolation, edit A (employee emp1 to emp2, same September) and edit B (date September to October, read before A commits) each pass their own check: A checks (emp1, Sep) and (emp2, Sep), B checks (emp1, Sep) and (emp1, Oct). The final row is (emp2, Oct), which neither checked, so revenue can land in an APPROVED or PAID settlement for emp2 in October. This needs two managers saving the same invoice within milliseconds, and it was derived from the code, not reproduced. It is the same race class as F-36.
 **Suggested fix:** Add `employeeId: stored.employeeId, createdAt: stored.createdAt` to the `updateMany` where clause and treat `count === 0` on a non-cancelled row as a stale edit (for example the existing `unexpected`, or a new "changed, reload" code). No current requirement is lost.
 **Resolution:**
+
+### F-67 [P3] open - A create day in the years 0100 to 0999 passes validation and then fails the save as "unexpected"
+
+**File:** lib/invoices.ts:235
+**Found:** 2026-11-06 by /audit independent (scope: current; lens: quality)
+**Why it matters:** `invoiceDaySchema` uses `isCalendarDate` plus only an upper bound, so a forged `date=0999-01-15` passes. `invoiceCreatedAt` returns a real instant, and `touchesLockedSettlement` then calls `monthPeriod(salonMonth(createdAt))`. `Intl` formats year 999 as `999` (checked with Node), so the month string is malformed, the settlement query fails, and the user gets `unexpected` instead of a field error on `date`. Years 1000 to 1899 are saved, placing revenue in a meaningless month. This is the same gap as F-64, now reachable through the new create path. It needs a forged request or a far-back calendar navigation, so impact is low.
+**Suggested fix:** Give `invoiceDaySchema` the same lower bound chosen for F-64 (for example, reject days before 2000) and add `0999-01-15` to the rejection cases in `lib/invoices.test.ts`. No current requirement is lost.
+**Resolution:**
+

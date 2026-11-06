@@ -25,9 +25,6 @@ export const invoiceIdSchema = idSchema;
 /** The fields an edit can change. The amount must be greater than 0 and stays a string. */
 export const invoiceSchema = z.object({ employeeId: idSchema, serviceId: idSchema, amount: priceSchema });
 
-/** A new invoice starts Paid or Unpaid; the user must choose. */
-export const createInvoiceSchema = invoiceSchema.extend({ status: z.enum(["PAID", "UNPAID"]) });
-
 export const invoiceStatusSchema = z.enum(INVOICE_STATUSES);
 
 export type InvoiceInput = z.infer<typeof invoiceSchema>;
@@ -218,6 +215,59 @@ export const invoiceDateSchema = z
     return date;
   })
   .refine((date) => date.getTime() <= Date.now(), "date in the future");
+
+/** The most invoices one create can add. */
+export const MAX_INVOICES_PER_CREATE = 20;
+
+/** How many identical invoices a create adds: a whole number from 1 to the maximum. */
+export const invoiceCountSchema = z
+  .string()
+  .transform((value) => normalizeDigitsAndSpaces(value).trim())
+  .pipe(
+    z
+      .string()
+      .regex(/^\d{1,2}$/)
+      .transform(Number)
+      .pipe(z.number().int().min(1).max(MAX_INVOICES_PER_CREATE)),
+  );
+
+/** A create's invoice day: a real salon calendar day, not later than today. */
+export const invoiceDaySchema = z
+  .string()
+  .refine(isCalendarDate, "invalid date")
+  .refine((day) => day <= salonDateTimeInput(new Date()).slice(0, 10), "date in the future");
+
+/**
+ * The `createdAt` for a new invoice on this salon day: the current instant for today,
+ * and 12:00 salon time for an earlier day, safely inside that day.
+ */
+export function invoiceCreatedAt(day: string, now: Date = new Date(), timeZone: string = SALON_TIME_ZONE): Date {
+  if (day === salonDateTimeInput(now, timeZone).slice(0, 10)) return now;
+  const noon = parseSalonDateTime(`${day}T12:00`, timeZone);
+  if (!noon) throw new Error(`invoice day ${day} is not a calendar day`);
+  return noon;
+}
+
+/** `count` consecutive numbers after the highest stored one. */
+export function nextInvoiceNumbers(highest: string | null, count: number): string[] {
+  const numbers: string[] = [];
+  let previous = highest;
+  for (let i = 0; i < count; i++) {
+    previous = nextInvoiceNumber(previous);
+    numbers.push(previous);
+  }
+  return numbers;
+}
+
+/**
+ * A new invoice starts Paid or Unpaid; the user must choose. A create also sets the
+ * invoice day and how many identical invoices to add.
+ */
+export const createInvoiceSchema = invoiceSchema.extend({
+  status: z.enum(["PAID", "UNPAID"]),
+  date: invoiceDaySchema,
+  count: invoiceCountSchema,
+});
 
 /** An edit also moves the invoice date, which is its `createdAt`. */
 export const editInvoiceSchema = invoiceSchema.extend({ date: invoiceDateSchema });

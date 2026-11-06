@@ -5,6 +5,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { InvoiceCreateForm } from "@/components/invoices/InvoiceCreateForm";
 import { requirePermission } from "@/lib/auth/authorize";
 import { db } from "@/lib/db";
+import { salonToday } from "@/lib/expenses";
 import { isOwnScope } from "@/lib/invoices";
 import { getSalonSettings } from "@/lib/settings";
 
@@ -72,6 +73,7 @@ export default async function NewInvoicePage() {
                 isActive: true,
               }))}
               currency={currency}
+              today={salonToday()}
             />
           )}
         </div>
