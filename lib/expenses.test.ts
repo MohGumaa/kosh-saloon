@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   EXPENSE_CATEGORIES,
+  activeExpensePeriod,
   dateValue,
+  expensePeriodRange,
   dayOf,
   expenseListHref,
   expenseSchema,
@@ -113,15 +115,48 @@ describe("parseExpenseFilters", () => {
     expect(parseExpenseFilters({ from: "2026-10-01" })).toEqual({ from: "2026-10-01" });
     expect(parseExpenseFilters({ to: ["2026-10-01", "2026-10-09"] })).toEqual({ to: "2026-10-01" });
   });
+
+  it("keeps a non-default period, but not the default, an unknown one, or one beside a date", () => {
+    expect(parseExpenseFilters({ period: "year" })).toEqual({ period: "year" });
+    expect(parseExpenseFilters({ period: "all", category: "RENT" })).toEqual({ period: "all", category: "RENT" });
+    expect(parseExpenseFilters({ period: "month" })).toEqual({});
+    expect(parseExpenseFilters({ period: "forever" })).toEqual({});
+    expect(parseExpenseFilters({ period: "year", from: "2026-10-01" })).toEqual({ from: "2026-10-01" });
+  });
+});
+
+describe("expensePeriodRange", () => {
+  it.each([
+    ["month", "2026-10-07", { from: "2026-10-01", to: "2026-10-07" }],
+    ["previousMonth", "2026-10-07", { from: "2026-09-01", to: "2026-09-30" }],
+    ["previousMonth", "2026-03-31", { from: "2026-02-01", to: "2026-02-28" }],
+    ["previousMonth", "2026-01-15", { from: "2025-12-01", to: "2025-12-31" }],
+    ["year", "2026-10-07", { from: "2026-01-01", to: "2026-10-07" }],
+    ["all", "2026-10-07", null],
+  ] as const)("covers %s when today is %s", (period, today, range) => {
+    expect(expensePeriodRange(period, today)).toEqual(range);
+  });
+
+  it("shows no period while a date is set", () => {
+    expect(activeExpensePeriod({})).toBe("month");
+    expect(activeExpensePeriod({ period: "year" })).toBe("year");
+    expect(activeExpensePeriod({ to: "2026-10-01" })).toBeNull();
+  });
 });
 
 describe("expenseWhere", () => {
-  it("lists everything with no filters", () => {
-    expect(expenseWhere({})).toEqual({});
+  it("lists this month with no filters", () => {
+    expect(expenseWhere({}, TODAY)).toEqual({
+      date: { gte: new Date("2026-10-01T00:00:00.000Z"), lte: new Date(`${TODAY}T00:00:00.000Z`) },
+    });
+  });
+
+  it("lists everything for all time", () => {
+    expect(expenseWhere({ period: "all" }, TODAY)).toEqual({});
   });
 
   it("bounds the date column inclusively and matches the category and search text", () => {
-    expect(expenseWhere({ q: "rent", category: "RENT", from: "2026-09-01", to: "2026-09-30" })).toEqual({
+    expect(expenseWhere({ q: "rent", category: "RENT", from: "2026-09-01", to: "2026-09-30" }, TODAY)).toEqual({
       category: "RENT",
       date: { gte: new Date("2026-09-01T00:00:00.000Z"), lte: new Date("2026-09-30T00:00:00.000Z") },
       OR: [
@@ -132,7 +167,7 @@ describe("expenseWhere", () => {
   });
 
   it("handles one open end, including the last representable day", () => {
-    expect(expenseWhere({ to: "9999-12-31" })).toEqual({ date: { lte: new Date("9999-12-31T00:00:00.000Z") } });
+    expect(expenseWhere({ to: "9999-12-31" }, TODAY)).toEqual({ date: { lte: new Date("9999-12-31T00:00:00.000Z") } });
   });
 });
 
@@ -141,5 +176,8 @@ describe("expenseListHref", () => {
     expect(expenseListHref({})).toBe("/expenses");
     expect(expenseListHref({ category: "RENT", q: "a b" }, 1)).toBe("/expenses?q=a+b&category=RENT");
     expect(expenseListHref({ from: "2026-10-01" }, 3)).toBe("/expenses?from=2026-10-01&page=3");
+    expect(expenseListHref({ category: "RENT", period: "previousMonth" }, 2)).toBe(
+      "/expenses?category=RENT&period=previousMonth&page=2",
+    );
   });
 });

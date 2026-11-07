@@ -49,6 +49,24 @@ describe("parseRevenueReport presets", () => {
   });
 
   it.each([
+    [today, "2026-10-06"],
+    ["2026-03-01", "2026-02-28"], // across a month end
+    ["2026-01-01", "2025-12-31"], // across a year end
+  ])("covers only the day before %s for yesterday", (day, yesterday) => {
+    expect(parse({ period: "yesterday" }, day)).toMatchObject({
+      period: "yesterday",
+      from: yesterday,
+      to: yesterday,
+      group: "day",
+    });
+  });
+
+  it("keeps yesterday in preset links", () => {
+    const range = parseRevenueReport({}, today);
+    expect(reportHref("/reports/revenue", range, { period: "yesterday" }, today)).toBe("/reports/revenue?period=yesterday");
+  });
+
+  it.each([
     ["2026-10-05", "2026-10-05"], // Monday: just today
     ["2026-10-11", "2026-10-05"], // Sunday: the whole week
   ])("covers this week from Monday when today is %s", (day, monday) => {

@@ -537,7 +537,16 @@
       "create": "Add the first expense to start tracking what the salon spends.",
       "view": "No expenses have been recorded yet.",
       "noMatchTitle": "No matching expenses",
-      "noMatch": "No expenses match these filters."
+      "noMatch": "No expenses match these filters.",
+      "monthTitle": "No expenses this month",
+      "month": "No expenses have been recorded this month yet."
+    },
+    "periods": {
+      "label": "Expense period",
+      "month": "This month",
+      "previousMonth": "Previous month",
+      "year": "This year",
+      "all": "All time"
     },
     "pagination": {
       "label": "Expense pages",
@@ -796,6 +805,7 @@
     "periods": {
       "label": "Period",
       "today": "Today",
+      "yesterday": "Yesterday",
       "week": "This week",
       "month": "This month",
       "year": "This year",

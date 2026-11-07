@@ -11,11 +11,16 @@ import { resolvePage } from "@/lib/audit";
 import { requirePermission } from "@/lib/auth/authorize";
 import { db } from "@/lib/db";
 import {
+  DEFAULT_EXPENSE_PERIOD,
   EXPENSE_CATEGORIES,
   EXPENSE_PAGE_SIZE,
+  EXPENSE_PERIODS,
+  activeExpensePeriod,
   expenseListHref,
   expenseWhere,
   parseExpenseFilters,
+  salonToday,
+  type ExpensePeriod,
 } from "@/lib/expenses";
 import { nameLabels } from "@/lib/names";
 import { getSalonSettings } from "@/lib/settings";
@@ -33,6 +38,11 @@ const linkClass =
 
 const controlClass = "h-11 rounded-xl px-3 md:text-sm";
 
+const chipClass =
+  "flex h-9 items-center rounded-xl border px-3 text-sm font-medium outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50";
+
+const activeChipClass = "border-primary bg-primary text-primary-foreground hover:bg-primary/80";
+
 export default async function ExpensesPage({ searchParams }: PageProps<"/expenses">) {
   const { permissions } = await requirePermission("expenses.view");
   const canCreate = permissions.has("expenses.create");
@@ -40,7 +50,17 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
   const params = await searchParams;
   const filters = parseExpenseFilters(params);
   const filtered = Object.keys(filters).length > 0;
-  const where = expenseWhere(filters);
+  const where = expenseWhere(filters, salonToday());
+  const activePeriod = activeExpensePeriod(filters);
+  // All time with no search or category: an empty list means nothing was ever recorded.
+  const noExpensesAtAll = activePeriod === "all" && !filters.q && !filters.category;
+  // A period link keeps the search and category but replaces any From/To dates.
+  const periodHref = (period: ExpensePeriod) =>
+    expenseListHref({
+      q: filters.q,
+      category: filters.category,
+      period: period === DEFAULT_EXPENSE_PERIOD ? undefined : period,
+    });
 
   const [t, locale, { currency }, total] = await Promise.all([
     getTranslations("expenses"),
@@ -99,6 +119,26 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
         aria-label={t("filters.label")}
         className="grid min-w-0 gap-4 rounded-2xl border bg-card p-5 text-card-foreground shadow-card sm:grid-cols-2 lg:grid-cols-4 lg:p-6"
       >
+        <nav aria-label={t("periods.label")} className="sm:col-span-2 lg:col-span-4">
+          <ul className="flex flex-wrap gap-2">
+            {EXPENSE_PERIODS.map((period) => {
+              const active = activePeriod === period;
+              return (
+                <li key={period}>
+                  <Link
+                    href={periodHref(period)}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(chipClass, active && activeChipClass)}
+                  >
+                    {t(`periods.${period}`)}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+        {/* Keeps the chosen period when the form is submitted without dates. */}
+        {filters.period && <input type="hidden" name="period" value={filters.period} />}
         <div className="flex flex-col gap-2 sm:col-span-2">
           <label htmlFor="filter-q" className="text-sm font-medium">
             {t("filters.q")}
@@ -154,7 +194,20 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
       {/* min-w-0 lets the card shrink below the table, so the table scrolls instead of widening the page. */}
       <section className="min-w-0 rounded-2xl border bg-card p-5 text-card-foreground shadow-card lg:p-6">
         {expenses.length === 0 ? (
-          filtered ? (
+          noExpensesAtAll ? (
+            <EmptyState
+              icon={Wallet}
+              title={t("empty.title")}
+              description={t(canCreate ? "empty.create" : "empty.view")}
+              action={
+                canCreate && (
+                  <Link href="/expenses/new" className={cn(linkClass, "text-sm")}>
+                    {t("new")}
+                  </Link>
+                )
+              }
+            />
+          ) : filtered ? (
             <EmptyState
               icon={Wallet}
               title={t("empty.noMatchTitle")}
@@ -166,16 +219,15 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
               }
             />
           ) : (
+            // The default view is this month, so an empty list may only mean an empty month.
             <EmptyState
               icon={Wallet}
-              title={t("empty.title")}
-              description={t(canCreate ? "empty.create" : "empty.view")}
+              title={t("empty.monthTitle")}
+              description={t("empty.month")}
               action={
-                canCreate && (
-                  <Link href="/expenses/new" className={cn(linkClass, "text-sm")}>
-                    {t("new")}
-                  </Link>
-                )
+                <Link href={periodHref("all")} className={cn(linkClass, "text-sm")}>
+                  {t("periods.all")}
+                </Link>
               }
             />
           )

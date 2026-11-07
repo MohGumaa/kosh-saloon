@@ -80,15 +80,47 @@ export function dayOf(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+/** Quick date ranges for the list. A From or To date replaces the period. */
+export const EXPENSE_PERIODS = ["month", "previousMonth", "year", "all"] as const;
+
+export type ExpensePeriod = (typeof EXPENSE_PERIODS)[number];
+
+export const DEFAULT_EXPENSE_PERIOD = "month" satisfies ExpensePeriod;
+
 export interface ExpenseFilters {
   q?: string;
   category?: ExpenseCategoryValue;
+  /** Set only when it is not the default and no From or To date is set. */
+  period?: ExpensePeriod;
   /** `YYYY-MM-DD`, inclusive. */
   from?: string;
   to?: string;
 }
 
-export const FILTER_KEYS = ["q", "category", "from", "to"] as const;
+export const FILTER_KEYS = ["q", "category", "period", "from", "to"] as const;
+
+/** The inclusive salon days a period covers, or `null` for no date limit. */
+export function expensePeriodRange(period: ExpensePeriod, today: string): { from: string; to: string } | null {
+  switch (period) {
+    case "month":
+      return { from: `${today.slice(0, 7)}-01`, to: today };
+    case "previousMonth": {
+      // Day 0 of this month is the last day of the previous one.
+      const lastDay = new Date(Date.UTC(Number(today.slice(0, 4)), Number(today.slice(5, 7)) - 1, 0));
+      const to = dayOf(lastDay);
+      return { from: `${to.slice(0, 7)}-01`, to };
+    }
+    case "year":
+      return { from: `${today.slice(0, 4)}-01-01`, to: today };
+    case "all":
+      return null;
+  }
+}
+
+/** The period the list shows: none while a From or To date is set. */
+export function activeExpensePeriod(filters: ExpenseFilters): ExpensePeriod | null {
+  return filters.from || filters.to ? null : (filters.period ?? DEFAULT_EXPENSE_PERIOD);
+}
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -116,17 +148,25 @@ export function parseExpenseFilters(params: SearchParams): ExpenseFilters {
     if (validTo) filters.to = validTo;
   }
 
+  const period = EXPENSE_PERIODS.find((key) => key === first(params.period));
+  if (period && period !== DEFAULT_EXPENSE_PERIOD && !filters.from && !filters.to) filters.period = period;
+
   return filters;
 }
 
-/** The list query for these filters. Salon expenses have no per-user scope. */
-export function expenseWhere(filters: ExpenseFilters): Prisma.SalonExpenseWhereInput {
+/**
+ * The list query for these filters. Without a From or To date, the period applies (this month
+ * by default); `today` is the salon day. Salon expenses have no per-user scope.
+ */
+export function expenseWhere(filters: ExpenseFilters, today: string): Prisma.SalonExpenseWhereInput {
   const where: Prisma.SalonExpenseWhereInput = {};
   if (filters.category) where.category = filters.category;
-  if (filters.from || filters.to) {
+  const period = activeExpensePeriod(filters);
+  const range = period ? expensePeriodRange(period, today) : { from: filters.from, to: filters.to };
+  if (range && (range.from || range.to)) {
     where.date = {
-      ...(filters.from && { gte: dateValue(filters.from) }),
-      ...(filters.to && { lte: dateValue(filters.to) }),
+      ...(range.from && { gte: dateValue(range.from) }),
+      ...(range.to && { lte: dateValue(range.to) }),
     };
   }
   if (filters.q) {

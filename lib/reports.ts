@@ -5,7 +5,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import type { PermissionKey } from "@/lib/auth/permissions";
 import type { SessionUser } from "@/lib/auth/session";
-import { DAILY_MAX_DAYS, daysInRange, first, isValidCustomRange, presetRange } from "@/lib/dashboard";
+import { DAILY_MAX_DAYS, addDays, daysInRange, first, isValidCustomRange, presetRange } from "@/lib/dashboard";
 import { effectiveSharePercentage, shiftMonth, type ShareSource } from "@/lib/earnings";
 import { isOwnScope } from "@/lib/invoices";
 import {
@@ -17,7 +17,7 @@ import {
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
-export const REVENUE_PERIODS = ["today", "week", "month", "year", "custom"] as const;
+export const REVENUE_PERIODS = ["today", "yesterday", "week", "month", "year", "custom"] as const;
 
 export type RevenuePeriod = (typeof REVENUE_PERIODS)[number];
 
@@ -43,8 +43,12 @@ export interface RevenueReportRange {
   submitted?: { from?: string; to?: string };
 }
 
-/** The inclusive salon days a preset covers, ending today. */
+/** The inclusive salon days a preset covers, ending today or, for `yesterday`, the day before. */
 export function revenuePresetRange(period: RevenuePreset, today: string): { from: string; to: string } {
+  if (period === "yesterday") {
+    const yesterday = addDays(today, -1);
+    return { from: yesterday, to: yesterday };
+  }
   return period === "year" ? { from: `${today.slice(0, 4)}-01-01`, to: today } : presetRange(period, today);
 }
 
