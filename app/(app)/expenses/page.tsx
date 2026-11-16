@@ -34,14 +34,14 @@ export async function generateMetadata(): Promise<Metadata> {
 const COLUMNS = ["date", "title", "category", "amount", "createdBy"] as const;
 
 const linkClass =
-  "rounded-md font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring";
+  "rounded-md font-medium text-primary-text underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring";
 
 const controlClass = "h-11 rounded-xl px-3 md:text-sm";
 
 const chipClass =
-  "flex h-9 items-center rounded-xl border px-3 text-sm font-medium outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50";
+  "flex h-9 items-center rounded-xl border px-3 text-sm font-medium outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring";
 
-const activeChipClass = "border-primary bg-primary text-primary-foreground hover:bg-primary/80";
+const activeChipClass = "border-primary bg-primary text-primary-foreground hover:bg-primary-hover";
 
 export default async function ExpensesPage({ searchParams }: PageProps<"/expenses">) {
   const { permissions } = await requirePermission("expenses.view");
@@ -105,7 +105,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
         {canCreate && (
           <Link
             href="/expenses/new"
-            className="flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground outline-none hover:bg-primary/80 focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground outline-none hover:bg-primary-hover focus-visible:ring-3 focus-visible:ring-ring"
           >
             <Plus aria-hidden className="size-4" />
             {t("new")}
@@ -179,7 +179,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
         <div className="flex flex-wrap items-center gap-4 sm:col-span-2 lg:col-span-4">
           <button
             type="submit"
-            className="h-11 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground outline-none hover:bg-primary/80 focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="h-11 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground outline-none hover:bg-primary-hover focus-visible:ring-3 focus-visible:ring-ring"
           >
             {t("filters.apply")}
           </button>

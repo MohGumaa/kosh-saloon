@@ -129,7 +129,7 @@ export function InvoiceCreateForm({ employees, services, currency, today }: Invo
           {STATUSES.map((status) => (
             <label
               key={status}
-              className="flex h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 text-sm has-data-checked:border-primary has-data-checked:bg-primary-soft has-focus-visible:ring-3 has-focus-visible:ring-ring/50 md:text-base"
+              className="flex h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 text-sm has-data-checked:border-primary has-data-checked:bg-primary-soft has-focus-visible:ring-3 has-focus-visible:ring-ring md:text-base"
             >
               <RadioGroupItem value={status} className="focus-visible:ring-0" />
               {t(`statuses.${status}`)}

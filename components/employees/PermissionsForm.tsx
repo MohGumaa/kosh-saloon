@@ -4,6 +4,7 @@ import { startTransition, useActionState, useState, type FormEvent } from "react
 import { useTranslations } from "next-intl";
 import { updateUserPermissions, type PermissionsFormState } from "@/actions/permissions";
 import { FormMessage } from "@/components/auth/FormMessage";
+import { useFocusOnError } from "@/components/auth/useFocusOnError";
 import { useSuccessToast } from "@/components/auth/useSuccessToast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -31,6 +32,8 @@ export function PermissionsForm({ userId, current, changeable, defaults, readOnl
   const t = useTranslations("permissions");
   const [state, action, pending] = useActionState<PermissionsFormState, FormData>(updateUserPermissions, null);
   useSuccessToast(state, t("saved"));
+  // No field-level errors here, so a failed save focuses the form-level message.
+  const { formRef, messageRef } = useFocusOnError(state);
   const [checked, setChecked] = useState<ReadonlySet<PermissionKey>>(() => new Set(current));
   const canChange = new Set(changeable);
   const hasLocked = !readOnly && changeable.length < PERMISSION_KEYS.length;
@@ -66,9 +69,9 @@ export function PermissionsForm({ userId, current, changeable, defaults, readOnl
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+    <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-6">
       <input type="hidden" name="userId" value={userId} />
-      {state && !state.success && <FormMessage tone="error">{t(`errors.${state.error}`)}</FormMessage>}
+      {state && !state.success && <FormMessage ref={messageRef} tone="error">{t(`errors.${state.error}`)}</FormMessage>}
       {hasLocked && <p className="text-sm text-muted-foreground">{t("lockedNote")}</p>}
 
       <div className="grid gap-5 md:grid-cols-2">

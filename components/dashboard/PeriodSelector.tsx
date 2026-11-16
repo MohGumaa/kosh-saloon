@@ -27,8 +27,8 @@ export async function PeriodSelector({ range, today }: { range: DashboardRange; 
                   href={presetHref(period)}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex h-9 items-center rounded-xl border px-3 text-sm font-medium outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50",
-                    active && "border-primary bg-primary text-primary-foreground hover:bg-primary/80",
+                    "flex h-9 items-center rounded-xl border px-3 text-sm font-medium outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring",
+                    active && "border-primary bg-primary text-primary-foreground hover:bg-primary-hover",
                   )}
                 >
                   {t(`periods.${period}`)}
@@ -62,8 +62,8 @@ export async function PeriodSelector({ range, today }: { range: DashboardRange; 
           type="submit"
           aria-current={range.period === "custom" ? "page" : undefined}
           className={cn(
-            "h-11 rounded-xl border px-5 text-sm font-medium outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50",
-            range.period === "custom" && "border-primary bg-primary text-primary-foreground hover:bg-primary/80",
+            "h-11 rounded-xl border px-5 text-sm font-medium outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring",
+            range.period === "custom" && "border-primary bg-primary text-primary-foreground hover:bg-primary-hover",
           )}
         >
           {t("custom.apply")}

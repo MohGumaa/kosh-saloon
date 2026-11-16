@@ -14,7 +14,7 @@ const panelClass = "min-w-0 rounded-2xl border bg-card p-5 text-card-foreground 
 const numberCell = "px-3 py-3 tabular-nums whitespace-nowrap";
 
 const linkClass =
-  "rounded-md font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring";
+  "rounded-md font-medium text-primary-text underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring";
 
 type Column = "invoices" | "paid" | "unpaid" | "share" | "earnings" | "expenses" | "payout";
 

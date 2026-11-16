@@ -53,7 +53,7 @@ export function AdjustmentList({ rows, locale, currency, pendingLabel, addedBy }
           {row.link ? (
             <Link
               href={row.link.href}
-              className="shrink-0 self-start rounded-md text-sm font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring"
+              className="shrink-0 self-start rounded-md text-sm font-medium text-primary-text underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring"
             >
               {row.link.label}
             </Link>

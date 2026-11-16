@@ -46,6 +46,7 @@
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-primary-soft: var(--primary-soft);
+  --color-primary-text: var(--primary-text);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -96,6 +97,8 @@
   --primary: #2563eb;
   --primary-hover: #1d4fd8;
   --primary-soft: rgba(37, 99, 235, 0.1);
+  /* Kosh blue for links and small text; meets 4.5:1 on the background and cards. */
+  --primary-text: #2563eb;
   --primary-foreground: #ffffff;
   --secondary: #f0f3f9;
   --secondary-foreground: #0f1a2e;
@@ -110,7 +113,8 @@
   --destructive-soft: rgba(220, 59, 59, 0.1);
   --border: #dde3ee;
   --input: #dde3ee;
-  --ring: rgba(37, 99, 235, 0.35);
+  /* Focus indicators are solid so they meet 3:1 against the background, cards, and popovers. */
+  --ring: #2563eb;
 
   --success: #147a3a;
   --success-soft: rgba(22, 163, 74, 0.1);
@@ -140,7 +144,7 @@
   --sidebar-accent: rgba(255, 255, 255, 0.08);
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #26324f;
-  --sidebar-ring: rgba(96, 148, 255, 0.6);
+  --sidebar-ring: #6094ff;
 
   --sidebar-width: 16rem;
   --header-height: 4rem;
@@ -153,9 +157,13 @@
   --card-foreground: #e8eefc;
   --popover: #111a2e;
   --popover-foreground: #e8eefc;
-  --primary: #2f6bff;
-  --primary-hover: #4a7fff;
+  /* #2f6bff measured 4.499:1 under white button text; one step darker meets 4.5:1. */
+  --primary: #2e6afe;
+  /* Darker on hover so white button text keeps 4.5:1. */
+  --primary-hover: #2459e0;
   --primary-soft: rgba(47, 107, 255, 0.14);
+  /* Kosh blue is too dark for small text on dark cards (3.85:1); links use this lighter blue. */
+  --primary-text: #6b97ff;
   --primary-foreground: #ffffff;
   --secondary: #17223a;
   --secondary-foreground: #e8eefc;
@@ -168,7 +176,7 @@
   --destructive-soft: rgba(242, 90, 90, 0.14);
   --border: #22304d;
   --input: #22304d;
-  --ring: rgba(47, 107, 255, 0.45);
+  --ring: #2f6bff;
 
   --success: #22c55e;
   --success-soft: rgba(34, 197, 94, 0.14);
@@ -197,7 +205,7 @@
   --sidebar-accent: rgba(255, 255, 255, 0.08);
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #22304d;
-  --sidebar-ring: rgba(96, 148, 255, 0.6);
+  --sidebar-ring: #6094ff;
 }
 
 @layer base {

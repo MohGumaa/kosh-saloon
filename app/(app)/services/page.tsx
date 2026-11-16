@@ -43,7 +43,7 @@ export default async function ServicesPage() {
         {canCreate && (
           <Link
             href="/services/new"
-            className="flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground outline-none hover:bg-primary/80 focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground outline-none hover:bg-primary-hover focus-visible:ring-3 focus-visible:ring-ring"
           >
             <Plus aria-hidden className="size-4" />
             {t("new")}

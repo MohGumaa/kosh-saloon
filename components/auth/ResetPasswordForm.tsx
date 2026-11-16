@@ -22,7 +22,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
         <FormMessage ref={messageRef} tone="error">
           {t("errors.invalid_token")}
         </FormMessage>
-        <Link href="/forgot-password" className="text-center text-sm text-primary hover:underline">
+        <Link href="/forgot-password" className="text-center text-sm text-primary-text hover:underline">
           {t("reset.requestNew")}
         </Link>
       </div>

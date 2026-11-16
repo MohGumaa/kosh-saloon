@@ -19,7 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
 const COLUMNS = ["time", "user", "action", "record", "changes"] as const;
 
 const pageLinkClass =
-  "rounded-md font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring";
+  "rounded-md font-medium text-primary-text underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring";
 
 const pageHref = (page: number) => (page === 1 ? "/audit-log" : `/audit-log?page=${page}`);
 
@@ -129,7 +129,7 @@ export default async function AuditLogPage({ searchParams }: PageProps<"/audit-l
                             <span className="text-muted-foreground">{t("noChanges")}</span>
                           ) : (
                             <details>
-                              <summary className="cursor-pointer rounded-md font-medium text-primary outline-none focus-visible:ring-3 focus-visible:ring-ring">
+                              <summary className="cursor-pointer rounded-md font-medium text-primary-text outline-none focus-visible:ring-3 focus-visible:ring-ring">
                                 {t("viewChanges")}
                               </summary>
                               <dl className="mt-2 flex max-w-md flex-col gap-3">

@@ -74,7 +74,7 @@ export function DatePicker({
           id={id}
           {...aria}
           className={cn(
-            "flex h-11 w-full items-center gap-3 rounded-xl border border-input bg-transparent px-3 text-start text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:bg-input/30 dark:hover:bg-input/50",
+            "flex h-11 w-full items-center gap-3 rounded-xl border border-input bg-transparent px-3 text-start text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:bg-input/30 dark:hover:bg-input/50",
             clearable && value && "pe-11",
             className
           )}

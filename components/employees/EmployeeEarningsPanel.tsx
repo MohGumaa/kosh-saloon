@@ -9,7 +9,7 @@ import { getSalonSettings } from "@/lib/settings";
 import { calculateSettlement } from "@/lib/settlements";
 
 const linkClass =
-  "flex items-center gap-1 rounded-md font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring";
+  "flex items-center gap-1 rounded-md font-medium text-primary-text underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring";
 
 interface EmployeeEarningsPanelProps {
   employeeId: string;

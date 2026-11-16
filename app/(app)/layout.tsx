@@ -1,5 +1,6 @@
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { MAIN_CONTENT_ID, SkipLink } from "@/components/layout/SkipLink";
 import { ThemePreferenceSync } from "@/components/layout/ThemePreferenceSync";
 import { getPermissions } from "@/lib/auth/authorize";
 import { requireSession } from "@/lib/auth/current-user";
@@ -14,12 +15,15 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
 
   return (
     <div className="flex min-h-dvh">
+      <SkipLink />
       <ThemePreferenceSync stored={fromStoredTheme(user.theme)} />
       <Sidebar navKeys={navKeys} />
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Only display fields reach the client. */}
         <Header user={{ name: user.name, role: user.role, image: user.image }} navKeys={navKeys} />
-        <main className="flex-1 p-4 lg:p-6">{children}</main>
+        <main id={MAIN_CONTENT_ID} tabIndex={-1} className="flex-1 p-4 outline-none lg:p-6">
+          {children}
+        </main>
       </div>
     </div>
   );

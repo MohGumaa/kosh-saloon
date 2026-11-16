@@ -56,7 +56,7 @@ export async function generateMetadata(): Promise<Metadata> {
 const panelClass = "min-w-0 rounded-2xl border bg-card p-5 text-card-foreground shadow-card lg:p-6";
 
 const linkClass =
-  "rounded-md font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring";
+  "rounded-md font-medium text-primary-text underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring";
 
 const INVOICE_COLUMNS = ["invoice", "employee", "date", "amount", "status"] as const;
 

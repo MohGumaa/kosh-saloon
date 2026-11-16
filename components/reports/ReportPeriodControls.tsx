@@ -7,9 +7,9 @@ import { cn } from "@/lib/utils";
 const ERROR_ID = "report-range-error";
 
 const chipClass =
-  "flex h-9 items-center rounded-xl border px-3 text-sm font-medium outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50";
+  "flex h-9 items-center rounded-xl border px-3 text-sm font-medium outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring";
 
-const activeClass = "border-primary bg-primary text-primary-foreground hover:bg-primary/80";
+const activeClass = "border-primary bg-primary text-primary-foreground hover:bg-primary-hover";
 
 /** Preset and grouping links plus a custom-range GET form. The server parses the result; there is no client state. */
 export async function ReportPeriodControls({
@@ -74,7 +74,7 @@ export async function ReportPeriodControls({
           type="submit"
           aria-current={range.period === "custom" ? "page" : undefined}
           className={cn(
-            "h-11 rounded-xl border px-5 text-sm font-medium outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50",
+            "h-11 rounded-xl border px-5 text-sm font-medium outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring",
             range.period === "custom" && activeClass,
           )}
         >

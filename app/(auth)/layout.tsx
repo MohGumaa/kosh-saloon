@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { BrandPanel } from "@/components/auth/BrandPanel";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
+import { MAIN_CONTENT_ID, SkipLink } from "@/components/layout/SkipLink";
 import { ThemeSwitcher } from "@/components/layout/ThemeSwitcher";
 
 /** Signed-out pages: the form on one side and, from `lg`, the brand panel on the other. */
@@ -9,6 +10,7 @@ export default async function AuthLayout({ children }: LayoutProps<"/">) {
 
   return (
     <div className="grid min-h-dvh lg:grid-cols-2">
+      <SkipLink />
       <div className="flex min-h-dvh flex-col">
         <header className="flex items-center justify-between gap-2 p-4 lg:justify-end lg:px-8">
           <div className="flex items-center gap-3 lg:hidden">
@@ -28,7 +30,11 @@ export default async function AuthLayout({ children }: LayoutProps<"/">) {
             <ThemeSwitcher />
           </div>
         </header>
-        <main className="flex flex-1 items-center justify-center px-4 pt-6 pb-16 sm:px-8">
+        <main
+          id={MAIN_CONTENT_ID}
+          tabIndex={-1}
+          className="flex flex-1 items-center justify-center px-4 pt-6 pb-16 outline-none sm:px-8"
+        >
           <div className="w-full max-w-md">{children}</div>
         </main>
       </div>

@@ -34,7 +34,7 @@ const numberCell = "px-3 py-3 text-end tabular-nums whitespace-nowrap";
 const headCell = "px-3 py-2.5 font-medium";
 
 const linkClass =
-  "rounded-md font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring";
+  "rounded-md font-medium text-primary-text underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring";
 
 /** The money columns every table shares, in order. */
 const SUM_COLUMNS = ["revenue", "earnings", "expenses", "adjustments", "final"] as const;

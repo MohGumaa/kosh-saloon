@@ -54,7 +54,7 @@ export function LoginForm({ next, resetDone }: LoginFormProps) {
         error={failure?.fieldErrors?.password}
       />
 
-      <Link href="/forgot-password" className="self-start text-sm text-primary hover:underline">
+      <Link href="/forgot-password" className="self-start text-sm text-primary-text hover:underline">
         {t("login.forgotPassword")}
       </Link>
 

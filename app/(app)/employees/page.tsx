@@ -60,7 +60,7 @@ export default async function EmployeesPage() {
         {permissions.has("employees.create") && (
           <Link
             href="/employees/new"
-            className="flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground outline-none hover:bg-primary/80 focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground outline-none hover:bg-primary-hover focus-visible:ring-3 focus-visible:ring-ring"
           >
             <UserPlus aria-hidden className="size-4" />
             {t("new")}
@@ -130,7 +130,7 @@ export default async function EmployeesPage() {
                         <Link
                           href={`/employees/${user.id}?tab=permissions`}
                           aria-label={t("managePermissionsFor", { name: user.name })}
-                          className={cn(linkClass, "text-primary")}
+                          className={cn(linkClass, "text-primary-text")}
                         >
                           {t("managePermissions")}
                         </Link>

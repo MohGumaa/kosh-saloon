@@ -36,8 +36,10 @@
     }
   },
   "header": {
+    "skipToContent": "Skip to main content",
     "openMenu": "Open menu",
     "menu": "Menu",
+    "close": "Close",
     "language": "Language",
     "theme": "Theme"
   },
