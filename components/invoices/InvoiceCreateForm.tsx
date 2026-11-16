@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { MAX_INVOICES_PER_CREATE } from "@/lib/invoices";
+import { MAX_INVOICES_PER_CREATE } from "@/lib/form-constants";
 
 interface InvoiceCreateFormProps {
   employees: InvoiceChoice[] | { ownName: string };

@@ -8,8 +8,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { FormSelect, fieldSelectClass } from "@/components/ui/form-select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { EMPLOYEE_EXPENSE_CATEGORIES } from "@/lib/employee-expenses";
-import { DESCRIPTION_MAX } from "@/lib/expenses";
+import { DESCRIPTION_MAX, EMPLOYEE_EXPENSE_CATEGORIES } from "@/lib/form-constants";
 
 interface EmployeeExpenseFieldsProps {
   values: Record<EmployeeExpenseField, string>;

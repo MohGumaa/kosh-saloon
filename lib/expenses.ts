@@ -8,24 +8,13 @@ import { SINGLE_LINE_TEXT } from "@/lib/auth/validation";
 import { SALON_TIME_ZONE, isCalendarDate } from "@/lib/invoices";
 import { priceSchema } from "@/lib/services";
 
-export const EXPENSE_CATEGORIES = [
-  "RENT",
-  "ELECTRICITY",
-  "WATER",
-  "INTERNET",
-  "SUPPLIES",
-  "EQUIPMENT",
-  "MAINTENANCE",
-  "MARKETING",
-  "OTHER",
-] as const;
+import { DESCRIPTION_MAX, EXPENSE_CATEGORIES, TITLE_MAX } from "@/lib/form-constants";
+
+export { DESCRIPTION_MAX, EXPENSE_CATEGORIES, TITLE_MAX };
 
 export type ExpenseCategoryValue = (typeof EXPENSE_CATEGORIES)[number];
 
 export const EXPENSE_PAGE_SIZE = 50;
-
-export const TITLE_MAX = 100;
-export const DESCRIPTION_MAX = 500;
 
 export const expenseIdSchema = z.string().min(1).max(100);
 

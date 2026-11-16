@@ -6,7 +6,7 @@ import type { DetailsField, EmployeeFieldErrorCode } from "@/actions/employees";
 import { FormField } from "@/components/auth/FormField";
 import { FormSelect, fieldSelectClass } from "@/components/ui/form-select";
 import { Label } from "@/components/ui/label";
-import { ROLES } from "@/lib/employees";
+import { ROLES } from "@/lib/form-constants";
 
 interface EmployeeFieldsProps {
   values: Record<DetailsField, string>;

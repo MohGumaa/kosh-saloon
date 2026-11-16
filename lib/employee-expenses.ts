@@ -8,13 +8,9 @@ import { dateValue, descriptionSchema } from "@/lib/expenses";
 import { isCalendarDate } from "@/lib/invoices";
 import { priceSchema } from "@/lib/services";
 
-export const EMPLOYEE_EXPENSE_CATEGORIES = [
-  "CASH_ADVANCE",
-  "ADVANCE_SALARY",
-  "WITHDRAWAL",
-  "PERSONAL_PURCHASE",
-  "OTHER",
-] as const;
+import { EMPLOYEE_EXPENSE_CATEGORIES } from "@/lib/form-constants";
+
+export { EMPLOYEE_EXPENSE_CATEGORIES };
 
 export type EmployeeExpenseCategoryValue = (typeof EMPLOYEE_EXPENSE_CATEGORIES)[number];
 

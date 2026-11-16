@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { PHONE_CHARACTERS, SINGLE_LINE_TEXT, normalizeDigitsAndSpaces } from "@/lib/auth/validation";
+import { CHECKBOX_ON, LOGO_MAX_BYTES } from "@/lib/form-constants";
 
-/** The value a settings checkbox submits when checked; an unchecked box submits nothing. */
-export const CHECKBOX_ON = "true";
+export { CHECKBOX_ON, LOGO_MAX_BYTES };
 
 const optionalText =(max: number) => z.string().trim().max(max).regex(SINGLE_LINE_TEXT);
 
@@ -50,8 +50,6 @@ export const financialSettingsSchema = z.object({
 });
 
 export type FinancialSettings = z.infer<typeof financialSettingsSchema>;
-
-export const LOGO_MAX_BYTES = 1024 * 1024;
 
 export interface ImageType {
   contentType: "image/png" | "image/jpeg" | "image/webp";

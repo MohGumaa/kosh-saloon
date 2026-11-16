@@ -8,7 +8,7 @@ import { useFocusOnError } from "@/components/auth/useFocusOnError";
 import { useSuccessToast } from "@/components/auth/useSuccessToast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CHECKBOX_ON } from "@/lib/settings-validation";
+import { CHECKBOX_ON } from "@/lib/form-constants";
 
 interface NotificationsFormProps {
   loginNotificationsEnabled: boolean;

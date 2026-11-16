@@ -7,6 +7,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { PermissionKey } from "@/lib/auth/permissions";
 import type { SessionUser } from "@/lib/auth/session";
 import { SINGLE_LINE_TEXT, normalizeDigitsAndSpaces } from "@/lib/auth/validation";
+import { MAX_INVOICES_PER_CREATE } from "@/lib/form-constants";
 import { priceSchema } from "@/lib/services";
 
 export const INVOICE_STATUSES = ["PAID", "UNPAID", "CANCELLED"] as const;
@@ -216,8 +217,7 @@ export const invoiceDateSchema = z
   })
   .refine((date) => date.getTime() <= Date.now(), "date in the future");
 
-/** The most invoices one create can add. */
-export const MAX_INVOICES_PER_CREATE = 20;
+export { MAX_INVOICES_PER_CREATE };
 
 /** How many identical invoices a create adds: a whole number from 1 to the maximum. */
 export const invoiceCountSchema = z

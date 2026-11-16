@@ -6,7 +6,9 @@ import { z } from "zod";
 import { emailSchema, passwordSchema, profileSchema, usernameSchema } from "@/lib/auth/validation";
 import { percentageSchema } from "@/lib/settings-validation";
 
-export const ROLES = ["ADMIN", "SUPERVISOR", "STAFF"] as const;
+import { ROLES } from "@/lib/form-constants";
+
+export { ROLES };
 
 export type Role = (typeof ROLES)[number];
 

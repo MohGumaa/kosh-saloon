@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 // Not from `lib/settlements`, which loads the Prisma runtime that cannot run in the browser.
-import { DESCRIPTION_MAX as ADJUSTMENT_REASON_MAX } from "@/lib/expenses";
+import { DESCRIPTION_MAX as ADJUSTMENT_REASON_MAX } from "@/lib/form-constants";
 
 const EMPTY = { amount: "", reason: "" };
 

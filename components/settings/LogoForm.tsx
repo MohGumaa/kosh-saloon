@@ -11,7 +11,7 @@ import { useSuccessToast } from "@/components/auth/useSuccessToast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LOGO_MAX_BYTES } from "@/lib/settings-validation";
+import { LOGO_MAX_BYTES } from "@/lib/form-constants";
 
 interface LogoFormProps {
   /** The stored public URL, or null when no logo was uploaded. */
