@@ -7,6 +7,7 @@ import type { PermissionKey } from "@/lib/auth/permissions";
 import {
   bucketExpenses,
   bucketInvoices,
+  calculateProfit,
   chartBuckets,
   dashboardSections,
   presetRange,
@@ -61,6 +62,7 @@ export async function loadDashboard(
     chartExpenses,
     topServiceTotals,
     latestInvoices,
+    employeeExpenses,
   ] = await Promise.all([
     db.invoice.groupBy({
       by: ["status"],
@@ -110,12 +112,25 @@ export async function loadDashboard(
           },
         })
       : null,
+    sections.profit
+      ? db.employeeExpense.aggregate({ where: { date: expenseDate }, _sum: { amount: true } })
+      : null,
   ]);
 
   const paid = byStatus.find((row) => row.status === "PAID");
   const unpaid = byStatus.find((row) => row.status === "UNPAID");
   const paidSum = paid?._sum.amount ?? zero();
   const unpaidSum = unpaid?._sum.amount ?? zero();
+  const salonExpenses = expenses ? (expenses._sum.amount ?? zero()) : null;
+  // `profit` implies `expenses`, so the salon total is loaded whenever this runs.
+  const profit =
+    employeeExpenses && salonExpenses
+      ? calculateProfit({
+          paidRevenue: paidSum,
+          salonExpenses,
+          employeeExpenses: employeeExpenses._sum.amount ?? zero(),
+        })
+      : null;
 
   const keys = chartBuckets(range.from, range.to, range.granularity);
   const invoiceBuckets = bucketInvoices(chartInvoices, keys, range.granularity, timeZone);
@@ -139,7 +154,8 @@ export async function loadDashboard(
       bills: (paid?._count._all ?? 0) + (unpaid?._count._all ?? 0),
       billsTotal: paidSum.plus(unpaidSum),
       pendingRevenue: unpaidSum,
-      salonExpenses: expenses ? (expenses._sum.amount ?? zero()) : null,
+      profit,
+      salonExpenses,
       employeePayouts: payouts ? (payouts._sum.finalAmount ?? zero()) : null,
     },
     fixed: {

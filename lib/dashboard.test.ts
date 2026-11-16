@@ -5,6 +5,7 @@ import {
   averageBill,
   bucketExpenses,
   bucketInvoices,
+  calculateProfit,
   canViewSalonDashboard,
   chartBuckets,
   dashboardSections,
@@ -238,13 +239,46 @@ describe("dashboard access", () => {
   });
 
   it("enables each extra widget only with its permission", () => {
-    expect(dashboardSections(all)).toEqual({ expenses: true, payouts: true, latestInvoices: true });
-    expect(dashboardSections(reports)).toEqual({ expenses: false, payouts: false, latestInvoices: false });
+    expect(dashboardSections(all)).toEqual({ expenses: true, payouts: true, latestInvoices: true, profit: true });
+    expect(dashboardSections(reports)).toEqual({
+      expenses: false,
+      payouts: false,
+      latestInvoices: false,
+      profit: false,
+    });
     expect(dashboardSections(new Set(["expenses.view"]))).toEqual({
       expenses: true,
       payouts: false,
       latestInvoices: false,
+      profit: false,
     });
+  });
+
+  it("shows profit only with both salon and employee expense views", () => {
+    expect(dashboardSections(new Set(["expenses.view", "employee_expenses.view"])).profit).toBe(true);
+    expect(dashboardSections(new Set(["employee_expenses.view"])).profit).toBe(false);
+    expect(dashboardSections(new Set(["expenses.view", "settlements.view"])).profit).toBe(false);
+  });
+});
+
+describe("calculateProfit", () => {
+  it("subtracts salon and employee expenses from paid revenue", () => {
+    const profit = calculateProfit({ paidRevenue: "6805.00", salonExpenses: "1200.00", employeeExpenses: "735.00" });
+    expect(profit.toFixed(2)).toBe("4870.00");
+  });
+
+  it("keeps exact decimals", () => {
+    expect(calculateProfit({ paidRevenue: "0.30", salonExpenses: "0.10", employeeExpenses: "0.20" }).toFixed(2)).toBe(
+      "0.00",
+    );
+  });
+
+  it("can be negative", () => {
+    expect(calculateProfit({ paidRevenue: 100, salonExpenses: 150, employeeExpenses: 25 }).toFixed(2)).toBe("-75.00");
+  });
+
+  it("is the paid revenue when there are no expenses", () => {
+    expect(calculateProfit({ paidRevenue: "250.50", salonExpenses: 0, employeeExpenses: 0 }).toFixed(2)).toBe("250.50");
   });
 });
 

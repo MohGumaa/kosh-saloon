@@ -10,6 +10,7 @@ import {
   Hourglass,
   Percent,
   PieChart,
+  PiggyBank,
   Receipt,
   Scissors,
   Sun,
@@ -266,12 +267,15 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
   const periodCards: { key: string; value: string; icon: LucideIcon }[] = [
     { key: "paidRevenue", value: price.format(data.period.paidRevenue.toNumber()), icon: TrendingUp },
-    { key: "bills", value: count.format(data.period.bills), icon: FileText },
-    { key: "pendingRevenue", value: price.format(data.period.pendingRevenue.toNumber()), icon: Hourglass },
-    { key: "averageBill", value: average ? price.format(average.toNumber()) : t("noValue"), icon: Calculator },
     ...(data.period.salonExpenses
       ? [{ key: "salonExpenses", value: price.format(data.period.salonExpenses.toNumber()), icon: Wallet }]
       : []),
+    // Profit replaces Pending revenue only for viewers who may see both expense totals it is built from.
+    data.period.profit
+      ? { key: "profit", value: price.format(data.period.profit.toNumber()), icon: PiggyBank }
+      : { key: "pendingRevenue", value: price.format(data.period.pendingRevenue.toNumber()), icon: Hourglass },
+    { key: "averageBill", value: average ? price.format(average.toNumber()) : t("noValue"), icon: Calculator },
+    { key: "bills", value: count.format(data.period.bills), icon: FileText },
     ...(data.period.employeePayouts
       ? [{ key: "employeePayouts", value: price.format(data.period.employeePayouts.toNumber()), icon: HandCoins }]
       : []),

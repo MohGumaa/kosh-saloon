@@ -369,3 +369,11 @@
 **Suggested fix:** Give `invoiceDaySchema` the same lower bound chosen for F-64 (for example, reject days before 2000) and add `0999-01-15` to the rejection cases in `lib/invoices.test.ts`. No current requirement is lost.
 **Resolution:**
 
+### F-68 [P3] open - No test pins that the salon dashboard skips the employee-expense query and returns no Profit without both expense views
+
+**File:** lib/dashboard-data.ts:115
+**Found:** 2026-11-16 by /audit independent (scope: current; lens: tests)
+**Why it matters:** The spec says "The employee-expense query runs only when this section is allowed" and lists "Query gating for viewers without permissions" under Must not break; the point of the gate is that a viewer missing `expenses.view` or `employee_expenses.view` never receives a total built from figures they cannot see. `dashboardSections(...).profit` and `calculateProfit` are unit-tested (`lib/dashboard.test.ts:241` to `:283`), but the wiring in `loadDashboard` is not: nothing asserts that `sections.profit: false` skips `db.employeeExpense.aggregate` (lines 115 to 117), that `period.profit` is `null` in that case (lines 126 to 133, which the page uses to choose Profit over Pending revenue), or that the query filters on the expense `date` with `gte`/`lte` like the salon expense total. The code is correct at `ecd7cb2`; a later edit that drops the ternary or the `salonExpenses &&` guard would show salon-wide employee deductions (folded into Profit) to a Supervisor without `employee_expenses.view` and still pass `pnpm test`, `tsc`, and lint. The spec's done-when for step 1 asked only for the pure-helper tests, so this is a gap against the gating contract, not a missed configured gate. Same shape as F-48 (personal dashboard loader); repairing F-48 alone does not cover `loadDashboard`.
+**Suggested fix:** Add cases to a `lib/dashboard-data.test.ts` with a mocked `db` (as `actions/settlements.test.ts` does) asserting: with only `expenses.view`, `employeeExpense.aggregate` is never called and `period.profit` is `null`; with both views it is called once with `where: { date: { gte: dateValue(from), lte: dateValue(to) } }` and `period.profit` equals paid revenue minus both sums (including a negative case). No current requirement is lost.
+**Resolution:**
+

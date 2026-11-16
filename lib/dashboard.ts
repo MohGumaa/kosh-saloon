@@ -217,11 +217,23 @@ export function canViewSalonDashboard(
 
 /** The widgets that need a permission beyond the salon dashboard itself. Their queries run only when true. */
 export function dashboardSections(permissions: ReadonlySet<PermissionKey>) {
+  const expenses = permissions.has("expenses.view");
   return {
-    expenses: permissions.has("expenses.view"),
+    expenses,
     payouts: permissions.has("settlements.view"),
     latestInvoices: permissions.has("invoices.view"),
+    // Profit is built from salon and employee expenses, so it needs both views.
+    profit: expenses && permissions.has("employee_expenses.view"),
   };
+}
+
+/** Paid revenue minus salon and employee expenses. Settlements are not part of it; it can be negative. */
+export function calculateProfit(parts: {
+  paidRevenue: DecimalInput;
+  salonExpenses: DecimalInput;
+  employeeExpenses: DecimalInput;
+}): Prisma.Decimal {
+  return new Prisma.Decimal(parts.paidRevenue).minus(parts.salonExpenses).minus(parts.employeeExpenses);
 }
 
 /** The Staff personal dashboard's sections. Their queries run only when true. */
