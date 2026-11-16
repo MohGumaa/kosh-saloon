@@ -57,6 +57,8 @@ export const NAVIGATION: NavGroup[] = [
       },
       { key: "employeeEarnings", permissions: ["reports.view"] },
       { key: "settlements", href: "/reports/settlements", permissions: ["settlements.view"] },
+      // The page also requires reports.view and settlements.view, and never shows to Staff.
+      { key: "closingStatement", href: "/reports/closing", permissions: ["expenses.view"] },
     ],
   },
   {

@@ -227,3 +227,28 @@
     color-scheme: dark;
   }
 }
+
+/* Printing always uses the light palette on white paper, whatever theme is on screen. */
+@media print {
+  .dark {
+    --background: #ffffff;
+    --foreground: #0f1a2e;
+    --card: #ffffff;
+    --card-foreground: #0f1a2e;
+    --muted: #f0f3f9;
+    --muted-foreground: #56627a;
+    --border: #dde3ee;
+    --primary-text: #2563eb;
+    --destructive: #c53030;
+    --success: #147a3a;
+    --warning: #9a5b07;
+    --warning-soft: rgba(217, 140, 16, 0.12);
+    --st-draft: #5a687e;
+    --st-calculated: #7c3aed;
+    --st-approved: #2563eb;
+    color-scheme: light;
+  }
+  body {
+    background: #ffffff;
+  }
+}

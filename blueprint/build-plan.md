@@ -76,6 +76,8 @@ Your features
 
 - [x] 30. Invoice date & multiple invoices on create - On the create invoice form, every user who can create invoices (Admin, Supervisor, and Staff for their own invoices) can pick the invoice date (default today, no future dates) and a number of invoices (default 1, up to 20); one save creates that many identical invoices, each with its own sequential number.
 
+- [x] 31. Monthly closing statement - A printable `/reports/closing` page for one completed month, used to do the month-end calculation with the supervisor: total paid revenue, then one line per employee from their saved settlement (share + adjustments earned, minus advances already taken, = final payout still to pay, with status), then salon expenses by category, ending with the net the salon keeps = paid revenue − employee earnings − salon expenses. Employees without a settlement for that month are flagged "not settled" and the net is marked provisional until every active employee is settled. Visible only to users who can view both settlements and salon expenses. EN/AR, RTL, and Print / Save as PDF; nothing new is stored.
+
 Future features
 These should remain outside V1 until the core CRM is stable:
 

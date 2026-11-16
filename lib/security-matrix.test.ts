@@ -10,6 +10,7 @@ import { canChangeEmployeeRole, canManageEmployee, canManageEmployeeAccess, type
 import { canManageInvoices, canViewEmployeeInvoices } from "@/lib/invoices";
 import { visibleNavKeys } from "@/lib/navigation";
 import {
+  canViewClosingStatement,
   canViewEmployeePerformance,
   canViewExpenseReport,
   canViewRevenueReport,
@@ -132,6 +133,10 @@ describe("salon-wide dashboard and reports", () => {
 
   it("never shows Staff the expense report", () => {
     expectRow((a) => canViewExpenseReport(a, a.permissions), salonWide);
+  });
+
+  it("never shows Staff the closing statement", () => {
+    expectRow((a) => canViewClosingStatement(a, a.permissions), salonWide);
   });
 
   it("limits Staff to their own performance, whatever they hold", () => {
@@ -285,6 +290,7 @@ describe("navigation", () => {
         "employeePerformance",
         "employeeEarnings",
         "settlements",
+        "closingStatement",
         "settings",
         "auditLog",
       ],
@@ -299,6 +305,7 @@ describe("navigation", () => {
         "employeePerformance",
         "employeeEarnings",
         "settlements",
+        "closingStatement",
       ],
       staff: ["dashboard", "invoices", "services", "employeePerformance", "settlements"],
       // Links only: the report pages still refuse Staff (open finding F-50 covers the dead links).
@@ -313,6 +320,7 @@ describe("navigation", () => {
         "employeePerformance",
         "employeeEarnings",
         "settlements",
+        "closingStatement",
         "settings",
       ],
       supervisorWithNone: ["dashboard"],

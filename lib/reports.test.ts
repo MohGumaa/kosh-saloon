@@ -3,7 +3,9 @@ import { Prisma } from "@/generated/prisma/client";
 import { PERMISSION_KEYS, ROLE_DEFAULTS, type PermissionKey } from "@/lib/auth/permissions";
 import {
   breakdownRows,
+  canViewClosingStatement,
   canViewEmployeePerformance,
+  closingStatement,
   canViewExpenseReport,
   employeePerformanceRows,
   employeeReportScope,
@@ -579,5 +581,141 @@ describe("settlementReportTotals", () => {
     expect(byStatus).toHaveLength(4);
     expect(byMonth).toEqual([]);
     expect(byEmployee).toEqual([]);
+  });
+});
+
+describe("canViewClosingStatement", () => {
+  const set = (keys: readonly PermissionKey[]) => new Set(keys);
+  const without = (...drop: PermissionKey[]) => ROLE_DEFAULTS.SUPERVISOR.filter((key) => !drop.includes(key));
+
+  it("allows an ADMIN and a default Supervisor", () => {
+    expect(canViewClosingStatement({ role: "ADMIN" }, set(PERMISSION_KEYS))).toBe(true);
+    expect(canViewClosingStatement({ role: "SUPERVISOR" }, set(ROLE_DEFAULTS.SUPERVISOR))).toBe(true);
+  });
+
+  it.each(["reports.view", "settlements.view", "expenses.view"] as const)("requires %s", (key) => {
+    expect(canViewClosingStatement({ role: "SUPERVISOR" }, set(without(key)))).toBe(false);
+  });
+
+  it("denies Staff even when granted every key", () => {
+    expect(canViewClosingStatement({ role: "STAFF" }, set(PERMISSION_KEYS))).toBe(false);
+  });
+});
+
+describe("closingStatement", () => {
+  const d = (value: string | number) => new Prisma.Decimal(value);
+  const amira = { id: "e1", name: "Amira" };
+  const basma = { id: "e2", name: "Basma" };
+  const carla = { id: "e3", name: "Carla" };
+  const settlement = (
+    employee: { id: string; name: string },
+    values: { revenue: string; share: string; expenses: string; adjustments: string; status?: "DRAFT" | "CALCULATED" | "APPROVED" | "PAID" },
+  ) => ({
+    employee,
+    status: values.status ?? "APPROVED",
+    totalRevenue: d(values.revenue),
+    sharePercentage: d(50),
+    employeeShare: d(values.share),
+    totalExpenses: d(values.expenses),
+    totalAdjustments: d(values.adjustments),
+    finalAmount: d(values.share).minus(values.expenses).plus(values.adjustments),
+  });
+  const base = {
+    paidRevenue: d("8000"),
+    invoiceCount: 40,
+    paidByEmployee: new Map([
+      ["e1", d("5000")],
+      ["e2", d("3000")],
+    ]),
+    expectedEmployees: [amira, basma],
+    settlements: [
+      settlement(basma, { revenue: "3000", share: "1500", expenses: "0", adjustments: "-100", status: "PAID" }),
+      settlement(amira, { revenue: "5000", share: "2500", expenses: "300", adjustments: "0" }),
+    ],
+    salonExpensesByCategory: [
+      { id: "RENT", amount: d("2000"), count: 1 },
+      { id: "SUPPLIES", amount: d("450.50"), count: 3 },
+    ] satisfies GroupedExpense[],
+  };
+
+  it("deducts earnings (share + adjustments) and salon expenses, not advances again", () => {
+    const result = closingStatement(base);
+    // 8000 − (2500 + 1500 − 100) − 2450.50
+    expect(result.employeeEarnings.toFixed(2)).toBe("3900.00");
+    expect(result.salonExpenses.toFixed(2)).toBe("2450.50");
+    expect(result.net.toFixed(2)).toBe("1649.50");
+    expect(result.employeeTotals.advances.toFixed(2)).toBe("300.00");
+    expect(result.employeeTotals.final.toFixed(2)).toBe("3600.00");
+    expect(result.provisional).toBe(false);
+    expect(result.employees.map((row) => row.employee.name)).toEqual(["Amira", "Basma"]);
+    expect(result.expenses.map((row) => row.category)).toEqual(["RENT", "SUPPLIES"]);
+  });
+
+  it("counts still-to-pay only for settlements not yet PAID", () => {
+    expect(closingStatement(base).stillToPay.toFixed(2)).toBe("2200.00");
+  });
+
+  it("allows a negative net and stays exact with decimals", () => {
+    const result = closingStatement({
+      ...base,
+      paidRevenue: d("0.30"),
+      paidByEmployee: new Map(),
+      expectedEmployees: [],
+      settlements: [],
+      salonExpensesByCategory: [
+        { id: "WATER", amount: d("0.10"), count: 1 },
+        { id: "INTERNET", amount: d("0.20"), count: 1 },
+        { id: "OTHER", amount: d("1"), count: 1 },
+      ],
+    });
+    expect(result.salonExpenses.toFixed(2)).toBe("1.30");
+    expect(result.net.toFixed(2)).toBe("-1.00");
+  });
+
+  it("flags an expected employee without a settlement and leaves their pay out of the net", () => {
+    const result = closingStatement({
+      ...base,
+      paidRevenue: d("9000"),
+      paidByEmployee: new Map([...base.paidByEmployee, ["e3", d("1000")]]),
+      expectedEmployees: [amira, basma, carla],
+    });
+    const row = result.employees.find((employee) => employee.employee.id === "e3")!;
+    expect(row).toEqual({ settled: false, employee: carla, revenue: d("1000") });
+    expect(result.unsettledCount).toBe(1);
+    expect(result.provisional).toBe(true);
+    expect(result.employeeEarnings.toFixed(2)).toBe("3900.00");
+    expect(result.employeeTotals.revenue.toFixed(2)).toBe("9000.00");
+  });
+
+  it("marks a settlement out of date when current paid revenue differs", () => {
+    const result = closingStatement({
+      ...base,
+      paidRevenue: d("7800"),
+      paidByEmployee: new Map([
+        ["e1", d("4800")],
+        ["e2", d("3000")],
+      ]),
+    });
+    const amiraRow = result.employees.find((row) => row.employee.id === "e1")!;
+    expect(amiraRow.settled && amiraRow.outOfDate).toBe(true);
+    expect(result.outOfDateCount).toBe(1);
+    expect(result.provisional).toBe(true);
+    // The stored values still drive the net.
+    expect(result.net.toFixed(2)).toBe("1449.50");
+  });
+
+  it("returns zeros for an empty month", () => {
+    const result = closingStatement({
+      paidRevenue: d(0),
+      invoiceCount: 0,
+      paidByEmployee: new Map(),
+      expectedEmployees: [],
+      settlements: [],
+      salonExpensesByCategory: [],
+    });
+    expect(result.employees).toEqual([]);
+    expect(result.expenses).toEqual([]);
+    expect(result.net.toFixed(2)).toBe("0.00");
+    expect(result.provisional).toBe(false);
   });
 });

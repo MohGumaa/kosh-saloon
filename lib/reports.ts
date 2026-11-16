@@ -535,3 +535,119 @@ export function settlementReportTotals<E extends { id: string; name: string }>(
 }
 
 export type SettlementReportTotals<E extends { id: string; name: string }> = ReturnType<typeof settlementReportTotals<E>>;
+
+/**
+ * The monthly closing statement covers every employee and the salon's expenses, so it needs
+ * all three views, and Staff never see it whatever they hold.
+ */
+export function canViewClosingStatement(
+  user: Pick<SessionUser, "role">,
+  permissions: ReadonlySet<PermissionKey>,
+): boolean {
+  return (
+    !isOwnScope(user) &&
+    permissions.has("reports.view") &&
+    permissions.has("settlements.view") &&
+    permissions.has("expenses.view")
+  );
+}
+
+export const CLOSING_STATEMENT_PATH = "/reports/closing";
+
+export interface ClosingStatementInput<E extends { id: string; name: string }> {
+  /** The month's PAID invoices, as settlements count them. */
+  paidRevenue: Prisma.Decimal;
+  invoiceCount: number;
+  /** Current paid revenue per employee id. */
+  paidByEmployee: ReadonlyMap<string, Prisma.Decimal>;
+  /** Employees a settlement is expected for (paid invoices or employee expenses in the month), with details. */
+  expectedEmployees: readonly E[];
+  /** The month's stored settlements. */
+  settlements: readonly Omit<SettlementReportInput<E>, "periodStart">[];
+  salonExpensesByCategory: readonly GroupedExpense[];
+  locale?: string;
+}
+
+export type ClosingEmployeeRow<E> =
+  | {
+      settled: true;
+      employee: E;
+      revenue: Prisma.Decimal;
+      sharePercentage: Prisma.Decimal;
+      earned: Prisma.Decimal;
+      advances: Prisma.Decimal;
+      adjustments: Prisma.Decimal;
+      final: Prisma.Decimal;
+      status: SettlementStatusValue;
+      /** The stored revenue no longer matches the employee's current paid invoices. */
+      outOfDate: boolean;
+    }
+  | { settled: false; employee: E; revenue: Prisma.Decimal };
+
+/**
+ * The closing statement from stored settlement values; nothing is recalculated.
+ * `net = paidRevenue − (employeeShare + adjustments) − salon expenses`. Advances are inside
+ * the earnings already, so they are not deducted again. An employee without a settlement adds
+ * nothing to the deductions and makes the statement provisional, as does an out-of-date one.
+ */
+export function closingStatement<E extends { id: string; name: string }>(input: ClosingStatementInput<E>) {
+  const zero = new Prisma.Decimal(0);
+  const liveRevenue = (id: string) => input.paidByEmployee.get(id) ?? zero;
+
+  const settledIds = new Set(input.settlements.map((row) => row.employee.id));
+  const settledRows: ClosingEmployeeRow<E>[] = input.settlements.map((row) => ({
+    settled: true,
+    employee: row.employee,
+    revenue: row.totalRevenue,
+    sharePercentage: row.sharePercentage,
+    earned: row.employeeShare,
+    advances: row.totalExpenses,
+    adjustments: row.totalAdjustments,
+    final: row.finalAmount,
+    status: row.status,
+    outOfDate: !row.totalRevenue.equals(liveRevenue(row.employee.id)),
+  }));
+  const unsettledRows: ClosingEmployeeRow<E>[] = input.expectedEmployees
+    .filter((employee) => !settledIds.has(employee.id))
+    .map((employee) => ({ settled: false, employee, revenue: liveRevenue(employee.id) }));
+  const employees = [...settledRows, ...unsettledRows].sort((a, b) =>
+    a.employee.name.localeCompare(b.employee.name, input.locale),
+  );
+
+  const totals = { revenue: zero, earned: zero, advances: zero, adjustments: zero, final: zero, stillToPay: zero };
+  for (const row of employees) {
+    totals.revenue = totals.revenue.plus(row.revenue);
+    if (!row.settled) continue;
+    totals.earned = totals.earned.plus(row.earned);
+    totals.advances = totals.advances.plus(row.advances);
+    totals.adjustments = totals.adjustments.plus(row.adjustments);
+    totals.final = totals.final.plus(row.final);
+    if (row.status !== "PAID") totals.stillToPay = totals.stillToPay.plus(row.final);
+  }
+
+  const expenses = input.salonExpensesByCategory
+    .map((row) => ({ category: row.id, count: row.count, total: row.amount ?? zero }))
+    .sort((a, b) => b.total.comparedTo(a.total) || a.category.localeCompare(b.category));
+  const salonExpenses = expenses.reduce((sum, row) => sum.plus(row.total), zero);
+
+  const employeeEarnings = totals.earned.plus(totals.adjustments);
+  const unsettledCount = unsettledRows.length;
+  const outOfDateCount = settledRows.filter((row) => row.settled && row.outOfDate).length;
+
+  return {
+    paidRevenue: input.paidRevenue,
+    invoiceCount: input.invoiceCount,
+    employees,
+    employeeTotals: totals,
+    expenses,
+    salonExpenses,
+    employeeEarnings,
+    stillToPay: totals.stillToPay,
+    net: input.paidRevenue.minus(employeeEarnings).minus(salonExpenses),
+    unsettledCount,
+    outOfDateCount,
+    provisional: unsettledCount > 0 || outOfDateCount > 0,
+  };
+}
+
+export type ClosingStatement<E extends { id: string; name: string }> = ReturnType<typeof closingStatement<E>>;

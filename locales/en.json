@@ -25,6 +25,7 @@
     "employeePerformance": "Employee Performance",
     "employeeEarnings": "Employee Earnings",
     "settlements": "Settlements",
+    "closingStatement": "Closing Statement",
     "settings": "Settings",
     "auditLog": "Audit Log",
     "comingSoon": "Coming soon",
@@ -954,6 +955,57 @@
     },
     "total": "Total",
     "inactive": "Inactive"
+  },
+  "closingStatement": {
+    "title": "Closing statement",
+    "description": "The month-end calculation: paid revenue, each employee's payout, salon expenses, and what the salon keeps.",
+    "loading": "Loading the closing statement",
+    "month": "Month",
+    "show": "Show",
+    "print": "Print / Save as PDF",
+    "sheetLabel": "Monthly closing statement",
+    "license": "Trade licence",
+    "generated": "Generated {date}",
+    "total": "Total",
+    "notApplicable": "Not applicable",
+    "notSettled": "Not settled",
+    "outOfDate": "Out of date",
+    "revenue": {
+      "title": "Paid revenue",
+      "invoices": "{count, plural, =0 {No paid invoices} one {# paid invoice} other {# paid invoices}}"
+    },
+    "employees": {
+      "title": "Employee payouts",
+      "empty": "No employee activity or settlements this month.",
+      "note": "Earned + adjustments is the employees' cost for the month. Advances were already paid in cash and are part of it; the final payout is what is left to pay."
+    },
+    "expenses": {
+      "title": "Salon expenses",
+      "empty": "No salon expenses this month."
+    },
+    "columns": {
+      "earned": "Earned",
+      "advances": "Advances",
+      "category": "Category",
+      "entries": "Entries",
+      "amount": "Amount"
+    },
+    "summary": {
+      "title": "Summary",
+      "paidRevenue": "Paid revenue",
+      "employeeEarnings": "Employee earnings",
+      "salonExpenses": "Salon expenses",
+      "net": "Net the salon keeps",
+      "stillToPay": "Still to pay employees",
+      "formula": "Net = paid revenue − employee earnings (earned + adjustments) − salon expenses."
+    },
+    "provisional": {
+      "title": "These figures are provisional",
+      "badge": "Provisional",
+      "unsettled": "{count, plural, one {# employee has} other {# employees have}} activity this month but no settlement, so their pay is not deducted yet.",
+      "outOfDate": "{count, plural, one {# settlement no longer matches} other {# settlements no longer match}} the current paid invoices.",
+      "open": "Open this month's settlements"
+    }
   },
   "employeeReport": {
     "title": "Employee performance",

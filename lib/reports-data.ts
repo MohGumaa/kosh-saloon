@@ -7,7 +7,9 @@ import { bucketExpenses, bucketInvoices, chartBuckets } from "@/lib/dashboard";
 import { db } from "@/lib/db";
 import { dateValue } from "@/lib/expenses";
 import { SALON_TIME_ZONE, salonDayRange } from "@/lib/invoices";
+import { paidRevenueWhere } from "@/lib/earnings";
 import {
+  closingStatement,
   employeePerformanceRows,
   performanceFigures,
   settlementReportTotals,
@@ -21,7 +23,7 @@ import {
   type SettlementReportScope,
 } from "@/lib/reports";
 import { getSalonSettings } from "@/lib/settings";
-import { monthOf, monthPeriod } from "@/lib/settlements";
+import { expensesWhere, monthOf, monthPeriod } from "@/lib/settlements";
 
 const STATUSES: ("PAID" | "UNPAID")[] = ["PAID", "UNPAID"];
 
@@ -332,3 +334,75 @@ export async function loadSettlementReport(
     ...settlementReportTotals(rows, locale),
   };
 }
+
+const CLOSING_EMPLOYEE = { id: true, name: true, image: true, isActive: true } as const;
+
+/**
+ * One completed month's closing statement. Runs only after `canViewClosingStatement`; the
+ * number of queries does not depend on the number of employees.
+ */
+export async function loadClosingStatement(month: string, locale?: string) {
+  const { periodStart, periodEnd } = monthPeriod(month);
+  const paid = paidRevenueWhere(month);
+
+  const [settings, revenue, revenueByEmployee, expensesByEmployee, settlements, salonByCategory, first] =
+    await Promise.all([
+      getSalonSettings(),
+      db.invoice.aggregate({ where: paid, _sum: { amount: true }, _count: { _all: true } }),
+      db.invoice.groupBy({ by: ["employeeId"], where: paid, _sum: { amount: true } }),
+      db.employeeExpense.groupBy({ by: ["employeeId"], where: expensesWhere(month) }),
+      db.employeeSettlement.findMany({
+        where: { periodStart },
+        select: {
+          status: true,
+          totalRevenue: true,
+          sharePercentage: true,
+          employeeShare: true,
+          totalExpenses: true,
+          totalAdjustments: true,
+          finalAmount: true,
+          employee: { select: CLOSING_EMPLOYEE },
+        },
+      }),
+      db.salonExpense.groupBy({
+        by: ["category"],
+        where: { date: { gte: periodStart, lte: periodEnd } },
+        _sum: { amount: true },
+        _count: { _all: true },
+      }),
+      db.employeeSettlement.aggregate({ _min: { periodStart: true } }),
+    ]);
+
+  // The same rule `generateSettlements` uses: paid invoices or employee expenses in the month.
+  const settled = new Set(settlements.map((row) => row.employee.id));
+  const unsettledIds = [
+    ...new Set([...revenueByEmployee, ...expensesByEmployee].map((row) => row.employeeId)),
+  ].filter((id) => !settled.has(id));
+  const unsettled =
+    unsettledIds.length === 0
+      ? []
+      : await db.user.findMany({ where: { id: { in: unsettledIds } }, select: CLOSING_EMPLOYEE });
+
+  return {
+    currency: settings.currency,
+    salon: { name: settings.name, licenseNumber: settings.licenseNumber, logo: settings.logo },
+    firstMonth: first._min.periodStart ? monthOf(first._min.periodStart) : null,
+    ...closingStatement({
+      paidRevenue: revenue._sum.amount ?? new Prisma.Decimal(0),
+      invoiceCount: revenue._count._all,
+      paidByEmployee: new Map(
+        revenueByEmployee.map((row) => [row.employeeId, row._sum.amount ?? new Prisma.Decimal(0)]),
+      ),
+      expectedEmployees: unsettled,
+      settlements,
+      salonExpensesByCategory: salonByCategory.map((row) => ({
+        id: row.category,
+        amount: row._sum.amount,
+        count: row._count._all,
+      })),
+      locale,
+    }),
+  };
+}
+
+export type ClosingStatementData = Awaited<ReturnType<typeof loadClosingStatement>>;

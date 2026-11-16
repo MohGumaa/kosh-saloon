@@ -109,4 +109,10 @@ describe("NAVIGATION", () => {
 
     expect(settlements?.href).toBe("/reports/settlements");
   });
+
+  it("links the closing statement item to its report", () => {
+    const closing = NAVIGATION.flatMap((group) => group.items).find((item) => item.key === "closingStatement");
+
+    expect(closing?.href).toBe("/reports/closing");
+  });
 });

@@ -1,6 +1,6 @@
 # Kosh CRM - Project Overview
 
-<!-- blueprint:source-hash 2fc61a3499ecb8bd56f966777fb081b8fc87c76fa61962ab657f5c45d5b29e2f -->
+<!-- blueprint:source-hash a1119501673582f6a9d40eb6011b70779ec16d9c22b953c3f8f425e47d8e881a -->
 
 > Salon management and financial CRM for Kosh Salon: employees, services,
 > invoices, expenses, employee earnings, monthly settlements, reports,
@@ -118,6 +118,7 @@ passes.
     - 29e. **End-to-end smoke tests** - browser tests for main flows per role; needs `/tests browser` first.
     - 29f. **Final production verification** - checklist in `docs/operations.md`, full checks, post-deploy smoke checklist.
 30. **Invoice date & multiple invoices on create** - all creators (Staff for themselves) pick the invoice date and a count (1-20) on `/transactions/new`; one save creates that many numbered invoices.
+31. **Monthly closing statement** - printable `/reports/closing` for one completed month: paid revenue, each employee's settlement (earned, advances, final payout, status), salon expenses by category, and net kept = paid revenue - employee earnings (share + adjustments) - salon expenses; unsettled employees flagged and net marked provisional; needs both settlement and salon-expense view; browser Print / Save as PDF; stores nothing.
 
 Out of V1 (future): customers, appointments/calendar, inventory, POS/product
 sales, tips, receipt/PDF printing, invoice tax calculation, scheduled report and

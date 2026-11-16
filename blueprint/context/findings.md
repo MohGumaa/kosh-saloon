@@ -377,3 +377,27 @@
 **Suggested fix:** Add cases to a `lib/dashboard-data.test.ts` with a mocked `db` (as `actions/settlements.test.ts` does) asserting: with only `expenses.view`, `employeeExpense.aggregate` is never called and `period.profit` is `null`; with both views it is called once with `where: { date: { gte: dateValue(from), lte: dateValue(to) } }` and `period.profit` equals paid revenue minus both sums (including a negative case). No current requirement is lost.
 **Resolution:**
 
+### F-69 [P3] open - The Closing statement sidebar link shows to viewers the page always sends to the access-denied page
+
+**File:** lib/navigation.ts:61
+**Found:** 2026-11-16 by /audit independent (scope: current; lens: quality)
+**Why it matters:** The item needs only `expenses.view`, and `visibleNavKeys` shows an item when any listed key is held. The page needs `reports.view`, `settlements.view` and `expenses.view` and a non-Staff role (`canViewClosingStatement`, `lib/reports.ts:543`). A Supervisor who keeps `expenses.view` but loses `reports.view` or `settlements.view`, or a Staff user granted `expenses.view`, sees an enabled link that always redirects to `/forbidden` (`lib/security-matrix.test.ts:323` pins it for `staffGrantedAll`). The spec chose this permission list on purpose and says the page enforces the full rule, so nothing is exposed and default roles are correct. Same family as F-50 (a different item), so repairing F-50 alone may not cover it.
+**Suggested fix:** When F-50's family is repaired, give this item the page rule (for example an all-keys plus non-Staff visibility check that reuses `canViewClosingStatement`), and update the `staffGrantedAll` row. Requires a user decision because the spec named the single key; no current requirement is lost.
+**Resolution:**
+
+### F-70 [P3] open - No test pins that the closing statement checks permission before loading, or that its loader runs a constant number of queries
+
+**File:** app/(app)/reports/closing/page.tsx:40
+**Found:** 2026-11-16 by /audit independent (scope: current; lens: tests)
+**Why it matters:** The spec requires that "the loader is called only after the page's permission check" and that "the query count doesn't depend on the number of employees" (feature 29d). Both hold at `d589c28` (`page.tsx:39-47`; `lib/reports-data.ts:344-384`: seven parallel queries plus at most one `user.findMany`). Only the pure rule `canViewClosingStatement` and `closingStatement` are tested. A later edit that moves `loadClosingStatement` into the `Promise.all` before the check, or adds a per-employee query, would pass `pnpm test`, `tsc`, lint and build. Same shape as F-48 and F-68. The spec's done-when for step 2 asked only for `tsc`, so this is a gap, not a missed gate.
+**Suggested fix:** Add a `lib/reports-data.test.ts` case with a mocked `db` (as `actions/settlements.test.ts` does) asserting that `user.findMany` is skipped when every expected employee is settled and called once with only the unsettled ids otherwise, and that the salon-expense and invoice queries use `monthPeriod`/`paidRevenueWhere`. Optionally test the page with mocked `requireSession`/`getPermissions` to assert `redirect("/forbidden")` happens and `loadClosingStatement` is never called for a Staff user. No current requirement is lost.
+**Resolution:**
+
+### F-71 [P3] unverified - The "expected employees" rule leaves out employees who only carry a pending adjustment, which settlement generation includes
+
+**File:** lib/reports-data.ts:376
+**Found:** 2026-11-16 by /audit independent (scope: current; lens: quality)
+**Why it matters:** The code comment and the spec say the expected set is "the same rule `generateSettlements` uses". `generateSettlements` (`actions/settlements.ts:146-155`) also includes employees with an unapplied adjustment from an earlier settlement. If such an employee has no settlement for the month, the statement shows a final (not provisional) net, but generating the month would create a settlement carrying that adjustment and change the month's employee earnings. The spec's rules table names only paid invoices and employee expenses, so the code matches the written spec; whether the adjustment should land in this month or a later one at generation time is not proven here.
+**Suggested fix:** Ask the user whether pending adjustments should count. If yes, add the existing `settlementAdjustment.groupBy` (`appliedSettlementId: null`, source `periodStart < periodStart`) to the loader's `Promise.all` and its ids to the expected set, with a test. If no, correct the comment so it no longer claims parity with `generateSettlements`. No current requirement is lost.
+**Resolution:**
+
