@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { ExpenseCreateForm } from "@/components/expenses/ExpenseCreateForm";
 import { requirePermission } from "@/lib/auth/authorize";
-import { salonToday } from "@/lib/expenses";
+import { expenseCategoriesFor, salonToday } from "@/lib/expenses";
 import { getSalonSettings } from "@/lib/settings";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -13,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function NewExpensePage() {
-  const { permissions } = await requirePermission("expenses.create");
+  const { user, permissions } = await requirePermission("expenses.create");
   const [t, { currency }] = await Promise.all([getTranslations("expenses"), getSalonSettings()]);
 
   return (
@@ -32,7 +32,9 @@ export default async function NewExpensePage() {
         <h1 className="text-2xl font-semibold">{t("create.title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t("create.description")}</p>
         <div className="mt-6">
-          <ExpenseCreateForm currency={currency} today={salonToday()} canView={permissions.has("expenses.view")} />
+          <ExpenseCreateForm currency={currency} today={salonToday()} canView={permissions.has("expenses.view")}
+            categories={expenseCategoriesFor(user)}
+          />
         </div>
       </section>
     </div>

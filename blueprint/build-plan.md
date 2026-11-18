@@ -78,6 +78,10 @@ Your features
 
 - [x] 31. Monthly closing statement - A printable `/reports/closing` page for one completed month, used to do the month-end calculation with the supervisor: total paid revenue, then one line per employee from their saved settlement (share + adjustments earned, minus advances already taken, = final payout still to pay, with status), then salon expenses by category, ending with the net the salon keeps = paid revenue − employee earnings − salon expenses. Employees without a settlement for that month are flagged "not settled" and the net is marked provisional until every active employee is settled. Visible only to users who can view both settlements and salon expenses. EN/AR, RTL, and Print / Save as PDF; nothing new is stored.
 
+- [ ] 32. Owner costs & net profit - Track owner-paid costs separately from the month-end closing with the supervisor, and show the owner's real profit before corporate tax.
+  - [x] 32a. Owner cost categories - Rent, Electricity, Water and Internet salon expenses are owner costs: only Admin can add, edit, delete or see them. Non-admins never see them in the expense list, expense details, expense reports or the dashboard. The closing statement's "net kept" leaves them out for everyone, so it stays the figure agreed with the supervisor.
+  - [ ] 32b. Owner net profit - Admin only. On the monthly closing statement, a section below the shared sheet: net kept − owner costs by category = owner net profit. Plus a yearly Profit & Loss page `/reports/profit-loss?year=YYYY` for the Jan–Dec tax period: paid revenue, employee earnings (salary), salon expenses, owner costs by category, net income before tax. Printable, EN/AR, nothing new stored, no tax amount calculated.
+
 Future features
 These should remain outside V1 until the core CRM is stable:
 

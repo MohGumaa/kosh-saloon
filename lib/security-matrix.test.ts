@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { PERMISSION_KEYS, ROLE_DEFAULTS, changeableKeys, type PermissionKey } from "@/lib/auth/permissions";
 import { canViewSalonDashboard } from "@/lib/dashboard";
 import { canChangeEmployeeRole, canManageEmployee, canManageEmployeeAccess, type Role } from "@/lib/employees";
+import { canSeeOwnerCosts } from "@/lib/expenses";
 import { canManageInvoices, canViewEmployeeInvoices } from "@/lib/invoices";
 import { visibleNavKeys } from "@/lib/navigation";
 import {
@@ -137,6 +138,17 @@ describe("salon-wide dashboard and reports", () => {
 
   it("never shows Staff the closing statement", () => {
     expectRow((a) => canViewClosingStatement(a, a.permissions), salonWide);
+  });
+
+  it("shows owner costs (rent, utilities) to ADMIN only, whatever anyone else holds", () => {
+    expectRow(canSeeOwnerCosts, {
+      admin: true,
+      supervisor: false,
+      staff: false,
+      staffGrantedAll: false,
+      supervisorWithNone: false,
+    });
+    expect(canSeeOwnerCosts(actor("supervisorAll", "SUPERVISOR", PERMISSION_KEYS))).toBe(false);
   });
 
   it("limits Staff to their own performance, whatever they hold", () => {

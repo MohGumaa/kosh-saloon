@@ -615,6 +615,8 @@ Salon expenses affect salon financial reports.
 
 They do not automatically reduce an employee's payout.
 
+Owner costs: Rent, Electricity, Water and Internet are paid by the owner, not from the salon cash the supervisor manages. Only Admin can add, edit, delete or see expenses in these categories. They never appear to non-admins (expense list, details, reports, dashboard), and the monthly closing statement's net kept excludes them for everyone.
+
 # 19. Employee Earnings Formula
 
     The basic calculation is:
@@ -902,6 +904,8 @@ Employee Earnings
 Employee Expenses
 Services
 Monthly Settlements
+
+Owner net profit (Admin only): below the monthly closing statement, net kept − owner costs by category = owner net profit. A yearly Profit & Loss report (`/reports/profit-loss?year=YYYY`, the Jan–Dec corporate tax period) shows paid revenue, employee earnings (salary), salon expenses, owner costs by category and net income before tax. It helps prepare the UAE corporate tax return; the app does not calculate the tax amount.
 
 # 30. Revenue Reports
 

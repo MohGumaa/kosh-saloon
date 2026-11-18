@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { getPermissions } from "@/lib/auth/authorize";
 import { requireSession } from "@/lib/auth/current-user";
 import { addDays } from "@/lib/dashboard";
-import { dateValue, salonToday } from "@/lib/expenses";
+import { canSeeOwnerCosts, dateValue, salonToday } from "@/lib/expenses";
 import { employeeLabels } from "@/lib/names";
 import {
   canViewExpenseReport,
@@ -42,7 +42,7 @@ export default async function ExpenseReportPage({ searchParams }: PageProps<"/re
   const range = parseRevenueReport(await searchParams, today);
   const sections = expenseSections(permissions);
   const [data, t, tPeriod, tSalon, tEmployee, locale] = await Promise.all([
-    loadExpenseReport(range, sections),
+    loadExpenseReport(range, sections, canSeeOwnerCosts(user)),
     getTranslations("expenseReport"),
     getTranslations("reportPeriod"),
     getTranslations("expenses"),

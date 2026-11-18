@@ -8,7 +8,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { FormSelect, fieldSelectClass } from "@/components/ui/form-select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { DESCRIPTION_MAX, EXPENSE_CATEGORIES, TITLE_MAX } from "@/lib/form-constants";
+import { DESCRIPTION_MAX, TITLE_MAX } from "@/lib/form-constants";
 
 interface ExpenseFieldsProps {
   values: Record<ExpenseField, string>;
@@ -16,10 +16,12 @@ interface ExpenseFieldsProps {
   currency: string;
   /** The salon's current day; the latest date the picker offers. The server enforces it. */
   today: string;
+  /** The categories this user may pick (`expenseCategoriesFor`). The server enforces it. */
+  categories: readonly string[];
 }
 
 /** The title, category, amount, date, and description inputs shared by the create and edit forms. */
-export function ExpenseFields({ values, errors, currency, today }: ExpenseFieldsProps) {
+export function ExpenseFields({ values, errors, currency, today, categories }: ExpenseFieldsProps) {
   const t = useTranslations("expenses");
   const tAuth = useTranslations("auth");
   const categoryError = errors?.category;
@@ -49,7 +51,7 @@ export function ExpenseFields({ values, errors, currency, today }: ExpenseFields
           required
           defaultValue={values.category}
           placeholder={t("fields.chooseCategory")}
-          options={EXPENSE_CATEGORIES.map((category) => ({ value: category, label: t(`categories.${category}`) }))}
+          options={categories.map((category) => ({ value: category, label: t(`categories.${category}`) }))}
           aria-invalid={categoryError ? true : undefined}
           aria-describedby={categoryError ? "field-category-error" : undefined}
           className={fieldSelectClass}

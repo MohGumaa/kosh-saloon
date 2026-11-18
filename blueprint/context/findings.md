@@ -401,3 +401,19 @@
 **Suggested fix:** Ask the user whether pending adjustments should count. If yes, add the existing `settlementAdjustment.groupBy` (`appliedSettlementId: null`, source `periodStart < periodStart`) to the loader's `Promise.all` and its ids to the expected set, with a test. If no, correct the comment so it no longer claims parity with `generateSettlements`. No current requirement is lost.
 **Resolution:**
 
+
+### F-72 [P3] open - The non-admin edit and delete guard checks the category on read, but the write matches the id alone
+
+**File:** actions/expenses.ts:139
+**Found:** 2026-11-18 by /audit independent (scope: current; lens: security)
+**Why it matters:** `updateExpense` and `deleteExpense` read the row with `findUnique`, refuse a non-admin when the stored category is an owner cost, then write with `updateMany`/`deleteMany` where `{ id }` only (lines 139-141 and 186). Under the default Read Committed isolation, an ADMIN moving that row into RENT/ELECTRICITY/WATER/INTERNET between the read and the write lets a SUPERVISOR's in-flight edit or delete land on what is now an owner cost. The window is narrow and needs a concurrent admin edit, so this is hardening, not a reachable attacker-controlled bypass.
+**Suggested fix:** For a non-admin actor, add `...SALON_CASH_EXPENSES` to the `updateMany` and `deleteMany` where clauses; the existing `count === 0 -> "not_found"` path then covers the race. Add one action test asserting the where clause for a supervisor. No current requirement is lost.
+**Resolution:**
+
+### F-73 [P3] open - No test pins that the dashboard, expense report and closing loaders filter owner costs
+
+**File:** lib/dashboard-data.ts:48
+**Found:** 2026-11-18 by /audit independent (scope: current; lens: tests)
+**Why it matters:** The owner-cost exclusion in `loadDashboard` (`lib/dashboard-data.ts:48`), `loadExpenseReport` (`lib/reports-data.ts:99`) and the unconditional one in `loadClosingStatement` (`lib/reports-data.ts:373`) have no test; the helpers and actions are covered, but nothing fails if a loader drops `SALON_CASH_EXPENSES`, applies it to the wrong query, or a page passes `true` instead of `canSeeOwnerCosts(user)`. These loaders feed money totals (dashboard profit, closing net kept), so a regression would silently change figures shown to a supervisor.
+**Suggested fix:** Add mocked-`db` loader tests (the pattern `actions/*.test.ts` already uses) asserting the salon `aggregate`/`findMany`/`groupBy` where clauses include `category: { notIn: OWNER_COST_CATEGORIES }` when the flag is false and omit it when true, and that the closing `groupBy` always includes it. No current requirement is lost.
+**Resolution:**

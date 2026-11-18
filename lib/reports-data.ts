@@ -5,7 +5,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import { bucketExpenses, bucketInvoices, chartBuckets } from "@/lib/dashboard";
 import { db } from "@/lib/db";
-import { dateValue } from "@/lib/expenses";
+import { SALON_CASH_EXPENSES, dateValue } from "@/lib/expenses";
 import { SALON_TIME_ZONE, salonDayRange } from "@/lib/invoices";
 import { paidRevenueWhere } from "@/lib/earnings";
 import {
@@ -98,18 +98,21 @@ export type RevenueReportData = Awaited<ReturnType<typeof loadRevenueReport>>;
 /**
  * The expense report queries, by each entry's calendar `date`. Runs only after
  * `canViewExpenseReport`; each section's queries run only when `expenseSections` allows them.
+ * Without `ownerCosts` (`canSeeOwnerCosts(viewer)`), owner-cost salon expenses are left out.
  */
 export async function loadExpenseReport(
   range: Pick<RevenueReportRange, "from" | "to" | "group">,
   sections: ExpenseSections,
+  ownerCosts: boolean,
 ) {
   const where = { date: { gte: dateValue(range.from), lte: dateValue(range.to) } };
+  const salonWhere = { ...where, ...(!ownerCosts && SALON_CASH_EXPENSES) };
   const grouped = { _sum: { amount: true }, _count: { _all: true } } as const;
 
   const [settings, salonRows, salonByCategory, employeeRows, employeeByCategory, byEmployee] = await Promise.all([
     getSalonSettings(),
-    sections.salon ? db.salonExpense.findMany({ where, select: { date: true, amount: true } }) : null,
-    sections.salon ? db.salonExpense.groupBy({ by: ["category"], where, ...grouped }) : null,
+    sections.salon ? db.salonExpense.findMany({ where: salonWhere, select: { date: true, amount: true } }) : null,
+    sections.salon ? db.salonExpense.groupBy({ by: ["category"], where: salonWhere, ...grouped }) : null,
     sections.employee ? db.employeeExpense.findMany({ where, select: { date: true, amount: true } }) : null,
     sections.employee ? db.employeeExpense.groupBy({ by: ["category"], where, ...grouped }) : null,
     sections.byEmployee ? db.employeeExpense.groupBy({ by: ["employeeId"], where, ...grouped }) : null,
@@ -366,7 +369,8 @@ export async function loadClosingStatement(month: string, locale?: string) {
       }),
       db.salonExpense.groupBy({
         by: ["category"],
-        where: { date: { gte: periodStart, lte: periodEnd } },
+        // Owner costs (rent, utilities) are paid by the owner, not from the salon cash, for every viewer.
+        where: { date: { gte: periodStart, lte: periodEnd }, ...SALON_CASH_EXPENSES },
         _sum: { amount: true },
         _count: { _all: true },
       }),

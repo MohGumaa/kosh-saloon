@@ -9,7 +9,7 @@ import { LocalDateTime } from "@/components/layout/LocalDateTime";
 import { Detail, Panel } from "@/components/layout/Panel";
 import { requirePermission } from "@/lib/auth/authorize";
 import { db } from "@/lib/db";
-import { dayOf, salonToday } from "@/lib/expenses";
+import { canSeeOwnerCosts, dayOf, expenseCategoriesFor, isOwnerCost, salonToday } from "@/lib/expenses";
 import { getSalonSettings } from "@/lib/settings";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -18,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ExpensePage({ params }: PageProps<"/expenses/[id]">) {
-  const { permissions } = await requirePermission("expenses.view");
+  const { user, permissions } = await requirePermission("expenses.view");
   const { id } = await params;
   const [t, locale, { currency }, expense] = await Promise.all([
     getTranslations("expenses"),
@@ -39,7 +39,8 @@ export default async function ExpensePage({ params }: PageProps<"/expenses/[id]"
       },
     }),
   ]);
-  if (!expense) notFound();
+  // An owner cost looks like an unknown id to a non-admin, so its existence is not revealed.
+  if (!expense || (isOwnerCost(expense.category) && !canSeeOwnerCosts(user))) notFound();
 
   const canEdit = permissions.has("expenses.edit");
   const canDelete = permissions.has("expenses.delete");
@@ -110,6 +111,7 @@ export default async function ExpensePage({ params }: PageProps<"/expenses/[id]"
             }}
             currency={currency}
             today={salonToday()}
+            categories={expenseCategoriesFor(user)}
           />
         </Panel>
       )}

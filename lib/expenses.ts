@@ -20,6 +20,31 @@ export const expenseIdSchema = z.string().min(1).max(100);
 
 export const expenseCategorySchema = z.enum(EXPENSE_CATEGORIES);
 
+/**
+ * Costs the owner pays personally, not from the salon cash the supervisor manages. Only an
+ * ADMIN can add, edit, delete or see them, and the closing statement leaves them out.
+ */
+export const OWNER_COST_CATEGORIES = ["RENT", "ELECTRICITY", "WATER", "INTERNET"] as const satisfies readonly ExpenseCategoryValue[];
+
+export function isOwnerCost(category: string): boolean {
+  return (OWNER_COST_CATEGORIES as readonly string[]).includes(category);
+}
+
+/** The role alone decides it; no permission key grants it. */
+export function canSeeOwnerCosts(user: { role: string }): boolean {
+  return user.role === "ADMIN";
+}
+
+/** The categories this user can see, pick and filter by, in the usual order. */
+export function expenseCategoriesFor(user: { role: string }): readonly ExpenseCategoryValue[] {
+  return canSeeOwnerCosts(user) ? EXPENSE_CATEGORIES : EXPENSE_CATEGORIES.filter((category) => !isOwnerCost(category));
+}
+
+/** Salon expenses paid from the salon cash: every category except the owner costs. */
+export const SALON_CASH_EXPENSES = {
+  category: { notIn: [...OWNER_COST_CATEGORIES] },
+} satisfies Prisma.SalonExpenseWhereInput;
+
 /** Like `SINGLE_LINE_TEXT`, but line breaks are allowed. */
 export const MULTI_LINE_TEXT = /^(?:[^\p{Cc}\p{Cf}\p{Zl}\p{Zp}]|[‌‍\n])*$/u;
 
@@ -117,15 +142,21 @@ const first = (value: string | string[] | undefined) => (Array.isArray(value) ? 
 
 const qSchema = z.string().trim().min(1).max(100).regex(SINGLE_LINE_TEXT);
 
-/** The valid filters in a list URL. An invalid value is dropped, never an error. */
-export function parseExpenseFilters(params: SearchParams): ExpenseFilters {
+/**
+ * The valid filters in a list URL. An invalid value is dropped, never an error; so is a
+ * category outside `categories` (the ones the viewer may see).
+ */
+export function parseExpenseFilters(
+  params: SearchParams,
+  categories: readonly ExpenseCategoryValue[] = EXPENSE_CATEGORIES,
+): ExpenseFilters {
   const filters: ExpenseFilters = {};
 
   const q = qSchema.safeParse(first(params.q) ?? "");
   if (q.success) filters.q = q.data;
 
   const category = expenseCategorySchema.safeParse(first(params.category));
-  if (category.success) filters.category = category.data;
+  if (category.success && categories.includes(category.data)) filters.category = category.data;
 
   const from = first(params.from);
   const to = first(params.to);
@@ -145,11 +176,17 @@ export function parseExpenseFilters(params: SearchParams): ExpenseFilters {
 
 /**
  * The list query for these filters. Without a From or To date, the period applies (this month
- * by default); `today` is the salon day. Salon expenses have no per-user scope.
+ * by default); `today` is the salon day. Without `ownerCosts`, owner-cost categories are
+ * always left out, even if a category filter names one.
  */
-export function expenseWhere(filters: ExpenseFilters, today: string): Prisma.SalonExpenseWhereInput {
+export function expenseWhere(
+  filters: ExpenseFilters,
+  today: string,
+  { ownerCosts = true }: { ownerCosts?: boolean } = {},
+): Prisma.SalonExpenseWhereInput {
   const where: Prisma.SalonExpenseWhereInput = {};
   if (filters.category) where.category = filters.category;
+  if (!ownerCosts) where.AND = [SALON_CASH_EXPENSES];
   const period = activeExpensePeriod(filters);
   const range = period ? expensePeriodRange(period, today) : { from: filters.from, to: filters.to };
   if (range && (range.from || range.to)) {

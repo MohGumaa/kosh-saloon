@@ -42,7 +42,7 @@ import {
 import { loadDashboard, loadPersonalDashboard } from "@/lib/dashboard-data";
 import { db } from "@/lib/db";
 import { salonMonth } from "@/lib/earnings";
-import { dateValue, salonToday } from "@/lib/expenses";
+import { canSeeOwnerCosts, dateValue, salonToday } from "@/lib/expenses";
 import { isOwnScope } from "@/lib/invoices";
 import { firstName, nameLabels } from "@/lib/names";
 import { getDirection, isLocale } from "@/i18n/locales";
@@ -246,7 +246,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const today = salonToday();
   const range = parseDashboardPeriod(await searchParams, today);
   const sections = dashboardSections(permissions);
-  const [data, tInvoices] = await Promise.all([loadDashboard(permissions, range, today), getTranslations("invoices")]);
+  const [data, tInvoices] = await Promise.all([
+    loadDashboard(permissions, range, today, canSeeOwnerCosts(user)),
+    getTranslations("invoices"),
+  ]);
 
   const price = new Intl.NumberFormat(locale, { style: "currency", currency: data.currency });
   const percent = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 2 });

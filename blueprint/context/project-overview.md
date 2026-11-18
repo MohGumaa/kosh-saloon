@@ -1,6 +1,6 @@
 # Kosh CRM - Project Overview
 
-<!-- blueprint:source-hash a1119501673582f6a9d40eb6011b70779ec16d9c22b953c3f8f425e47d8e881a -->
+<!-- blueprint:source-hash 7bd4f6d7df595421be33b0bbc80809136d8b4e389fd569423f42768e5db74c85 -->
 
 > Salon management and financial CRM for Kosh Salon: employees, services,
 > invoices, expenses, employee earnings, monthly settlements, reports,
@@ -54,6 +54,11 @@ individual permissions for Supervisor and Staff users.
 - `employeeShare` = `paidRevenue * sharePercentage / 100` (effective %)
 - `finalAmount` = `employeeShare - employeeExpenses + adjustments`
 - Salon expenses feed salon reports only; they never reduce employee payout.
+- **Owner costs:** RENT, ELECTRICITY, WATER, INTERNET salon expenses are paid by
+  the owner. Only ADMIN can add, edit, delete or see them; non-admins never see
+  them anywhere. The closing statement's net kept excludes them for everyone.
+  Admin-only owner net profit = net kept - owner costs (monthly, plus a yearly
+  P&L for the Jan-Dec corporate tax period); no tax amount is calculated.
 - **No tax math in V1:** the tax rate and tax ID are stored for future receipts;
   they do not affect invoice amounts, revenue, or payouts.
 - Each settlement stores the `sharePercentage` used, so historical settlements
@@ -119,6 +124,9 @@ passes.
     - 29f. **Final production verification** - checklist in `docs/operations.md`, full checks, post-deploy smoke checklist.
 30. **Invoice date & multiple invoices on create** - all creators (Staff for themselves) pick the invoice date and a count (1-20) on `/transactions/new`; one save creates that many numbered invoices.
 31. **Monthly closing statement** - printable `/reports/closing` for one completed month: paid revenue, each employee's settlement (earned, advances, final payout, status), salon expenses by category, and net kept = paid revenue - employee earnings (share + adjustments) - salon expenses; unsettled employees flagged and net marked provisional; needs both settlement and salon-expense view; browser Print / Save as PDF; stores nothing.
+32. **Owner costs & net profit** - keep owner-paid costs out of the supervisor closing and show the owner's profit before corporate tax.
+    - 32a. **Owner cost categories** - RENT/ELECTRICITY/WATER/INTERNET are Admin-only to add, edit, delete and see (list, details, reports, dashboard); closing statement net kept excludes them for everyone.
+    - 32b. **Owner net profit** - Admin-only section under the closing statement (net kept - owner costs by category = owner net profit) and a yearly `/reports/profit-loss?year=YYYY` P&L (paid revenue, employee earnings, salon expenses, owner costs, net income before tax); printable, EN/AR, stores nothing.
 
 Out of V1 (future): customers, appointments/calendar, inventory, POS/product
 sales, tips, receipt/PDF printing, invoice tax calculation, scheduled report and
@@ -184,6 +192,7 @@ PostgreSQL via Prisma. Money fields use `Decimal`. All models have `id`
 - `title` (string), `description` (string?), `category` (enum: RENT |
   ELECTRICITY | WATER | INTERNET | SUPPLIES | EQUIPMENT | MAINTENANCE |
   MARKETING | OTHER), `amount` (Decimal), `date` (Date), `createdById` -> User
+- RENT, ELECTRICITY, WATER, INTERNET are owner-cost categories (ADMIN only).
 
 ### EmployeeExpense
 

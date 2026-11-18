@@ -16,7 +16,7 @@ import {
 } from "@/lib/dashboard";
 import { db } from "@/lib/db";
 import { effectiveSharePercentage, salonMonthRange } from "@/lib/earnings";
-import { dateValue } from "@/lib/expenses";
+import { SALON_CASH_EXPENSES, dateValue } from "@/lib/expenses";
 import { SALON_TIME_ZONE, salonDayRange } from "@/lib/invoices";
 import { getSalonSettings } from "@/lib/settings";
 import { calculateSettlement, expensesWhere } from "@/lib/settlements";
@@ -38,11 +38,14 @@ export async function loadDashboard(
   permissions: ReadonlySet<PermissionKey>,
   range: Pick<DashboardRange, "from" | "to" | "granularity">,
   today: string,
+  /** `canSeeOwnerCosts(viewer)`: without it, owner-cost expenses are left out of every total. */
+  ownerCosts: boolean,
   timeZone: string = SALON_TIME_ZONE,
 ) {
   const sections = dashboardSections(permissions);
   const createdAt = salonDayRange(range.from, range.to, timeZone);
   const expenseDate = { gte: dateValue(range.from), lte: dateValue(range.to) };
+  const salonExpenseWhere = { date: expenseDate, ...(!ownerCosts && SALON_CASH_EXPENSES) };
   const fixed = (period: "today" | "week" | "month") => {
     const { from, to } = presetRange(period, today);
     return paidRevenue(from, to, timeZone);
@@ -77,7 +80,7 @@ export async function loadDashboard(
     db.service.count({ where: { isActive: true } }),
     getSalonSettings(),
     sections.expenses
-      ? db.salonExpense.aggregate({ where: { date: expenseDate }, _sum: { amount: true } })
+      ? db.salonExpense.aggregate({ where: salonExpenseWhere, _sum: { amount: true } })
       : null,
     sections.payouts
       ? db.employeeSettlement.aggregate({
@@ -89,7 +92,7 @@ export async function loadDashboard(
       where: { status: { in: ["PAID", "UNPAID"] }, createdAt },
       select: { createdAt: true, amount: true, status: true },
     }),
-    sections.expenses ? db.salonExpense.findMany({ where: { date: expenseDate }, select: { date: true, amount: true } }) : [],
+    sections.expenses ? db.salonExpense.findMany({ where: salonExpenseWhere, select: { date: true, amount: true } }) : [],
     db.invoice.groupBy({
       by: ["serviceId"],
       where: { status: "PAID", createdAt },

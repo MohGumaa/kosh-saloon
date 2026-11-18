@@ -321,6 +321,7 @@ export default async function ClosingStatementPage({ searchParams }: PageProps<"
               </table>
             </div>
           )}
+          <p className="mt-3 text-xs text-muted-foreground">{t("expenses.ownerCostsNote")}</p>
         </section>
 
         <section aria-labelledby="closing-summary" className="mt-10">

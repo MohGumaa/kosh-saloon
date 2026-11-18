@@ -15,9 +15,10 @@ interface ExpenseEditFormProps {
   values: Record<ExpenseField, string>;
   currency: string;
   today: string;
+  categories: readonly string[];
 }
 
-export function ExpenseEditForm({ id, values, currency, today }: ExpenseEditFormProps) {
+export function ExpenseEditForm({ id, values, currency, today, categories }: ExpenseEditFormProps) {
   const t = useTranslations("expenses");
   const [state, action, pending] = useActionState<ExpenseFormState, FormData>(updateExpense, null);
   const { formRef, messageRef } = useFocusOnError(state);
@@ -40,6 +41,7 @@ export function ExpenseEditForm({ id, values, currency, today }: ExpenseEditForm
         errors={failure?.fieldErrors}
         currency={currency}
         today={today}
+        categories={categories}
       />
       <Button type="submit" size="lg" disabled={pending} className="h-11 self-start rounded-xl px-5">
         {pending ? t("edit.submitting") : t("edit.submit")}

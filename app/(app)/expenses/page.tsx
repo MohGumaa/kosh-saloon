@@ -12,10 +12,11 @@ import { requirePermission } from "@/lib/auth/authorize";
 import { db } from "@/lib/db";
 import {
   DEFAULT_EXPENSE_PERIOD,
-  EXPENSE_CATEGORIES,
   EXPENSE_PAGE_SIZE,
   EXPENSE_PERIODS,
   activeExpensePeriod,
+  canSeeOwnerCosts,
+  expenseCategoriesFor,
   expenseListHref,
   expenseWhere,
   parseExpenseFilters,
@@ -44,13 +45,14 @@ const chipClass =
 const activeChipClass = "border-primary bg-primary text-primary-foreground hover:bg-primary-hover";
 
 export default async function ExpensesPage({ searchParams }: PageProps<"/expenses">) {
-  const { permissions } = await requirePermission("expenses.view");
+  const { user, permissions } = await requirePermission("expenses.view");
   const canCreate = permissions.has("expenses.create");
+  const categories = expenseCategoriesFor(user);
 
   const params = await searchParams;
-  const filters = parseExpenseFilters(params);
+  const filters = parseExpenseFilters(params, categories);
   const filtered = Object.keys(filters).length > 0;
-  const where = expenseWhere(filters, salonToday());
+  const where = expenseWhere(filters, salonToday(), { ownerCosts: canSeeOwnerCosts(user) });
   const activePeriod = activeExpensePeriod(filters);
   // All time with no search or category: an empty list means nothing was ever recorded.
   const noExpensesAtAll = activePeriod === "all" && !filters.q && !filters.category;
@@ -164,7 +166,7 @@ export default async function ExpensesPage({ searchParams }: PageProps<"/expense
             defaultValue={filters.category ?? ""}
             options={[
               { value: "", label: t("filters.all") },
-              ...EXPENSE_CATEGORIES.map((category) => ({ value: category, label: t(`categories.${category}`) })),
+              ...categories.map((category) => ({ value: category, label: t(`categories.${category}`) })),
             ]}
           />
         </div>

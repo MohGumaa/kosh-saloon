@@ -7,7 +7,16 @@ import { recordAudit } from "@/lib/audit";
 import { hasPermission } from "@/lib/auth/authorize";
 import { requireSession } from "@/lib/auth/current-user";
 import { db } from "@/lib/db";
-import { dateValue, dayOf, expenseIdSchema, expenseSchema, salonToday, type ExpenseInput } from "@/lib/expenses";
+import {
+  canSeeOwnerCosts,
+  dateValue,
+  dayOf,
+  expenseIdSchema,
+  expenseSchema,
+  isOwnerCost,
+  salonToday,
+  type ExpenseInput,
+} from "@/lib/expenses";
 
 /** Translation keys under `expenses.errors`. */
 export type ExpenseErrorCode = "forbidden" | "not_found" | "invalid_input" | "unexpected";
@@ -73,6 +82,8 @@ export async function createExpense(_prev: ExpenseFormState, formData: FormData)
     const parsed = parse(values);
     if ("failure" in parsed) return parsed.failure;
     const data = parsed.data;
+    // Owner costs are ADMIN-only; the form hides them, the server enforces it.
+    if (isOwnerCost(data.category) && !canSeeOwnerCosts(actor)) return { success: false, error: "forbidden", values };
 
     id = await db.$transaction(async (tx) => {
       const expense = await tx.salonExpense.create({
@@ -113,7 +124,9 @@ export async function updateExpense(_prev: ExpenseFormState, formData: FormData)
         where: { id: expenseId.data },
         select: { title: true, description: true, category: true, amount: true, date: true },
       });
-      if (!stored) return "not_found";
+      // An owner cost is reported as missing, so a non-admin learns nothing about it.
+      if (!stored || (isOwnerCost(stored.category) && !canSeeOwnerCosts(actor))) return "not_found";
+      if (isOwnerCost(next.category) && !canSeeOwnerCosts(actor)) return "forbidden";
 
       // Stored as the audit log shows them: the amount and the day as strings.
       const before: ExpenseInput = { ...stored, amount: stored.amount.toString(), date: dayOf(stored.date) };
@@ -168,7 +181,7 @@ export async function deleteExpense(_prev: ExpenseFormState, formData: FormData)
         where: { id: expenseId.data },
         select: { title: true, description: true, category: true, amount: true, date: true, createdById: true },
       });
-      if (!stored) return "not_found";
+      if (!stored || (isOwnerCost(stored.category) && !canSeeOwnerCosts(actor))) return "not_found";
 
       const { count } = await tx.salonExpense.deleteMany({ where: { id: expenseId.data } });
       if (count === 0) return "not_found";

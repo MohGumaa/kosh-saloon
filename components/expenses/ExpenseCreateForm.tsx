@@ -16,9 +16,10 @@ interface ExpenseCreateFormProps {
   today: string;
   /** Without `expenses.view` the detail page is forbidden, so the form clears for another expense instead. */
   canView: boolean;
+  categories: readonly string[];
 }
 
-export function ExpenseCreateForm({ currency, today, canView }: ExpenseCreateFormProps) {
+export function ExpenseCreateForm({ currency, today, canView, categories }: ExpenseCreateFormProps) {
   const t = useTranslations("expenses");
   const router = useRouter();
   const [state, action, pending] = useActionState<ExpenseFormState, FormData>(createExpense, null);
@@ -46,6 +47,7 @@ export function ExpenseCreateForm({ currency, today, canView }: ExpenseCreateFor
         errors={failure?.fieldErrors}
         currency={currency}
         today={today}
+        categories={categories}
       />
       <Button type="submit" size="lg" disabled={pending || !!createdId} className="h-11 self-start rounded-xl px-5">
         {pending ? t("create.submitting") : t("create.submit")}

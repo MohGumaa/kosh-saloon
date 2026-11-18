@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   EXPENSE_CATEGORIES,
+  OWNER_COST_CATEGORIES,
+  SALON_CASH_EXPENSES,
+  canSeeOwnerCosts,
+  expenseCategoriesFor,
+  isOwnerCost,
   activeExpensePeriod,
   dateValue,
   expensePeriodRange,
@@ -179,5 +184,55 @@ describe("expenseListHref", () => {
     expect(expenseListHref({ category: "RENT", period: "previousMonth" }, 2)).toBe(
       "/expenses?category=RENT&period=previousMonth&page=2",
     );
+  });
+});
+
+describe("owner costs", () => {
+  const admin = { role: "ADMIN" };
+  const supervisor = { role: "SUPERVISOR" };
+  const staff = { role: "STAFF" };
+  const shared = ["SUPPLIES", "EQUIPMENT", "MAINTENANCE", "MARKETING", "OTHER"];
+
+  it("marks rent, electricity, water and internet as owner costs", () => {
+    expect([...OWNER_COST_CATEGORIES]).toEqual(["RENT", "ELECTRICITY", "WATER", "INTERNET"]);
+    expect(EXPENSE_CATEGORIES.filter(isOwnerCost)).toEqual(["RENT", "ELECTRICITY", "WATER", "INTERNET"]);
+    expect(isOwnerCost("SUPPLIES")).toBe(false);
+  });
+
+  it("lets only an ADMIN see them", () => {
+    expect(canSeeOwnerCosts(admin)).toBe(true);
+    expect(canSeeOwnerCosts(supervisor)).toBe(false);
+    expect(canSeeOwnerCosts(staff)).toBe(false);
+  });
+
+  it("offers every category to an ADMIN and only the shared ones to anyone else", () => {
+    expect(expenseCategoriesFor(admin)).toEqual(EXPENSE_CATEGORIES);
+    expect(expenseCategoriesFor(supervisor)).toEqual(shared);
+    expect(expenseCategoriesFor(staff)).toEqual(shared);
+  });
+
+  it("drops an owner category filter for a viewer who can't see it", () => {
+    expect(parseExpenseFilters({ category: "RENT" }, expenseCategoriesFor(supervisor))).toEqual({});
+    expect(parseExpenseFilters({ category: "SUPPLIES" }, expenseCategoriesFor(supervisor))).toEqual({
+      category: "SUPPLIES",
+    });
+    expect(parseExpenseFilters({ category: "RENT" }, expenseCategoriesFor(admin))).toEqual({ category: "RENT" });
+    expect(parseExpenseFilters({ category: "RENT" })).toEqual({ category: "RENT" });
+  });
+
+  it("leaves owner costs out of the list query unless allowed", () => {
+    const filters = { q: "bill", category: "SUPPLIES" as const, from: "2026-10-01" };
+    const all = expenseWhere(filters, TODAY);
+    expect(all.AND).toBeUndefined();
+    expect(expenseWhere(filters, TODAY, { ownerCosts: true })).toEqual(all);
+    expect(expenseWhere(filters, TODAY, { ownerCosts: false })).toEqual({ ...all, AND: [SALON_CASH_EXPENSES] });
+    expect(SALON_CASH_EXPENSES).toEqual({ category: { notIn: ["RENT", "ELECTRICITY", "WATER", "INTERNET"] } });
+  });
+
+  it("still leaves owner costs out when a filter names one", () => {
+    expect(expenseWhere({ category: "RENT" }, TODAY, { ownerCosts: false })).toMatchObject({
+      category: "RENT",
+      AND: [SALON_CASH_EXPENSES],
+    });
   });
 });

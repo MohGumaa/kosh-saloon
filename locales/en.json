@@ -981,7 +981,8 @@
     },
     "expenses": {
       "title": "Salon expenses",
-      "empty": "No salon expenses this month."
+      "empty": "No salon expenses this month.",
+      "ownerCostsNote": "Rent, electricity, water and internet are owner costs and are not included."
     },
     "columns": {
       "earned": "Earned",

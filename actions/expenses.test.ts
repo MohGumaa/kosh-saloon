@@ -267,3 +267,60 @@ describe("deleteExpense", () => {
     expect(await remove()).toEqual({ success: false, error: "unexpected" });
   });
 });
+
+describe("owner costs (ADMIN only)", () => {
+  const supplies = { ...stored, category: "SUPPLIES", title: "Towels" };
+  const values = { title: "Towels", description: "", category: "SUPPLIES", amount: "4500", date: "2026-10-01" };
+
+  it("refuses a supervisor creating an owner cost, writing nothing", async () => {
+    signIn(supervisor);
+
+    expect(await createExpense(null, form(input))).toEqual({ success: false, error: "forbidden", values: input });
+    expectNothingWritten();
+  });
+
+  it("lets a supervisor create a shared category", async () => {
+    signIn(supervisor);
+
+    expect(await createExpense(null, form(values))).toEqual({ success: true, id: "exp1" });
+  });
+
+  it("lets an ADMIN create, edit and delete owner costs", async () => {
+    expect(await createExpense(null, form({ ...input, category: "ELECTRICITY" }))).toEqual({ success: true, id: "exp1" });
+    mocks.tx.salonExpense.findUnique.mockResolvedValue({ ...stored, category: "INTERNET" });
+    expect(await updateExpense(null, form({ ...values, id: "exp1", category: "INTERNET" }))).toEqual({ success: true });
+    expect(mocks.tx.salonExpense.updateMany).toHaveBeenCalled();
+    expect(await deleteExpense(null, form({ id: "exp1" }))).toEqual({ success: true });
+    expect(mocks.tx.salonExpense.deleteMany).toHaveBeenCalled();
+  });
+
+  it("reports a stored owner cost as not found to a supervisor editing it", async () => {
+    signIn(supervisor);
+    mocks.tx.salonExpense.findUnique.mockResolvedValue({ ...stored, category: "INTERNET" });
+
+    expect(await updateExpense(null, form({ ...values, id: "exp1" }))).toMatchObject({
+      success: false,
+      error: "not_found",
+    });
+    expectNothingWritten();
+  });
+
+  it("refuses a supervisor moving a shared expense into an owner category", async () => {
+    signIn(supervisor);
+    mocks.tx.salonExpense.findUnique.mockResolvedValue(supplies);
+
+    expect(await updateExpense(null, form({ ...values, id: "exp1", category: "RENT" }))).toMatchObject({
+      success: false,
+      error: "forbidden",
+    });
+    expectNothingWritten();
+  });
+
+  it("reports a stored owner cost as not found to a supervisor deleting it", async () => {
+    signIn(supervisor);
+    mocks.tx.salonExpense.findUnique.mockResolvedValue({ ...stored, category: "WATER" });
+
+    expect(await deleteExpense(null, form({ id: "exp1" }))).toEqual({ success: false, error: "not_found" });
+    expectNothingWritten();
+  });
+});
